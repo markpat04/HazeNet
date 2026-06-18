@@ -31,3 +31,7 @@ hazenet_dashboard/logs/
 
 # dashboard cache
 hazenet_dashboard/cache/
+
+# scratch logs/scripts
+_*.log
+_*.py
