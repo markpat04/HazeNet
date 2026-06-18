@@ -69,6 +69,7 @@ class Config:
     amp: bool
     seed: int
     num_workers: int
+    patience: int                   # early-stopping patience (0 = disabled)
 
     # ── paths ──
     grid_nc: str
@@ -153,6 +154,7 @@ class Config:
             lr=trn.get("lr", 1e-3), weight_decay=trn.get("weight_decay", 1e-4),
             grad_clip=trn.get("grad_clip", 1.0), amp=trn.get("amp", False),
             seed=trn.get("seed", 42), num_workers=trn.get("num_workers", 0),
+            patience=trn.get("patience", 0),
             grid_nc=_abs(pth["grid_nc"]), pm25_glob=_abs(pth["pm25_glob"]),
             raw_dir=_abs(pth.get("raw_dir", "data/raw_m2")),
             out_dir=_abs(pth.get("out_dir", "data/processed_hn")),

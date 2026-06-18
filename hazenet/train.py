@@ -82,7 +82,11 @@ def train(cfg) -> dict:
         if Run else None
 
     os.makedirs(cfg.models_dir, exist_ok=True)
-    print(f"training {cfg.epochs} epochs (from {start_ep}) ...")
+    import copy
+    best_te = min(te_losses) if te_losses else float("inf")
+    best_state, bad = None, 0
+    print(f"training {cfg.epochs} epochs (from {start_ep}) "
+          f"patience={cfg.patience or 'off'} ...")
     for ep in range(start_ep, cfg.epochs):
         model.train(); tot = 0.0
         for mb in tr_loader:
@@ -113,6 +117,20 @@ def train(cfg) -> dict:
         torch.save(dict(state_dict=model.state_dict(), opt=opt.state_dict(),
                         sched=sched.state_dict(), epoch=ep,
                         tr_losses=tr_losses, te_losses=te_losses), rp)
+
+        # early stopping on test loss (keep best weights)
+        if te_losses[-1] < best_te - 1e-5:
+            best_te, best_state, bad = te_losses[-1], copy.deepcopy(model.state_dict()), 0
+        else:
+            bad += 1
+            if cfg.patience and bad >= cfg.patience:
+                print(f"  early stop @ ep {ep+1}  (best test={best_te:.4f}, "
+                      f"no improve {bad} epochs)")
+                break
+
+    if best_state is not None:
+        model.load_state_dict(best_state)
+        print(f"[early-stop] restored best weights (test loss {best_te:.4f})")
 
     # ── final metrics (median path) ──
     model.eval(); preds = []

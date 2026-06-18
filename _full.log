@@ -1,0 +1,49 @@
+[local] grid 111×101 (G=11211)  years=[2019, 2020, 2021, 2022, 2023] test=2023  months=[2, 3, 4]
+  channels(9)=['u10', 'v10', 'dem', 'precip', 'rh', 'temp', 'wind_speed', 'tpi', 'precip_accum']
+  model=lowrank hidden=64 rank=32 curve=True quantiles=[0.1, 0.5, 0.9]
+
+============================================================
+▶ STAGE: train
+============================================================
+device: cuda  amp=False
+grid 111×101  G=11211  stations=99  in_ch=9  days=446
+model=lowrank  params=23,681,195  quantiles=[0.1, 0.5, 0.9]
+C:\Users\mark\Desktop\internship\hazenet\train.py:61: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+training 200 epochs (from 0) ...
+C:\Users\mark\Desktop\internship\hazenet\train.py:91: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.cuda.amp.autocast(enabled=use_amp):
+  ep   1  train=0.1116  test=0.0960
+  ep  20  train=0.0137  test=0.0573
+  ep  40  train=0.0114  test=0.0595
+  ep  60  train=0.0103  test=0.0566
+  ep  80  train=0.0093  test=0.0581
+  ep 100  train=0.0090  test=0.0582
+  ep 120  train=0.0082  test=0.0564
+  ep 140  train=0.0082  test=0.0579
+  ep 160  train=0.0076  test=0.0573
+  ep 180  train=0.0076  test=0.0570
+  ep 200  train=0.0072  test=0.0570
+
+[local] test MAE=50.7  RMSE=78.2 µg/m³
+[ok] C:\Users\mark\Desktop\internship\models\clno_local.pt
+
+============================================================
+▶ STAGE: eval
+============================================================
+C:\Users\mark\Desktop\internship\hazenet\infer.py:9: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  ck = torch.load(ckpt_path, map_location=device)
+train {'MAE': 5.167914867401123, 'RMSE': 8.161595344543457, 'bias': -0.3079017102718353, 'n': 10543}
+test  {'MAE': 50.67838668823242, 'RMSE': 78.24711608886719, 'bias': 11.153807640075684, 'n': 2802}
+
+per-year:
+  year  obs_mean      bias       MAE
+ 2019 46.132362 -0.893570  6.711811
+ 2020 45.156498 -0.086861  6.839245
+ 2021 41.084766 -0.364779  5.570917
+ 2022 34.445160 -0.165425  3.824413
+ 2023 73.748291 11.153808 50.678387
+
+GATE W2: worst low-dust-year |bias|=0.4 (target ≤25.0) → PASS ✅
+
+✅ done: ['train', 'eval']
