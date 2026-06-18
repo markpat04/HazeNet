@@ -17,7 +17,8 @@ HERE  = os.path.dirname(os.path.abspath(__file__))
 ROOT  = os.path.dirname(HERE)                       # โฟลเดอร์ internship
 SRC   = os.path.join(ROOT, "src")
 RAW   = os.path.join(ROOT, "data", "raw_m2")
-PROC  = os.path.join(ROOT, "data", "processed_m2")
+PROC  = os.path.join(ROOT, "data", "processed_hn")   # new hazenet/ pipeline output
+CONFIG_REL = os.path.join("configs", "local.yaml")
 MODELS= os.path.join(ROOT, "models")
 FIGS  = os.path.join(ROOT, "figures")
 RUNS  = os.path.join(HERE, "runs")                  # live training logs (จาก tracker.py)
@@ -88,19 +89,20 @@ def exists_glob(pattern):
 # ───────────────────────── PIPELINE STATUS ─────────────────────────
 def pipeline_status():
     """สแกนไฟล์จริง → สถานะแต่ละ stage + ตรวจ stale (โค้ด/อินพุตใหม่กว่าเอาต์พุต)."""
-    def script(name):
-        p = os.path.join(SRC, name)
-        return {"name": name, "exists": os.path.exists(p),
-                "mtime": mtime(p), "ago": ago(mtime(p)), "doc": docstring_of(p)}
+    def script(relpath):
+        p = os.path.join(ROOT, relpath)
+        return {"name": os.path.basename(relpath), "path": relpath.replace("\\", "/"),
+                "exists": os.path.exists(p), "mtime": mtime(p),
+                "ago": ago(mtime(p)), "doc": docstring_of(p)}
 
-    def stage(key, title, scripts, out_paths, extra_inputs=None):
+    def stage(key, title, scripts, out_paths, extra_inputs=None, run=None):
         outs = []
         for op in out_paths:
             for g in exists_glob(op):
                 outs.append({"path": os.path.relpath(g, ROOT).replace("\\", "/"),
                              "size": human(fsize(g)), "mtime": mtime(g), "ago": ago(mtime(g))})
         scr = [script(s) for s in scripts]
-        in_mtime = newest([os.path.join(SRC, s) for s in scripts] + (extra_inputs or []))
+        in_mtime = newest([os.path.join(ROOT, s) for s in scripts] + (extra_inputs or []))
         out_mtime = newest([os.path.join(ROOT, o["path"]) for o in outs])
         if not outs:
             status = "missing"
@@ -108,53 +110,50 @@ def pipeline_status():
             status = "stale"          # โค้ดหรืออินพุตเปลี่ยนหลัง build ล่าสุด
         else:
             status = "ok"
-        return {"key": key, "title": title, "status": status,
+        return {"key": key, "title": title, "status": status, "run": run,
                 "scripts": scr, "outputs": outs,
                 "out_mtime": out_mtime, "ago": ago(out_mtime)}
 
+    j = lambda *a: os.path.join("hazenet", *a)
     stages = [
-        stage("download", "1 · Data Ingestion",
-              ["download_firms_m2.py", "download_openmeteo_met_m2.py",
-               "download_dem_m2.py", "download_pm25_m2.py"],
+        stage("fetch", "1 · Data Ingestion (CDS/FIRMS/PM2.5/DEM/ENSO)",
+              [j("data", "fetch_era5.py"), j("data", "fetch_firms.py"),
+               j("data", "fetch_pm25.py"), j("data", "fetch_dem.py"),
+               j("data", "fetch_enso.py")],
               [os.path.join(RAW, "firms", "*.csv"),
-               os.path.join(RAW, "openmeteo", "*.nc"),
                os.path.join(RAW, "dem", "*.tif"),
                os.path.join(RAW, "pm25", "*.csv")]),
         stage("grid", "2 · Regrid → master grid",
-              ["build_grid_m2.py"],
-              [os.path.join(PROC, "grid_m2.nc")],
+              [j("features", "grid.py")],
+              [os.path.join(ROOT, "data", "processed_m2", "grid_m2.nc")],
               extra_inputs=[RAW]),
-        stage("datacube", "3 · Datacube + targets",
-              ["build_datacube_m2.py"],
-              [os.path.join(PROC, "datacube_m2.zarr"),
-               os.path.join(PROC, "target_pm25_m2.csv")],
-              extra_inputs=[os.path.join(PROC, "grid_m2.nc")]),
-        stage("train", "4 · Train CLNO",
-              ["train_operator_m2.py", "model_operator.py"],
-              [os.path.join(MODELS, "clno_m2.pt"),
+        stage("datacube", "3 · Datacube + targets (+ physics features)",
+              [j("features", "datacube.py"), j("features", "physics.py")],
+              [os.path.join(PROC, "datacube.zarr"),
+               os.path.join(PROC, "target_pm25.csv")],
+              extra_inputs=[os.path.join(ROOT, "data", "processed_m2", "grid_m2.nc")],
+              run="datacube"),
+        stage("train", "4 · Train CLNO (emission curve + quantile)",
+              [j("train.py"), j("model", "clno.py")],
+              [os.path.join(MODELS, "clno_local.pt"),
                os.path.join(MODELS, "metrics.json")],
-              extra_inputs=[os.path.join(PROC, "datacube_m2.zarr")]),
-        stage("eval", "5 · Evaluate + diagnose",
-              ["eval_operator_m2.py", "diagnose_m2.py", "loyo_m2.py", "sweep_m2.py"],
-              [os.path.join(FIGS, "model_comparison_m2.png"),
-               os.path.join(FIGS, "*loyo*.png"),
-               os.path.join(FIGS, "clno_m2_*.png")],
-              extra_inputs=[os.path.join(MODELS, "clno_m2.pt")]),
-        stage("viz", "6 · Visualizations",
-              ["plot_datacube_overview.py", "plot_pm25_crisis.py", "animate_smoke.py"],
-              [os.path.join(FIGS, "datacube_m2_overview.png"),
-               os.path.join(FIGS, "pm25_crisis_overlay.png"),
-               os.path.join(FIGS, "smoke_animation.gif")],
-              extra_inputs=[os.path.join(PROC, "grid_m2.nc")]),
+              extra_inputs=[os.path.join(PROC, "datacube.zarr")],
+              run="train"),
+        stage("eval", "5 · Evaluate + Gate W2 (per-year bias)",
+              [j("evaluate.py")],
+              [os.path.join(FIGS, "local_pred_vs_true.png"),
+               os.path.join(FIGS, "local_year_bias.png"),
+               os.path.join(MODELS, "eval_local.json")],
+              extra_inputs=[os.path.join(MODELS, "clno_local.pt")],
+              run="eval"),
     ]
     return {"stages": stages, "scanned": time.strftime("%Y-%m-%d %H:%M:%S")}
 
 
 # ───────────────────────── DATA / EDA (cached) ─────────────────────────
 def _eda_sources_sig():
-    paths = [os.path.join(PROC, "datacube_m2.zarr"),
-             os.path.join(PROC, "grid_m2.nc"),
-             os.path.join(PROC, "target_pm25_m2.csv")]
+    paths = [os.path.join(PROC, "datacube.zarr"),
+             os.path.join(PROC, "target_pm25.csv")]
     return newest(paths)
 
 def compute_eda():
@@ -172,7 +171,7 @@ def compute_eda():
     out = {"_sig": sig, "ok": True}
 
     try:
-        cube = xr.open_zarr(os.path.join(PROC, "datacube_m2.zarr"))
+        cube = xr.open_zarr(os.path.join(PROC, "datacube.zarr"))
         X = cube.X
         T, C, H, W = [int(s) for s in X.shape]
         chans = [str(c) for c in cube.channel.values]
@@ -196,7 +195,7 @@ def compute_eda():
 
     # target PM2.5
     try:
-        tgt = pd.read_csv(os.path.join(PROC, "target_pm25_m2.csv"))
+        tgt = pd.read_csv(os.path.join(PROC, "target_pm25.csv"))
         tgt["date"] = pd.to_datetime(tgt["date"])
         sta = tgt.groupby("locationId").first().reset_index()
         thai = int((sta["lat"] >= 14.5).sum())
@@ -223,13 +222,12 @@ def compute_eda():
     except Exception as e:
         out["pm25_error"] = str(e)
 
-    # FRP daily total
+    # FRP daily total — from the 'emission' channel of the cube
     try:
-        grid = xr.open_dataset(os.path.join(PROC, "grid_m2.nc"))
-        frp = grid.emission.sum(dim=["lat", "lon"]).values
-        times = pd.DatetimeIndex(grid.time.values)
+        emi = cube.X.sel(channel="emission").sum(dim=["lat", "lon"]).values
+        times = pd.DatetimeIndex(cube.time.values)
         out["frp_series"] = {"date": [d.strftime("%Y-%m-%d") for d in times],
-                             "value": [round(float(x), 0) for x in frp]}
+                             "value": [round(float(x), 0) for x in emi]}
     except Exception as e:
         out["frp_error"] = str(e)
 
@@ -312,28 +310,30 @@ def list_figures():
 
 
 # ───────────────────────── RUN SCRIPT (subprocess) ─────────────────────────
+STAGES_RUNNABLE = {"datacube", "train", "eval", "attribution"}
+
 def run_script(name):
-    """รันสคริปต์ src/<name> ด้วย python ตัวเดียวกับ server (env hazenet). whitelist .py ใน src."""
-    if not name.endswith(".py") or "/" in name or "\\" in name or ".." in name:
-        return {"error": "bad name"}
-    path = os.path.join(SRC, name)
-    if not os.path.exists(path):
-        return {"error": "not found", "name": name}
+    """รัน stage ของ hazenet CLI ด้วย python ตัวเดียวกับ server (env hazenet active)."""
+    if name not in STAGES_RUNNABLE:
+        return {"error": "not runnable", "name": name,
+                "allowed": sorted(STAGES_RUNNABLE)}
     cur = PROCS.get(name)
     if cur and cur["proc"].poll() is None:
         return {"status": "already-running", "name": name}
-    logpath = os.path.join(LOGS, name.replace(".py", "") + ".log")
+    logpath = os.path.join(LOGS, name + ".log")
     logf = open(logpath, "w", encoding="utf-8")
     env = dict(os.environ, KMP_DUPLICATE_LIB_OK="TRUE",
                PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
-    proc = subprocess.Popen([sys.executable, "-u", path], cwd=ROOT, env=env,
+    cmd = [sys.executable, "-u", "-m", "hazenet.cli",
+           "--config", CONFIG_REL, "--stage", name]
+    proc = subprocess.Popen(cmd, cwd=ROOT, env=env,
                             stdout=logf, stderr=subprocess.STDOUT)
     PROCS[name] = {"proc": proc, "log": logpath, "started": time.time()}
     return {"status": "started", "name": name, "pid": proc.pid}
 
 def script_status(name):
     info = PROCS.get(name)
-    logpath = os.path.join(LOGS, name.replace(".py", "") + ".log")
+    logpath = os.path.join(LOGS, name + ".log")
     log = ""
     if os.path.exists(logpath):
         try:

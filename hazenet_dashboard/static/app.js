@@ -91,12 +91,13 @@ async function loadPipeline(){
     ["stages", d.stages.length, "var(--cyan)"],
   ].map(([l,v,c])=>`<div class="kpi"><div class="v" style="color:${c}">${v}</div><div class="l">${l}</div></div>`).join("");
 
-  // code list + Run buttons
+  // code list + Run buttons (run = whole stage via hazenet CLI)
   $("#codeList").innerHTML = d.stages.map(s=>`<div class="card" style="margin-bottom:12px">
-    <h3>${s.title} ${badge(s.status)}</h3>
-    <table><tr><th>script</th><th>doc</th><th>แก้ล่าสุด</th><th>รัน</th></tr>
-    ${s.scripts.filter(x=>x.exists).map(x=>`<tr><td class="mono">${x.name}</td><td>${x.doc||"—"}</td><td>${x.ago}</td>
-      <td><button class="refresh" style="padding:3px 10px" onclick="runScript('${x.name}')">▶ run</button></td></tr>`).join("")}</table>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3 style="margin:0">${s.title} ${badge(s.status)}</h3>
+      ${s.run?`<button class="refresh" style="padding:4px 14px;background:var(--green);color:#0d1117;font-weight:bold" onclick="runScript('${s.run}')">▶ run ${s.run}</button>`:`<span class="muted" style="font-size:11px">รันผ่าน CLI (ต้องมี key/CDS)</span>`}</div>
+    <table style="margin-top:8px"><tr><th>module</th><th>doc</th><th>แก้ล่าสุด</th></tr>
+    ${s.scripts.map(x=>`<tr><td class="mono">${x.path||x.name}${x.exists?"":" <span style='color:var(--red)'>(missing)</span>"}</td><td>${x.doc||"—"}</td><td>${x.ago}</td></tr>`).join("")}</table>
     <div class="muted" style="font-size:12px;margin-top:8px">outputs: ${s.outputs.map(o=>o.path.split('/').pop()).join(", ")||"—"}</div>
   </div>`).join("");
 }

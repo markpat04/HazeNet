@@ -28,3 +28,6 @@ hazenet_dashboard/logs/
 *.pt
 *.pkl
 *.gif
+
+# dashboard cache
+hazenet_dashboard/cache/
