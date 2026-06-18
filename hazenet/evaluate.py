@@ -26,15 +26,19 @@ GATE_W2_BIAS = 25.0
 def evaluate(cfg) -> dict:
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     d = load_dataset(cfg)
-    model, _ = load_model(cfg.ckpt_path, dev)
+    model, ck = load_model(cfg.ckpt_path, dev)
     pm25_max = d["meta"]["pm25_max"]
+
+    # station features: prefer from checkpoint (matches training), fall back to dataset
+    sf = ck.get("station_feats", d["station_feats"])
+    sfeats_t = torch.tensor(np.asarray(sf, dtype="float32")).to(dev)
 
     met_t = torch.tensor(d["met"]); emis_t = torch.tensor(d["emis"])
     ds = TensorDataset(met_t, emis_t)
     preds = []
     with torch.no_grad():
         for mm, me in DataLoader(ds, batch_size=cfg.batch_size):
-            out, _, _ = model(mm.to(dev), me.to(dev))
+            out, _, _ = model(mm.to(dev), me.to(dev), sfeats_t)
             preds.append(model.predict_median(out).cpu())
     pred = torch.cat(preds).numpy() * pm25_max          # (T,S)
     y = d["y_raw"]; times = d["times"]

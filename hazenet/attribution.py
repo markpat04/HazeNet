@@ -23,7 +23,9 @@ class Attributor:
     def __init__(self, cfg, device: str = "cpu"):
         self.cfg = cfg; self.dev = device
         self.d = load_dataset(cfg)
-        self.model, _ = load_model(cfg.ckpt_path, device)
+        self.model, ck = load_model(cfg.ckpt_path, device)
+        sf = ck.get("station_feats", self.d["station_feats"])
+        self.sfeats_t = torch.tensor(np.asarray(sf, dtype="float32")).to(device)
         self.stations = self.d["stations"]
         self.LAT, self.LON = cfg.LAT, cfg.LON
 
@@ -31,7 +33,7 @@ class Attributor:
         met = torch.tensor(self.d["met"][day_idx:day_idx + 1]).to(self.dev)
         emis = torch.tensor(self.d["emis"][day_idx:day_idx + 1]).to(self.dev)
         with torch.no_grad():
-            out, K, b = self.model(met, emis)
+            out, K, b = self.model(met, emis, self.sfeats_t)
             contrib, _ = self.model.attribution(K, emis)     # (1,S,H,W)
         cmap = contrib[0, station_idx].cpu().numpy()          # (H,W)
         total = float(cmap.sum())

@@ -24,10 +24,11 @@ features:
   enso_csv: null
 
 model:
-  kind: globalv               # full | lowrank | globalv  (globalv = anti-overfit)
+  kind: globalv               # lowrank | globalv  (globalv = anti-overfit)
   hidden: 64
   rank: 32
   dropout: 0.3
+  sfeat_hidden: 16            # station-feature MLP hidden (lat/lon/dem/tpi → sE)
   emission_curve: true        # learnable saturating FRP→emission
   quantiles: [0.1, 0.5, 0.9]  # null -> plain MSE on the median
 

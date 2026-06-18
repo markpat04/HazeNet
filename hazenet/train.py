@@ -42,7 +42,8 @@ def train(cfg) -> dict:
     print(f"grid {meta['H']}×{meta['W']}  G={meta['H']*meta['W']}  "
           f"stations={S}  in_ch={in_ch}  days={meta['T']}")
 
-    model = build_model(cfg, n_stations=S, in_ch=in_ch).to(dev)
+    model = build_model(cfg, in_ch=in_ch).to(dev)
+    sfeats_t = torch.tensor(d["station_feats"]).to(dev)    # (S, 4) — fixed per run
     n_p = sum(p.numel() for p in model.parameters())
     print(f"model={cfg.model_kind}  params={n_p:,}  quantiles={cfg.quantiles}")
 
@@ -93,7 +94,7 @@ def train(cfg) -> dict:
             mm, me, my = (x.to(dev) for x in mb)
             opt.zero_grad()
             with torch.cuda.amp.autocast(enabled=use_amp):
-                out, _, _ = model(mm, me); loss = loss_fn(out, my)
+                out, _, _ = model(mm, me, sfeats_t); loss = loss_fn(out, my)
             scaler.scale(loss).backward()
             scaler.unscale_(opt)
             torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.grad_clip)
@@ -105,7 +106,7 @@ def train(cfg) -> dict:
         with torch.no_grad():
             for mb in te_loader:
                 mm, me, my = (x.to(dev) for x in mb)
-                out, _, _ = model(mm, me); tot += loss_fn(out, my).item()
+                out, _, _ = model(mm, me, sfeats_t); tot += loss_fn(out, my).item()
         te_losses.append(tot / max(1, len(te_loader)))
 
         if run:
@@ -137,7 +138,7 @@ def train(cfg) -> dict:
     with torch.no_grad():
         for mb in DataLoader(te_ds, batch_size=cfg.batch_size):
             mm, me, _ = (x.to(dev) for x in mb)
-            out, _, _ = model(mm, me)
+            out, _, _ = model(mm, me, sfeats_t)
             preds.append(model.predict_median(out).cpu())
     pred_te = torch.cat(preds).numpy() * pm25_max
     gt_te = d["y_raw"][d["test_mask"]]
@@ -149,8 +150,10 @@ def train(cfg) -> dict:
     torch.save(dict(state_dict=model.state_dict(), cfg_name=cfg.name,
                     model_kind=cfg.model_kind, in_ch=in_ch,
                     hidden=cfg.hidden, rank=cfg.rank, quantiles=cfg.quantiles,
+                    sfeat_hidden=cfg.sfeat_hidden, n_sfeats=4,
                     emission_curve=cfg.emission_curve,
                     H=meta["H"], W=meta["W"], S=S,
+                    station_feats=d["station_feats"],
                     stations=d["stations"].to_dict(),
                     meta={k: v for k, v in meta.items()
                           if not isinstance(v, (np.ndarray, list))},

@@ -35,7 +35,9 @@ def _load():
 
         import torch
         from hazenet.infer import load_model
-        model, _ = load_model(cfg.ckpt_path, "cpu")
+        model, ck = load_model(cfg.ckpt_path, "cpu")
+        sf = ck.get("station_feats", d["station_feats"])
+        sfeats_t = torch.tensor(np.asarray(sf, dtype="float32"))
 
         st = d["stations"]
         stations = [{"idx": i,
@@ -51,7 +53,8 @@ def _load():
         with np.errstate(all="ignore"):
             daily_mean = np.nanmean(y_raw, axis=1)
 
-        _STATE.update(dict(ready=True, model=model, np=np, torch=torch,
+        _STATE.update(dict(ready=True, model=model, sfeats_t=sfeats_t,
+                           np=np, torch=torch,
                            met=d["met"], emis=d["emis"], y_raw=y_raw,
                            times=d["times"], pm25_max=d["meta"]["pm25_max"],
                            LAT=cfg.LAT, LON=cfg.LON, H=cfg.H, W=cfg.W,
@@ -80,7 +83,7 @@ def attribution(day_idx, station_idx):
     with torch.no_grad():
         mt = torch.tensor(met_n, dtype=torch.float32)
         et = torch.tensor(emis_n, dtype=torch.float32)
-        out, K, b = s["model"](mt, et)
+        out, K, b = s["model"](mt, et, s["sfeats_t"])
         median = s["model"].predict_median(out)
         contrib, _ = s["model"].attribution(K, et)  # (1,S,H,W)
 

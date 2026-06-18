@@ -53,10 +53,11 @@ class Config:
     enso_csv: Optional[str]
 
     # ── model ──
-    model_kind: str                 # full | lowrank | globalv
+    model_kind: str                 # lowrank | globalv
     hidden: int
     rank: int
     dropout: float
+    sfeat_hidden: int               # station-feature MLP hidden size
     emission_curve: bool
     quantiles: Optional[list]       # e.g. [0.1,0.5,0.9] or None
 
@@ -145,9 +146,10 @@ class Config:
             precip_accum_window=feat.get("precip_accum_window", 3),
             tpi_radius=feat.get("tpi_radius", 5),
             enso_csv=_abs(feat.get("enso_csv")),
-            model_kind=mdl.get("kind", "lowrank"),
+            model_kind=mdl.get("kind", "globalv"),
             hidden=mdl.get("hidden", 64), rank=mdl.get("rank", 32),
             dropout=mdl.get("dropout", 0.1),
+            sfeat_hidden=mdl.get("sfeat_hidden", 16),
             emission_curve=mdl.get("emission_curve", True),
             quantiles=mdl.get("quantiles") or None,
             epochs=trn.get("epochs", 200), batch_size=trn.get("batch_size", 32),
@@ -168,4 +170,5 @@ class Config:
                 f"months={self.season_months}\n"
                 f"  channels({len(self.channels)})={self.channels}\n"
                 f"  model={self.model_kind} hidden={self.hidden} rank={self.rank} "
+                f"sfeat_hidden={self.sfeat_hidden} "
                 f"curve={self.emission_curve} quantiles={self.quantiles}")

@@ -27,6 +27,7 @@ model:
   hidden: 96
   rank: 48
   dropout: 0.1
+  sfeat_hidden: 16
   emission_curve: true
   quantiles: [0.1, 0.5, 0.9]
 
