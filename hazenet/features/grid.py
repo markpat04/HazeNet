@@ -13,10 +13,23 @@ from __future__ import annotations
 
 import os
 import glob
+import zipfile
+import tempfile
 
 import numpy as np
 import pandas as pd
 import xarray as xr
+
+
+def _open_era5(f):
+    """Open an ERA5 file that may be a CDS zip (instant + accum members)."""
+    if zipfile.is_zipfile(f):
+        d = tempfile.mkdtemp()
+        zipfile.ZipFile(f).extractall(d)
+        members = [os.path.join(d, m) for m in os.listdir(d) if m.endswith(".nc")]
+        return xr.merge([xr.open_dataset(m) for m in members],
+                        compat="override", join="outer")
+    return xr.open_dataset(f)
 
 
 # ── DEM ──
@@ -64,7 +77,7 @@ def _grid_era5(cfg, dates):
     def load_daily(files, how="mean"):
         parts = []
         for f in files:
-            ds = xr.open_dataset(f)
+            ds = _open_era5(f)
             tn = "valid_time" if "valid_time" in ds.dims else "time"
             ds = ds.resample({tn: "1D"}).sum() if how == "sum" else ds.resample({tn: "1D"}).mean()
             if tn != "time":
