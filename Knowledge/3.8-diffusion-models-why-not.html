@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.8 — Diffusion Models (เข้าใจแล้วรู้ว่าทำไมไม่ใช้)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .purple-box{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.6px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+  .pin.med{border-color:var(--amber);color:var(--amber)}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+  @media(max-width:680px){.compare{grid-template-columns:1fr}}
+  .compare-box{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+  .label-bad{background:rgba(248,81,73,.15);color:var(--red);border:1px solid var(--red);font-size:12px;font-weight:bold;padding:2px 8px;border-radius:12px;display:inline-block;margin-bottom:8px}
+  .label-good{background:rgba(63,185,80,.15);color:var(--green);border:1px solid var(--green);font-size:12px;font-weight:bold;padding:2px 8px;border-radius:12px;display:inline-block;margin-bottom:8px}
+  .label-neutral{background:rgba(88,166,255,.15);color:var(--blue);border:1px solid var(--blue);font-size:12px;font-weight:bold;padding:2px 8px;border-radius:12px;display:inline-block;margin-bottom:8px}
+  .noise-bar{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:14px}
+  .noise-block{height:20px;border-radius:4px;background:var(--muted);opacity:.3}
+  .noise-label{color:var(--muted);font-size:13px;min-width:50px}
+  .verdict{background:var(--panel2);border:2px solid var(--red);border-radius:10px;padding:16px 20px;margin:20px 0}
+  .verdict-title{color:var(--red);font-size:17px;font-weight:bold;margin-bottom:8px}
+  .step-box{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin:6px 0;font-size:14.5px}
+  .step-num{display:inline-block;background:var(--purple);color:white;border-radius:50%;width:22px;height:22px;text-align:center;line-height:22px;font-size:12px;font-weight:bold;margin-right:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>3.8 — Diffusion Models <span class="pin med">🟡 กลาง</span></h1>
+<p class="tagline">เข้าใจให้รู้ว่าทำงานอย่างไร แล้วรู้ว่าทำไม HazeNet ถึงไม่ใช้ — และตอบกรรมการได้</p>
+<p class="sub">เชื่อมกับ: 3.6 Tagged-Tracer (superposition), 3.7 Adjoint, 3.9 Uncertainty (ที่เราใช้แทน)</p>
+
+<div class="lead">
+<b>บทนี้มีเป้าหมายต่างจากบทอื่น:</b> ไม่ใช่ "เรียนแล้วนำไปใช้" — แต่คือ "เข้าใจแล้วอธิบายได้ว่าทำไมไม่เลือก"<br>
+Diffusion model เป็น <b>เทคนิค hot ที่สุดในวงการ AI ตอนนี้</b> (Stable Diffusion, DALL-E 3, Sora) — กรรมการ/ผู้ทบทวนงานแน่นอนจะถามว่า "ทำไมไม่ใช้?"<br>
+เมื่อจบบทนี้จะตอบได้ว่า: <b>"เราเข้าใจมันดี และมีเหตุผล 5 ข้อที่ชัดเจนว่าทำไมมันไม่เหมาะกับ HazeNet"</b>
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. Diffusion Model คืออะไรในโลกจริง</a><br>
+<a href="#p2">2. แนวคิดหลัก — ทำลายแล้วสร้างใหม่</a><br>
+<a href="#p3">3. Forward Process — เพิ่ม Noise ทีละนิด</a><br>
+<a href="#p4">4. Backward Process — ลบ Noise ทีละนิด</a><br>
+<a href="#p5">5. Training — สอนให้ Predict Noise</a><br>
+<a href="#p6">6. จุดแข็งของ Diffusion</a><br>
+<a href="#p7">7. 5 เหตุผลที่ HazeNet ไม่ใช้</a><br>
+<a href="#p8">8. เปรียบเทียบโดยตรง</a><br>
+<a href="#p9">9. ที่ Diffusion ใช้ได้ (งาน weather อื่น)</a><br>
+<a href="#p10">10. สคริปต์ตอบกรรมการ</a><br>
+<a href="#chk">11. แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. Diffusion Model คืออะไรในโลกจริง</h2>
+
+<div class="card">
+<p>ชื่อที่คุณอาจเคยได้ยิน — ทั้งหมดนี้ใช้ Diffusion:</p>
+<table>
+<tr><th>ชื่อผลิตภัณฑ์</th><th>ทำอะไร</th><th>ปี</th></tr>
+<tr><td>Stable Diffusion (Stability AI)</td><td>สร้างภาพจาก text prompt</td><td>2022</td></tr>
+<tr><td>DALL-E 3 (OpenAI)</td><td>สร้างภาพจาก text prompt</td><td>2023</td></tr>
+<tr><td>Sora (OpenAI)</td><td>สร้างวิดีโอจาก text prompt</td><td>2024</td></tr>
+<tr><td>Midjourney</td><td>สร้างภาพศิลปะ</td><td>2022–</td></tr>
+<tr><td>CorrDiff (NVIDIA)</td><td>Downscaling พยากรณ์อากาศ</td><td>2023</td></tr>
+<tr><td>GenCast (Google DeepMind)</td><td>Ensemble weather forecast</td><td>2024</td></tr>
+</table>
+<p>ใน weather/climate: CorrDiff และ GenCast คือตัวอย่างที่ diffusion นำมาใช้จริง — เราจะดูว่าทำไม use case ของพวกเขาต่างจาก HazeNet</p>
+</div>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. แนวคิดหลัก — "ทำลายแล้วสร้างใหม่"</h2>
+
+<h3>2.1 อุปมาง่ายๆ</h3>
+
+<div class="card">
+<p>จินตนาการรูปภาพสวยงาม แล้วค่อยๆ ราดทรายขาวทับจนมองไม่เห็นอะไร:</p>
+<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:10px 0">
+  <div style="text-align:center;font-size:13px">
+    <div style="width:70px;height:70px;border-radius:8px;background:linear-gradient(135deg,#3fb950,#58a6ff);margin:0 auto 4px"></div>
+    ภาพต้นฉบับ x₀
+  </div>
+  <div style="color:var(--muted)">→ noise →</div>
+  <div style="text-align:center;font-size:13px">
+    <div style="width:70px;height:70px;border-radius:8px;background:linear-gradient(135deg,#1c2330,#30363d);margin:0 auto 4px;opacity:.7"></div>
+    x₂₅₀ (noise ปาน กลาง)
+  </div>
+  <div style="color:var(--muted)">→ noise →</div>
+  <div style="text-align:center;font-size:13px">
+    <div style="width:70px;height:70px;border-radius:8px;background:#8b949e;margin:0 auto 4px"></div>
+    x₁₀₀₀ = pure noise
+  </div>
+</div>
+<p><b>Forward process</b>: ภาพ → noise ทีละขั้น (T ขั้น, T ≈ 1000)<br>
+<b>Backward process</b>: noise → ภาพ ทีละขั้น (เรียนจาก neural network)</p>
+<p class="muted">Key insight: ถ้าเรียนรู้ที่จะ <em>ย้อนกลับ</em> process นี้ได้ → สามารถสร้างภาพใหม่ได้โดยเริ่มจาก noise สุ่ม</p>
+</div>
+
+<h3>2.2 ทำไมชื่อ "Diffusion"</h3>
+
+<p>ชื่อมาจาก <b>Diffusion ในทางฟิสิกส์</b> — กระบวนการที่อนุภาคกระจายตัวจากบริเวณความเข้มข้นสูงสู่ต่ำจนสม่ำเสมอ ซึ่งคล้ายกับการเพิ่ม noise จนข้อมูลกระจายสม่ำเสมอ (Gaussian) เช่นเดียวกัน</p>
+
+<div class="why">
+<b>ไม่เกี่ยวกับ</b> Advection-Diffusion ในฟิสิกส์บรรยากาศ (1.2) เลย — แม้จะใช้คำเดียวกัน ชื่อนี้บังเอิญซ้ำกัน เป็นคนละ concept ทั้งหมด
+</div>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. Forward Process — เพิ่ม Noise ทีละขั้น</h2>
+
+<h3>3.1 สูตร</h3>
+
+<p>ที่ขั้น t เพิ่ม Gaussian noise เข้าไปในภาพ:</p>
+
+<pre><code><span class="cm">-- Forward process: q(xₜ | xₜ₋₁) --</span>
+xₜ = √(1−βₜ) · xₜ₋₁  +  √βₜ · ε
+     ↑                    ↑
+  ภาพเดิม (หรี่ลง)    noise ใหม่ที่เพิ่ม
+
+เมื่อ β ≡ noise schedule: β₁ &lt; β₂ &lt; ... &lt; β_T
+                          เพิ่ม noise มากขึ้นเรื่อยๆ ในแต่ละขั้น
+ε ~ N(0, I)  ← random Gaussian noise</code></pre>
+
+<h3>3.2 Shortcut: กระโดดตรงไป xₜ</h3>
+
+<p>ข้อดีของสูตรนี้คือสามารถคำนวณ xₜ จาก x₀ ตรงๆ ได้โดยไม่ต้องวนลูป T รอบ:</p>
+
+<pre><code><span class="cm">-- Reparameterization trick: ไปถึง xₜ จาก x₀ ตรงเลย --</span>
+ᾱₜ = ∏ᵢ₌₁ᵗ (1−βᵢ)   ← product ของ (1−β) ทุกขั้นถึง t
+
+xₜ = √ᾱₜ · x₀  +  √(1−ᾱₜ) · ε     (ε ~ N(0,I))
+     ↑                ↑
+  ภาพต้นฉบับ        noise รวม
+  (จางลงตาม t)
+
+<span class="cm">เมื่อ t→T: ᾱₜ→0 → xₜ ≈ pure noise (ข้อมูลต้นฉบับหายไปหมด)</span></code></pre>
+
+<div class="card">
+<p><b>ตัวอย่างค่า ᾱₜ:</b></p>
+<table>
+<tr><th>ขั้น t</th><th>ᾱₜ</th><th>ความหมาย</th></tr>
+<tr><td>0</td><td>1.00</td><td>ภาพต้นฉบับ 100%</td></tr>
+<tr><td>250</td><td>0.63</td><td>ยังเห็นโครงร่างภาพ</td></tr>
+<tr><td>500</td><td>0.11</td><td>เริ่มไม่ชัด</td></tr>
+<tr><td>750</td><td>0.006</td><td>แทบไม่เหลือ signal</td></tr>
+<tr><td>1000</td><td>~0</td><td>Pure Gaussian noise</td></tr>
+</table>
+</div>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. Backward Process — ลบ Noise ทีละขั้น (สิ่งที่ Neural Network เรียน)</h2>
+
+<h3>4.1 แนวคิด</h3>
+
+<p>ถ้ารู้ distribution ของ p(xₜ₋₁ | xₜ) สามารถย้อนกลับ forward process ได้ — แต่ distribution นี้ขึ้นกับข้อมูลทั้ง dataset → <b>neural network εθ</b> ทำหน้าที่ประมาณค่ามัน</p>
+
+<pre><code><span class="cm">-- Backward step: denoising ทีละขั้น --</span>
+p_θ(xₜ₋₁ | xₜ) = N(μ_θ(xₜ, t), Σ_θ)
+
+เมื่อ μ_θ คำนวณจาก noise ที่ network ทำนาย:
+μ_θ(xₜ, t) = (1/√αₜ) · [xₜ − (βₜ/√(1−ᾱₜ)) · ε_θ(xₜ, t)]
+                                              ↑
+                                   Network predict noise</code></pre>
+
+<h3>4.2 กระบวนการ Inference</h3>
+
+<div class="card">
+<p>เริ่มจาก pure noise → ลบทีละขั้น T รอบ:</p>
+<div style="margin:10px 0">
+  <div class="step-box"><span class="step-num">1</span>สุ่ม xT ~ N(0, I) (pure noise)</div>
+  <div class="step-box"><span class="step-num">2</span>for t = T, T−1, ..., 1: <br>&nbsp;&nbsp;&nbsp;&nbsp;ε̂ = ε_θ(xₜ, t) &nbsp;&nbsp;← network predict noise<br>&nbsp;&nbsp;&nbsp;&nbsp;xₜ₋₁ = μ_θ(xₜ, ε̂) + σₜ·z &nbsp;&nbsp;← denoising step</div>
+  <div class="step-box"><span class="step-num">3</span>ได้ x₀ = ภาพที่สร้าง</div>
+</div>
+<p class="muted">T ≈ 1000 steps (DDPM) หรือ ~50 steps (DDIM เร็วกว่า แต่ยังช้าอยู่)</p>
+</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. Training — "สอนให้ Predict Noise"</h2>
+
+<h3>5.1 Loss Function ของ Diffusion</h3>
+
+<p>ฟังดูซับซ้อน แต่ training objective ง่ายมาก:</p>
+
+<pre><code><span class="cm">-- Simple Diffusion Loss (DDPM) --</span>
+L(θ) = E[||ε − ε_θ(xₜ, t)||²]
+          ↑      ↑
+    noise จริง   noise ที่ predict
+
+กล่าวคือ: เอาภาพจริง x₀ → เพิ่ม noise รู้ค่า ε ที่เพิ่มเข้าไป
+          → ส่ง xₜ ให้ network → network ทาย ε ให้ถูก
+          → minimize MSE ของ noise prediction</code></pre>
+
+<pre><code><span class="cm"># ตัวอย่างโค้ด Training (ย่อ)</span>
+<span class="kw">def</span> <span class="fn">diffusion_loss</span>(model, x0, noise_schedule):
+    t = torch.<span class="fn">randint</span>(<span class="nm">1</span>, T, (<span class="nm">1</span>,))      <span class="cm"># สุ่ม timestep</span>
+    eps = torch.<span class="fn">randn_like</span>(x0)           <span class="cm"># noise จริง</span>
+    alpha_bar = noise_schedule[t]
+    xt = alpha_bar.<span class="fn">sqrt</span>() * x0 + (<span class="nm">1</span> - alpha_bar).<span class="fn">sqrt</span>() * eps
+    eps_pred = <span class="fn">model</span>(xt, t)              <span class="cm"># network predict noise</span>
+    <span class="kw">return</span> <span class="fn">F.mse_loss</span>(eps_pred, eps)     <span class="cm"># minimize noise prediction error</span></code></pre>
+
+<h3>5.2 Architecture ของ ε_θ</h3>
+
+<p>โดยทั่วไปใช้ <b>U-Net (3.3)</b> ที่รับ (xₜ, t) แล้วออก ε̂ — บางโมเดลใช้ Transformer แทน (DiT — Diffusion Transformer ใน Sora/SD3)</p>
+
+<div class="why">
+<b>ที่น่าสนใจ:</b> U-Net ที่เราใช้ใน 3.3 สำหรับ HazeNet คือ architecture เดียวกับที่ Stable Diffusion ใช้เป็น denoising network — แต่ task ต่างกันโดยสิ้นเชิง
+</div>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. จุดแข็งของ Diffusion — ทำอะไรได้ดีมาก</h2>
+
+<div class="card">
+<table>
+<tr><th>จุดแข็ง</th><th>อธิบาย</th><th>ตัวอย่าง</th></tr>
+<tr><td><b>สร้างความหลากหลาย</b></td><td>แต่ละ sample จาก noise ต่างกัน → ได้ ensemble ฟรี</td><td>GenCast: 50 ensemble members</td></tr>
+<tr><td><b>ภาพคมชัด</b></td><td>เอาชนะ GAN ในด้าน realism และ diversity</td><td>Stable Diffusion vs GAN</td></tr>
+<tr><td><b>Conditional generation</b></td><td>conditioning บน text / coarse forecast → refine ได้</td><td>CorrDiff: coarse → fine</td></tr>
+<tr><td><b>Uncertainty ในตัว</b></td><td>run หลาย sample → ได้ distribution ของ outcomes</td><td>spread ของ ensemble</td></tr>
+<tr><td><b>Training ง่าย</b></td><td>loss ง่าย (MSE on noise) เสถียรกว่า GAN มาก</td><td>ไม่มี mode collapse</td></tr>
+</table>
+</div>
+
+<div class="green-box">
+<b>สรุปสั้น:</b> Diffusion เก่งมากเรื่อง "สร้างข้อมูลที่ดูสมจริงและหลากหลาย" — ดีที่สุดในโลกสำหรับ image/video generation
+</div>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. 5 เหตุผลที่ HazeNet ไม่ใช้ Diffusion Model</h2>
+
+<p>นี่คือส่วนหลักของบท — ท่องจำให้ขึ้นใจ 5 ข้อนี้:</p>
+
+<!-- เหตุผล 1 -->
+<div class="verdict">
+<div class="verdict-title">❌ เหตุผล 1: ช้าเกินไปสำหรับ Operational Forecast</div>
+<p>Diffusion inference ต้องทำ T = 50–1000 denoising steps ต่อ 1 sample</p>
+<table>
+<tr><th>สถานการณ์</th><th>Forward passes ที่ต้องทำ</th><th>เวลาโดยประมาณ</th></tr>
+<tr><td>HazeNet rollout 48h</td><td>48 steps × 1 = <b>48</b></td><td>~10 วินาที (A100)</td></tr>
+<tr><td>Diffusion rollout 48h (DDIM)</td><td>48 steps × 50 = <b>2,400</b></td><td>~8 นาที</td></tr>
+<tr><td>Diffusion ensemble 50 members</td><td>2,400 × 50 = <b>120,000</b></td><td>~7 ชั่วโมง</td></tr>
+</table>
+<p>ระบบพยากรณ์ฝุ่นต้องอัปเดต<b>ทุก 1–6 ชั่วโมง</b> → Diffusion rollout เต็มๆ ไม่ทันรอบอัปเดตถัดไป</p>
+</div>
+
+<!-- เหตุผล 2 -->
+<div class="verdict">
+<div class="verdict-title">❌ เหตุผล 2: ทำลาย Superposition → Attribution พัง</div>
+<p>Diffusion model เป็น <b>non-linear อย่างมาก</b> ในทุก denoising step</p>
+<pre><code><span class="cm">-- ต้องการ (3.6 Tagged-Tracer): --</span>
+F(C⁽¹⁾ + C⁽²⁾) = F(C⁽¹⁾) + F(C⁽²⁾)   ← linearity in C
+
+<span class="cm">-- Diffusion Decoder: --</span>
+DiffDecode(C⁽¹⁾ + C⁽²⁾) ≠ DiffDecode(C⁽¹⁾) + DiffDecode(C⁽²⁾)
+<span class="cm">→ Superposition พัง → Tagged-Tracer ใช้ไม่ได้ → Attribution ไม่ถูกต้อง</span></code></pre>
+<p>นี่คือเหตุผลหลักทาง scientific ว่า diffusion ขัดกับ <b>design goal หลัก</b> ของ HazeNet</p>
+</div>
+
+<!-- เหตุผล 3 -->
+<div class="verdict">
+<div class="verdict-title">❌ เหตุผล 3: Source Inversion (3.7) เป็นไปไม่ได้จริง</div>
+<p>Source inversion ต้องการ ∂(PM2.5)/∂(Q) ผ่านทั้ง forward model<br>
+กับ Diffusion: gradient ต้องไหลผ่าน T = 50–1000 stochastic denoising steps</p>
+<pre><code><span class="cm">-- Gradient ผ่าน diffusion chain: --</span>
+∂loss/∂Q = (∂loss/∂x₀) · (∂x₀/∂x₁) · (∂x₁/∂x₂) · ... · (∂x_T/∂Q)
+                T = 1000 steps → vanishing gradient รุนแรงมาก
+
+<span class="cm">-- Memory ที่ต้องการ backprop ผ่าน T steps: --</span>
+mem = T × H × W × channels × 4 bytes
+    = 1000 × 128 × 128 × 256 × 4  ≈  17 GB  ← เฉพาะ diffusion chain เดียว</span></code></pre>
+<p>ทั้งช้า ทั้ง RAM หมด ทั้ง vanishing gradient — adjoint ผ่าน diffusion chain ไม่ practical</p>
+</div>
+
+<!-- เหตุผล 4 -->
+<div class="verdict">
+<div class="verdict-title">❌ เหตุผล 4: ไม่รักษา Conservation Laws</div>
+<p>HazeNet ออกแบบให้ <b>อนุรักษ์มวลฝุ่น</b> (2.4) — ∫C dV ลดได้แต่ไม่เพิ่มลอยๆ</p>
+<p>Diffusion model สร้างภาพที่ "ดูสมจริง" แต่ไม่มีกลไกบังคับ conservation law:</p>
+<pre><code><span class="cm"># Diffusion อาจสร้างภาพที่</span>
+total_pm25_before = C.sum()
+C_diffused = diffusion_decode(C)
+total_pm25_after = C_diffused.sum()
+
+assert total_pm25_after ≈ total_pm25_before   <span class="cm"># ← FAILS</span>
+<span class="cm"># ค่า PM2.5 รวมทั้ง domain เปลี่ยน → ผิดฟิสิกส์</span></code></pre>
+<p>สำหรับงานวิจัยที่ <b>เคลมว่าพิสูจน์ได้ทางฟิสิกส์</b> นี่คือปัญหาร้ายแรง</p>
+</div>
+
+<!-- เหตุผล 5 -->
+<div class="verdict">
+<div class="verdict-title">❌ เหตุผล 5: Stochastic ขัดกับ Operational Determinism</div>
+<p>การพยากรณ์ฝุ่นสำหรับ policy-making ต้องการ <b>deterministic baseline</b> ที่ชัดเจน:<br>
+"วันพรุ่งนี้ PM2.5 ที่เชียงใหม่จะเป็น X μg/m³ ± Y" ไม่ใช่ "อาจเป็น 80 หรือ 180 ก็ได้"</p>
+<p>Diffusion sample ทุกครั้งต่างกัน → run ใหม่อีกรอบได้ผลต่างออกไป → ยากต่อการ:</p>
+<ul>
+  <li>ออกประกาศเตือน (ต้องการค่าที่ reproducible)</li>
+  <li>เปรียบเทียบกับ WRF-Chem (ต้องการ deterministic prediction)</li>
+  <li>Debug หรือ validate ผล (แต่ละ run ต่างกัน)</li>
+</ul>
+<div class="warn">เรายังต้องการ uncertainty ใน HazeNet แต่เราได้มันจาก <b>ensemble + quantile regression (3.9)</b> แทน ซึ่ง deterministic และ reproducible</div>
+</div>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. เปรียบเทียบโดยตรง — HazeNet vs Diffusion สำหรับ Task ของเรา</h2>
+
+<table>
+<tr><th>เกณฑ์</th><th>HazeNet (เลือก)</th><th>Diffusion Model (ไม่เลือก)</th></tr>
+<tr><td><b>Speed (inference)</b></td><td style="color:var(--green)">✓ วินาที ต่อ forecast</td><td style="color:var(--red)">✗ นาที–ชั่วโมง ต่อ sample</td></tr>
+<tr><td><b>Attribution (3.6)</b></td><td style="color:var(--green)">✓ superposition ใช้ได้</td><td style="color:var(--red)">✗ non-linear → พัง</td></tr>
+<tr><td><b>Source Inversion (3.7)</b></td><td style="color:var(--green)">✓ .backward() ใช้ได้</td><td style="color:var(--red)">✗ T=1000 steps → impractical</td></tr>
+<tr><td><b>Mass Conservation (2.4)</b></td><td style="color:var(--green)">✓ explicit constraint</td><td style="color:var(--red)">✗ ไม่มีกลไกบังคับ</td></tr>
+<tr><td><b>Deterministic baseline</b></td><td style="color:var(--green)">✓ reproducible</td><td style="color:var(--red)">✗ stochastic ทุก run</td></tr>
+<tr><td><b>Uncertainty (ensemble)</b></td><td style="color:var(--amber)">~ quantile / ensemble (3.9)</td><td style="color:var(--green)">✓ natural (sample many)</td></tr>
+<tr><td><b>Visual realism</b></td><td style="color:var(--amber)">~ พอใช้</td><td style="color:var(--green)">✓ ดีกว่า (sharp detail)</td></tr>
+<tr><td><b>Training complexity</b></td><td style="color:var(--green)">✓ ง่ายกว่า</td><td style="color:var(--amber)">~ ปานกลาง</td></tr>
+</table>
+
+<div class="green-box">
+<b>สรุป:</b> จาก 8 เกณฑ์ HazeNet ชนะ 5, แพ้ 1 (visual realism ซึ่งไม่ใช่ goal ของเรา)<br>
+Diffusion ชนะ uncertainty ที่เราแก้ด้วย 3.9 ได้อยู่แล้ว → <b>ไม่มีเหตุผลเพียงพอที่จะใช้ Diffusion</b>
+</div>
+
+<!-- ============ 9 ============ -->
+<h2 id="p9">9. ที่ Diffusion ใช้ได้ดีใน Weather/Climate — ซื่อสัตย์</h2>
+
+<p>ก่อนตอบกรรมการต้องรู้ว่า Diffusion ไม่ใช่ "ไม่ดี" — แค่ไม่เหมาะกับ task ของเรา</p>
+
+<h3>9.1 CorrDiff (NVIDIA, 2023) — Diffusion ที่ใช้ถูกที่</h3>
+
+<div class="card">
+<p><b>Task:</b> รับ forecast คร่าวๆ 25 km resolution → สร้าง 3 km resolution<br>
+<b>ทำไม Diffusion เหมาะ:</b></p>
+<ul>
+  <li>ไม่ต้อง autoregressive rollout — แค่ step เดียว (low-res → high-res)</li>
+  <li>ไม่ต้องการ attribution หรือ inversion</li>
+  <li>Speed ไม่วิกฤต (offline post-processing)</li>
+  <li>Visual realism สำคัญ (ต้องการ sharp spatial detail)</li>
+</ul>
+<p class="muted">→ นี่คือ use case ที่ diffusion <em>ชนะ</em> approach อื่น</p>
+</div>
+
+<h3>9.2 GenCast (Google DeepMind, 2024) — Ensemble ด้วย Diffusion</h3>
+
+<div class="card">
+<p><b>Task:</b> Global weather ensemble 15 วัน<br>
+<b>ทำไม Diffusion เหมาะ:</b></p>
+<ul>
+  <li>Ensemble diversity คือ goal หลัก — diffusion natural ตรงนี้</li>
+  <li>Global scale — attribution ไม่ใช่ feature หลัก</li>
+  <li>Speed ยอมรับได้ (15 วัน forecast ไม่ต้องทำทุก 6 ชั่วโมง)</li>
+</ul>
+<p class="muted">→ scale และ objective ต่างจาก HazeNet โดยสิ้นเชิง</p>
+</div>
+
+<h3>9.3 Diffusion อาจช่วย HazeNet ได้อย่างไร (ถ้าจะใช้)</h3>
+
+<div class="card">
+<p>ถ้าวันหนึ่งต้องการ Diffusion ใน HazeNet ควรใช้เป็น <b>post-processing เสริม</b> ไม่ใช่ core model:</p>
+<table>
+<tr><th>วิธีใช้</th><th>บทบาท</th><th>ข้อดี</th></tr>
+<tr><td>HazeNet → Diffusion refiner</td><td>เพิ่ม spatial detail ให้ forecast</td><td>resolution ดีขึ้น ไม่แตะ core</td></tr>
+<tr><td>Diffusion สร้าง synthetic training data</td><td>เพิ่ม diversity ของ training scenarios</td><td>data augmentation</td></tr>
+<tr><td>Diffusion posterior sampling</td><td>uncertainty estimation เสริม</td><td>ensemble ด้วย sampling</td></tr>
+</table>
+<p class="muted">แต่ทั้งหมดนี้คือ "add-on" ไม่ใช่ "แทนที่" core model</p>
+</div>
+
+<!-- ============ 10 ============ -->
+<h2 id="p10">10. สคริปต์ตอบกรรมการ</h2>
+
+<p class="sub">จำสคริปต์นี้ไว้ — ใช้ตอบทั้งภาษาไทยและอังกฤษได้เลย</p>
+
+<div class="purple-box">
+<p><b>คำถามกรรมการ (ประมาณ):</b><br>
+"ทำไมไม่ใช้ diffusion model สำหรับ uncertainty? มันกำลัง popular มากในวงการ weather"</p>
+</div>
+
+<div class="green-box">
+<p><b>คำตอบแนะนำ (ไทย):</b><br><br>
+"เราพิจารณา diffusion model อย่างจริงจังครับ และทราบว่ามีผลงานที่น่าสนใจอย่าง GenCast (DeepMind) และ CorrDiff (NVIDIA)<br><br>
+อย่างไรก็ตาม HazeNet มี design constraint 3 ข้อที่ขัดกับ diffusion โดยตรง:<br><br>
+<b>หนึ่ง — Attribution:</b> เราต้องการ superposition property (C = ΣC⁽ˢ⁾) สำหรับ source attribution ซึ่ง diffusion decoder ที่ non-linear ทำลายคุณสมบัตินี้<br><br>
+<b>สอง — Source inversion:</b> เราต้องการ differentiable path สำหรับ adjoint-based inversion ซึ่งการ backprop ผ่าน 1000 stochastic denoising steps ไม่ practical<br><br>
+<b>สาม — Speed:</b> ระบบพยากรณ์ฝุ่นต้องอัปเดตทุก 1–6 ชั่วโมง diffusion rollout 48 ชั่วโมงด้วย 50 steps = 2400 forward passes ต่อ sample ซึ่งช้าเกินไปสำหรับ operational use<br><br>
+สำหรับ uncertainty เราใช้ quantile regression และ ensemble ซึ่งให้ calibrated uncertainty estimates โดยไม่เสียคุณสมบัติสองข้อแรก"</p>
+</div>
+
+<div class="green-box">
+<p><b>คำตอบแนะนำ (อังกฤษ — สำหรับ international reviewer):</b><br><br>
+"We carefully considered diffusion models, particularly given strong results from GenCast (DeepMind) and CorrDiff (NVIDIA).<br><br>
+However, HazeNet has three hard design constraints that are fundamentally incompatible with diffusion:<br><br>
+First, <b>attribution</b>: our source attribution via tagged-tracers requires superposition — that is, F(ΣC⁽ˢ⁾) = ΣF(C⁽ˢ⁾). The highly non-linear diffusion decoder violates this.<br><br>
+Second, <b>source inversion</b>: we need a differentiable forward model for adjoint-based emission inversion. Backpropagating through 1000 stochastic denoising steps is computationally prohibitive.<br><br>
+Third, <b>operational speed</b>: our system targets 1–6 hour update cycles. A 48-hour diffusion rollout with 50 DDIM steps requires 2400 forward passes per sample, making real-time ensemble generation infeasible on our compute budget.<br><br>
+We handle uncertainty through quantile regression and light ensembles (3.9), which provide calibrated prediction intervals without sacrificing the properties above."</p>
+</div>
+
+<h3>10.1 Follow-up คำถามที่อาจถามต่อ</h3>
+
+<div class="card">
+<table>
+<tr><th>คำถาม follow-up</th><th>คำตอบสั้น</th></tr>
+<tr><td>"แต่ DDIM ช้าแค่ 50 steps จริงไหม?"</td><td>ใช่ แต่ 50 steps × 48h rollout = 2400 passes · ถ้าต้องการ 50-member ensemble = 120,000 passes · HazeNet = 48 passes รวม</td></tr>
+<tr><td>"Diffusion รักษา mass conservation ไม่ได้จริงหรือ?"</td><td>ใช่ ไม่มี explicit mechanism · CorrDiff แก้บางส่วนด้วย conditioning แต่ไม่ใช่ hard constraint · งานเราต้องการ hard constraint (2.4)</td></tr>
+<tr><td>"ทำไมไม่ใช้ diffusion แค่สำหรับ downscaling?"</td><td>อาจเป็น future work ที่น่าสนใจ แต่ขอบเขต 2 เดือนและ A100 จำกัด · สำหรับ core task ที่ submit ไม่จำเป็น</td></tr>
+<tr><td>"GenCast ดีกว่า ECMWF ENS แล้วไง?"</td><td>GenCast เก่งมากสำหรับ global medium-range weather · แต่ task เราคือ regional PM2.5 attribution ที่ต้องการ linearity · คนละ objective</td></tr>
+</table>
+</div>
+
+<!-- ============ 11 ============ -->
+<h2 id="chk">11. แบบฝึกหัด</h2>
+
+<div class="chk">
+<p class="q">Q1: ทบทวน Forward Process</p>
+<p>ถ้า β = 0.02 (ค่า noise ที่เพิ่มแต่ละขั้น) และเริ่มจาก x₀ = ภาพจริง<br>
+หลังจาก 500 steps ค่า ᾱ₅₀₀ ≈ (1−0.02)⁵⁰⁰ = ? และ xₜ = √ᾱₜ · x₀ + √(1−ᾱₜ) · ε แปลว่าอะไร?</p>
+<details><summary>ดูเฉลย</summary>
+<p>ᾱ₅₀₀ = (0.98)⁵⁰⁰ ≈ (e^−0.02)⁵⁰⁰ = e^−10 ≈ 0.0000454<br>
+√ᾱₜ ≈ 0.0067 (ภาพต้นฉบับเหลือแค่ 0.7%) · √(1−ᾱₜ) ≈ 0.9999 (noise เกือบ 100%)<br>
+→ x₅₀₀ แทบเป็น pure noise แล้ว — signal ต้นฉบับหายไปหมด</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">Q2: Speed Calculation</p>
+<p>ถ้า diffusion inference 1 step = 0.02 วินาที (A100)<br>
+และต้องการ 48-step rollout × 50 DDIM steps × 100-member ensemble<br>
+ทั้งหมดใช้เวลากี่นาที? เทียบกับ HazeNet 48h rollout ที่ใช้เวลา 8 วินาที</p>
+<details><summary>ดูเฉลย</summary>
+<p>Diffusion: 48 × 50 × 100 × 0.02 = 4,800 วินาที = <b>80 นาที</b><br>
+HazeNet: <b>8 วินาที</b> (รวม ensemble ถ้า 100 members ≈ 800 วินาที = 13 นาที)<br>
+→ Diffusion ช้ากว่า ~6×–100× ขึ้นกับ ensemble size<br>
+→ ระบบที่ update ทุก 6 ชั่วโมงไม่สามารถรอ 80 นาทีต่อ forecast ได้</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">Q3: Superposition Test</p>
+<p>สมมติมี denoising network f(x, t) ที่มี non-linear activation (relu, softmax)<br>
+พิสูจน์หรืออธิบายว่าทำไม f(C⁽¹⁾ + C⁽²⁾, t) ≠ f(C⁽¹⁾, t) + f(C⁽²⁾, t)</p>
+<details><summary>ดูเฉลย</summary>
+<p>Counter-example ง่าย: สมมติ f(x) = relu(x)<br>
+C⁽¹⁾ = −2, C⁽²⁾ = 3<br>
+f(C⁽¹⁾ + C⁽²⁾) = relu(1) = 1<br>
+f(C⁽¹⁾) + f(C⁽²⁾) = relu(−2) + relu(3) = 0 + 3 = 3<br>
+1 ≠ 3 → superposition พัง แม้แค่ activation เดียว<br>
+Diffusion network มี relu/attention หลายร้อยชั้น → superposition พังอย่างรุนแรง</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">Q4: เหตุผลที่ถูกต้อง</p>
+<p>เลือกเหตุผลที่ <b>ถูกต้องที่สุด</b> ว่าทำไม HazeNet ไม่ใช้ diffusion (เลือกได้หลายข้อ):<br>
+A) Diffusion เป็นเทคนิคเก่าแล้ว ไม่ทันสมัย<br>
+B) Diffusion ทำลาย superposition property ที่จำเป็นสำหรับ attribution<br>
+C) Diffusion ช้าเกินไปสำหรับ operational 6-hourly update<br>
+D) Diffusion ไม่มี conservation law enforcement<br>
+E) Diffusion ยากเกินไปที่จะ implement</p>
+<details><summary>ดูเฉลย</summary>
+<p><b>คำตอบที่ถูก: B, C, D</b><br>
+A: ผิด — Diffusion เป็นเทคนิคที่กำลัง popular และใช้ใน GenCast/CorrDiff (2023–2024)<br>
+B: ถูก — non-linearity ทำลาย superposition → tagged-tracer พัง<br>
+C: ถูก — speed เป็นข้อจำกัดจริงสำหรับ operational system<br>
+D: ถูก — ไม่มี hard constraint → ผิดฟิสิกส์ได้<br>
+E: ผิด — เหตุผลทางเทคนิค ไม่ใช่เรื่องความยากของ implementation</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">Q5: กรรมการถาม</p>
+<p>กรรมการถาม: "CorrDiff ของ NVIDIA ใช้ diffusion สำหรับ weather ได้ดีมาก ทำไมคุณถึงไม่ทำแบบนั้น?"<br>
+ให้ตอบใน 3–4 ประโยค โดยแสดงว่าเข้าใจทั้ง CorrDiff และ HazeNet</p>
+<details><summary>ดูเฉลย</summary>
+<p>"CorrDiff เป็นงานที่น่าสนใจมากครับ และเป็นตัวอย่างที่ดีว่า diffusion เหมาะกับ task ไหน CorrDiff ทำ downscaling — แปลง forecast คร่าวๆ เป็น high-resolution ในขั้นเดียว ไม่ต้อง rollout หลาย timestep และไม่ต้องการ attribution หรือ source inversion HazeNet ต้องการทั้งสองอย่างนั้นเป็นหัวใจ — tagged-tracer attribution ต้องการ linearity ใน C และ adjoint inversion ต้องการ differentiable forward model ที่ fast ดังนั้น design space ของเราต่างจาก CorrDiff โดยพื้นฐาน"</p>
+</details>
+</div>
+
+<hr>
+<p class="center muted">3.8 Diffusion Models · ย้อนไป <a href="3.7-differentiable-adjoint-inversion.html" style="color:var(--blue)">3.7 Adjoint</a> · ต่อไป: <b><a href="3.9-uncertainty-ensemble-crps.html" style="color:var(--blue)">3.9 Uncertainty: Ensemble / Quantile / CRPS</a></b></p>
+
+</div>
+</body>
+</html>

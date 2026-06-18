@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>งานวิจัย State-of-the-Art ที่เกี่ยวข้องกับ HazeCast — อธิบายทีละตัวแบบเข้าใจง่าย</title>
+<style>
+  :root{
+    --bg:#0c0f14; --card:#151b24; --card2:#1b232e; --ink:#e6edf3; --muted:#9aa7b4; --dim:#6b7785;
+    --line:#252e3a; --green:#76b900; --green-d:#5a8c00; --green-soft:rgba(118,185,0,.12);
+    --blue:#4aa3ff; --blue-soft:rgba(74,163,255,.12); --orange:#ff9f43; --orange-soft:rgba(255,159,67,.12);
+    --purple:#b984ff; --purple-soft:rgba(185,132,255,.12); --red:#ff6b6b; --red-soft:rgba(255,107,107,.12);
+    --cyan:#36d6c3; --cyan-soft:rgba(54,214,195,.12); --pink:#ff7eb6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:"Segoe UI","Sarabun","Tahoma",sans-serif; line-height:1.74; font-size:16px;}
+  .wrap{max-width:1060px; margin:0 auto; padding:0 18px;}
+  header.hero{background:radial-gradient(950px 400px at 18% -10%,rgba(74,163,255,.16),transparent),linear-gradient(160deg,#0c0f14,#10151c); border-bottom:1px solid var(--line); padding:42px 20px 32px;}
+  header.hero h1{margin:0 0 8px; font-size:28px; line-height:1.32;}
+  header.hero p{margin:0; color:var(--muted); font-size:16.5px;}
+  .badge{display:inline-block; background:var(--blue-soft); color:var(--blue); border:1px solid rgba(74,163,255,.35); padding:4px 13px; border-radius:20px; font-size:13px; font-weight:600; margin-bottom:12px;}
+  nav{position:sticky; top:0; z-index:30; background:rgba(12,15,20,.93); backdrop-filter:blur(6px); border-bottom:1px solid var(--line);}
+  nav .wrap{display:flex; flex-wrap:wrap; gap:5px; padding:9px 18px;}
+  nav a{text-decoration:none; color:var(--muted); font-size:12.5px; padding:5px 9px; border-radius:7px; white-space:nowrap;}
+  nav a:hover{background:var(--blue-soft); color:var(--blue);}
+  section{padding:30px 0 6px;}
+  h2{font-size:22px; margin:0 0 6px; display:flex; align-items:center; gap:11px;}
+  h2 .n{background:var(--blue); color:#0c0f14; min-width:34px; height:34px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-size:15px; font-weight:800; flex:none;}
+  h3{font-size:17.5px; margin:20px 0 6px; color:#fff;}
+  p{margin:8px 0;} .lead{color:var(--muted); font-size:16.5px;}
+  .paper{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 22px; margin:16px 0; border-top:3px solid var(--blue);}
+  .paper.core{border-top-color:var(--green);}
+  .paper.alt{border-top-color:var(--purple);}
+  .paper.data{border-top-color:var(--cyan);}
+  .paper.phys{border-top-color:var(--orange);}
+  .ptitle{font-size:18px; font-weight:700; color:#fff; margin:0 0 2px;}
+  .pmeta{font-size:13px; color:var(--dim); margin-bottom:8px;}
+  .pmeta a{color:var(--blue); text-decoration:none;}
+  .pmeta a:hover{text-decoration:underline;}
+  .what{background:var(--card2); border-radius:9px; padding:10px 14px; margin:10px 0; font-size:15px;}
+  .what b{color:var(--cyan);}
+  ol.steps{margin:8px 0; padding-left:22px; counter-reset:s;}
+  ol.steps li{margin:7px 0; padding-left:4px;}
+  ol.steps li::marker{color:var(--green); font-weight:700;}
+  .use{border-left:3px solid var(--green); background:var(--green-soft); padding:10px 14px; border-radius:8px; margin:10px 0 2px; font-size:14.5px;}
+  .use b{color:var(--green);}
+  .num{color:var(--orange); font-weight:700;}
+  .grid{display:grid; gap:14px;} .g2{grid-template-columns:1fr 1fr;}
+  @media(max-width:780px){.g2{grid-template-columns:1fr;}}
+  table{border-collapse:collapse; width:100%; font-size:14px; margin:10px 0; border-radius:10px; overflow:hidden;}
+  th,td{border:1px solid var(--line); padding:8px 11px; text-align:left; vertical-align:top;}
+  th{background:#1c2530; color:#fff; font-weight:600;} td{background:var(--card);}
+  .note{border-left:3px solid var(--blue); background:var(--blue-soft); padding:12px 16px; border-radius:9px; margin:13px 0;}
+  .note.g{border-color:var(--green); background:var(--green-soft);}
+  .note.o{border-color:var(--orange); background:var(--orange-soft);}
+  svg{max-width:100%; height:auto; display:block; margin:8px auto;}
+  .cap{text-align:center; color:var(--dim); font-size:13px; margin-top:2px;}
+  code{background:#0a0d12; border:1px solid var(--line); padding:1px 6px; border-radius:5px; font-size:13.5px; color:var(--cyan);}
+  footer{padding:26px 18px 50px; color:var(--dim); font-size:13px; border-top:1px solid var(--line); margin-top:24px;}
+  .anchor{scroll-margin-top:58px;}
+  .tag{display:inline-block; font-size:11.5px; padding:2px 9px; border-radius:14px; margin:0 4px 4px 0; background:var(--card2); border:1px solid var(--line); color:var(--muted);}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="badge">📚 Literature Review · คัดเฉพาะที่สำคัญจริง 16 ชิ้น · ลิงก์ตรวจสอบแล้วทุกตัว</span>
+    <h1>งานวิจัย State-of-the-Art เบื้องหลัง HazeCast<br>อ่านจบ = รู้ว่าโลกทำอะไรไปแล้ว และช่องว่างของเราอยู่ตรงไหน</h1>
+    <p>จัดเป็น 5 กลุ่มตามบทบาทใน pipeline · แต่ละงานอธิบาย "คืออะไร → ทำงานยังไงทีละขั้น → ตัวเลขสำคัญ → เอามาใช้กับเรายังไง" สำหรับคนไม่เคยอ่านเปเปอร์มาก่อน</p>
+  </div>
+</header>
+
+<nav>
+  <div class="wrap">
+    <a href="#map">แผนที่วรรณกรรม</a>
+    <a href="#g1">① AI แทนโมเดลฟิสิกส์</a>
+    <a href="#g2">② พยากรณ์คุณภาพอากาศ</a>
+    <a href="#g3">③ ทางเลือกสถาปัตยกรรม</a>
+    <a href="#g4">④ ดาวเทียม→PM2.5</a>
+    <a href="#g5">⑤ ฟิสิกส์อ้างอิง+ไทย</a>
+    <a href="#order">ลำดับการอ่าน</a>
+    <a href="#synth">ตารางสังเคราะห์</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- ===== MAP ===== -->
+<section id="map" class="anchor">
+  <h2><span class="n">🗺</span> แผนที่วรรณกรรม — 16 งาน 5 กลุ่ม วางบน pipeline ของ HazeCast</h2>
+  <svg viewBox="0 0 1000 430" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,Sarabun,sans-serif">
+    <defs><marker id="ar" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6b7785"/></marker></defs>
+    <!-- pipeline backbone -->
+    <rect x="30" y="180" width="180" height="70" rx="11" fill="#0f1620" stroke="#36d6c3" stroke-width="1.5"/>
+    <text x="120" y="208" text-anchor="middle" fill="#36d6c3" font-size="13.5" font-weight="bold">STAGE A · Fusion</text>
+    <text x="120" y="228" text-anchor="middle" fill="#9aa7b4" font-size="10.5">ดาวเทียม+สถานี → แผนที่ฝุ่น</text>
+    <rect x="410" y="180" width="180" height="70" rx="11" fill="#0f1620" stroke="#76b900" stroke-width="1.5"/>
+    <text x="500" y="208" text-anchor="middle" fill="#76b900" font-size="13.5" font-weight="bold">STAGE B · Forecast</text>
+    <text x="500" y="228" text-anchor="middle" fill="#9aa7b4" font-size="10.5">ฟิสิกส์ advection + NN</text>
+    <rect x="790" y="180" width="180" height="70" rx="11" fill="#0f1620" stroke="#b984ff" stroke-width="1.5"/>
+    <text x="880" y="208" text-anchor="middle" fill="#b984ff" font-size="13.5" font-weight="bold">STAGE C · Attribution</text>
+    <text x="880" y="228" text-anchor="middle" fill="#9aa7b4" font-size="10.5">ควันมาจากไหน</text>
+    <line x1="210" y1="215" x2="408" y2="215" stroke="#6b7785" stroke-width="2" marker-end="url(#ar)"/>
+    <line x1="590" y1="215" x2="788" y2="215" stroke="#6b7785" stroke-width="2" marker-end="url(#ar)"/>
+
+    <!-- group 4 above stage A -->
+    <rect x="20" y="40" width="220" height="100" rx="10" fill="#11161d" stroke="#36d6c3" stroke-dasharray="4 3"/>
+    <text x="130" y="63" text-anchor="middle" fill="#36d6c3" font-size="12" font-weight="bold">กลุ่ม ④ ดาวเทียม → PM2.5</text>
+    <text x="130" y="84" text-anchor="middle" fill="#e6edf3" font-size="10.5">van Donkelaar (ACAG global)</text>
+    <text x="130" y="102" text-anchor="middle" fill="#e6edf3" font-size="10.5">Himawari hourly PM2.5</text>
+    <text x="130" y="120" text-anchor="middle" fill="#e6edf3" font-size="10.5">TabNet+TROPOMI (ไทย)</text>
+    <line x1="130" y1="140" x2="122" y2="178" stroke="#36d6c3" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#ar)"/>
+
+    <!-- group 1 + 2 above stage B -->
+    <rect x="280" y="20" width="210" height="120" rx="10" fill="#11161d" stroke="#76b900" stroke-dasharray="4 3"/>
+    <text x="385" y="43" text-anchor="middle" fill="#76b900" font-size="12" font-weight="bold">กลุ่ม ① AI แทนโมเดลฟิสิกส์</text>
+    <text x="385" y="64" text-anchor="middle" fill="#e6edf3" font-size="10.5">Aurora (Nature 2025) ★สำคัญสุด</text>
+    <text x="385" y="82" text-anchor="middle" fill="#e6edf3" font-size="10.5">GraphCast (Science 2023)</text>
+    <text x="385" y="100" text-anchor="middle" fill="#e6edf3" font-size="10.5">FourCastNet (พิมพ์เขียวเดิม)</text>
+    <text x="385" y="118" text-anchor="middle" fill="#e6edf3" font-size="10.5">StormCast (พิมพ์เขียวเดิม)</text>
+    <rect x="510" y="20" width="210" height="120" rx="10" fill="#11161d" stroke="#76b900" stroke-dasharray="4 3"/>
+    <text x="615" y="43" text-anchor="middle" fill="#76b900" font-size="12" font-weight="bold">กลุ่ม ② พยากรณ์ AQ โดยตรง</text>
+    <text x="615" y="64" text-anchor="middle" fill="#e6edf3" font-size="10.5">AirPhyNet (ICLR 2024) ★ญาติใกล้สุด</text>
+    <text x="615" y="82" text-anchor="middle" fill="#e6edf3" font-size="10.5">PM2.5-GNN (SIGSPATIAL 2020)</text>
+    <text x="615" y="100" text-anchor="middle" fill="#e6edf3" font-size="10.5">AirFormer (AAAI 2023)</text>
+    <line x1="420" y1="140" x2="465" y2="178" stroke="#76b900" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#ar)"/>
+    <line x1="590" y1="140" x2="540" y2="178" stroke="#76b900" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#ar)"/>
+
+    <!-- group 3 below stage B -->
+    <rect x="330" y="300" width="340" height="100" rx="10" fill="#11161d" stroke="#b984ff" stroke-dasharray="4 3"/>
+    <text x="500" y="323" text-anchor="middle" fill="#b984ff" font-size="12" font-weight="bold">กลุ่ม ③ ทางเลือกสถาปัตยกรรม + ความน่าจะเป็น</text>
+    <text x="500" y="344" text-anchor="middle" fill="#e6edf3" font-size="10.5">MetNet-3 (direct multi-horizon + เรียนจากสถานีเบาบาง)</text>
+    <text x="500" y="362" text-anchor="middle" fill="#e6edf3" font-size="10.5">CorrDiff (downscaling 25→2 กม.) · GenCast (diffusion ensemble)</text>
+    <text x="500" y="380" text-anchor="middle" fill="#9aa7b4" font-size="10">ใช้ตัดสินใจ: AR vs direct · uncertainty · sharpening</text>
+    <line x1="500" y1="298" x2="500" y2="252" stroke="#b984ff" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#ar)"/>
+
+    <!-- group 5 right -->
+    <rect x="740" y="300" width="240" height="100" rx="10" fill="#11161d" stroke="#ff9f43" stroke-dasharray="4 3"/>
+    <text x="860" y="323" text-anchor="middle" fill="#ff9f43" font-size="12" font-weight="bold">กลุ่ม ⑤ ฟิสิกส์อ้างอิง + บริบทไทย</text>
+    <text x="860" y="344" text-anchor="middle" fill="#e6edf3" font-size="10.5">WRF-Chem ข้ามแดน (ครูตรวจ attribution)</text>
+    <text x="860" y="362" text-anchor="middle" fill="#e6edf3" font-size="10.5">FINNv2.5 (ไฟ→emission) · HYSPLIT</text>
+    <text x="860" y="380" text-anchor="middle" fill="#9aa7b4" font-size="10">บรรพบุรุษของ Smoke Fingerprint</text>
+    <line x1="870" y1="298" x2="878" y2="252" stroke="#ff9f43" stroke-width="1.5" stroke-dasharray="3 3" marker-end="url(#ar)"/>
+  </svg>
+  <p class="cap">★ = สองงานที่ต้องอ่านก่อนใคร: Aurora (พิสูจน์ว่า AI ทำนายเคมีบรรยากาศได้) และ AirPhyNet (ญาติใกล้ชิดที่สุดของ Stage B)</p>
+</section>
+
+<!-- ===== GROUP 1 ===== -->
+<section id="g1" class="anchor">
+  <h2><span class="n">①</span> กลุ่มที่ 1 — "AI แทนโมเดลฟิสิกส์" (รากฐานความเชื่อทั้งโปรเจกต์)</h2>
+  <p class="lead">คำถามแรกที่กรรมการจะถาม: "AI จะจำลองการเคลื่อนของสารในบรรยากาศแทนสมการเคมี-ฟิสิกส์ได้จริงเหรอ?"
+  กลุ่มนี้คือหลักฐานว่า <b>ได้ และทำไปแล้วสำเร็จระดับ Nature</b></p>
+
+  <!-- AURORA -->
+  <div class="paper core">
+    <div class="ptitle">1. Aurora — Foundation Model ที่พยากรณ์ "มลพิษอากาศทั้งโลก" ได้แม่นกว่าระบบยุโรป ★สำคัญที่สุดสำหรับเรา</div>
+    <div class="pmeta">Microsoft Research · Nature 2025 · <a href="https://www.nature.com/articles/s41586-025-09005-y">Nature: s41586-025-09005-y</a> · <a href="https://arxiv.org/abs/2405.13063">arXiv:2405.13063</a> · <a href="https://microsoft.github.io/aurora/models.html">โค้ด/โมเดลเปิด</a></div>
+    <span class="tag">3D Swin Transformer</span><span class="tag">Foundation model</span><span class="tag">CAMS air quality</span><span class="tag">1.3B params</span>
+    <div class="what"><b>คืออะไร:</b> โมเดลฐานของบรรยากาศที่ pretrain จากข้อมูลธรณีฟิสิกส์ &gt;1 ล้านชั่วโมง แล้ว fine-tune ไปทำงานอะไรก็ได้ —
+    การทดลองที่เกี่ยวกับเราที่สุดคือ fine-tune ให้พยากรณ์ <b>มลพิษอากาศ (PM2.5, PM10, NO₂, O₃, SO₂, CO)</b> แทนระบบ CAMS ของยุโรป</div>
+    <h3>ทำงานยังไง (ทีละขั้น)</h3>
+    <ol class="steps">
+      <li><b>Pretrain:</b> ป้อนข้อมูลบรรยากาศหลายแหล่ง (ERA5, GFS, IFS, แบบจำลองภูมิอากาศ) ให้เรียน "พลวัตทั่วไปของบรรยากาศ" — เหมือนเด็กที่ดูเมฆ ลม ฝนมาทั้งชีวิตจนรู้สึกได้ว่าอากาศ "ไหลยังไง"</li>
+      <li><b>สถาปัตยกรรม:</b> encoder ยืดหยุ่น — รับตัวแปรกี่ตัวก็ได้ (ผิวพื้น + หลายชั้นความสูง) แปลงเป็นโทเคน 3 มิติ → ตัวประมวลกลางเป็น 3D Swin Transformer U-Net → decoder ถอดกลับเป็นตัวแปรชุดใดก็ได้</li>
+      <li><b>Fine-tune กับ CAMS:</b> เอาโมเดลที่ "เข้าใจอากาศ" แล้ว มาสอนต่อด้วยข้อมูลวิเคราะห์มลพิษของ CAMS (0.4°) แค่ช่วงสั้น ๆ — จุดเด็ดคือ<b>ไม่ป้อนข้อมูลการปล่อยมลพิษ (emission) เลย</b></li>
+      <li><b>พยากรณ์:</b> วนแบบ autoregressive ได้หลายวัน — ผลคือเทียบเท่า/ชนะ CAMS ใน <span class="num">74% ของเป้าหมาย</span> ที่ต้นทุนถูกกว่า <span class="num">~5,000 เท่า</span></li>
+      <li><b>สิ่งที่น่าทึ่งสุด:</b> โมเดลเรียนรู้ "รูปแบบการปล่อยจากกิจกรรมมนุษย์" เองโดยปริยาย — เช่น NO₂ ลดลงวันหยุดสุดสัปดาห์ วัฏจักรกลางวัน-กลางคืน ทั้งที่ไม่มีใครบอก</li>
+    </ol>
+    <div class="use"><b>ใช้กับ HazeCast ยังไง:</b> นี่คือ "หลักฐานชั้น Nature" ว่าแนวคิดแกนของเราเป็นไปได้ — AI เรียนการเคลื่อนของมลพิษโดยไม่ต้องรู้ emission สมบูรณ์
+    แต่ Aurora หยาบ (0.4° ≈ 40 กม. ทั้งแอ่งเชียงใหม่ = พิกเซลเดียว) ไม่มีไฟเป็นเงื่อนไข ไม่มี attribution — <b>ช่องว่างของเราคือทำสิ่งเดียวกันแบบ regional 0.1° + fire-conditioned + อธิบายแหล่งที่มา</b></div>
+  </div>
+
+  <!-- GRAPHCAST -->
+  <div class="paper core">
+    <div class="ptitle">2. GraphCast — ผู้พิสูจน์สูตร "เทรนทำนายทีละก้าว แล้ววนให้ไกล"</div>
+    <div class="pmeta">Google DeepMind · Science 2023 · <a href="https://arxiv.org/abs/2212.12794">arXiv:2212.12794</a></div>
+    <span class="tag">GNN message passing</span><span class="tag">Multi-mesh</span><span class="tag">Autoregressive</span>
+    <div class="what"><b>คืออะไร:</b> โมเดลพยากรณ์อากาศโลก 10 วันที่ชนะระบบ HRES ของ ECMWF ใน 90% ของตัวชี้วัด — ตัวกำหนดมาตรฐานของวงการก่อนยุค foundation model</div>
+    <h3>ทำงานยังไง</h3>
+    <ol class="steps">
+      <li>แปลงโลกเป็น <b>กราฟ icosahedral หลายระดับ</b> (ตาข่ายหยาบ→ละเอียดซ้อนกัน) — เส้นเชื่อมระยะไกลช่วยให้ข้อมูลข้ามทวีปถึงกันเร็ว</li>
+      <li><b>Encoder:</b> ดึงข้อมูลจากกริด lat-lon เข้าโหนดของตาข่าย → <b>Processor:</b> message passing 16 รอบ (โหนดแลกข้อมูลกับเพื่อนบ้าน) → <b>Decoder:</b> คายกลับเป็นกริด</li>
+      <li>ทำนายทีละ 6 ชม. แล้ว <b>วนป้อนตัวเอง</b> 40 รอบ = 10 วัน</li>
+      <li>เคล็ดลับการเทรนที่เราต้องลอก: <b>ค่อย ๆ เพิ่มจำนวนก้าวตอน fine-tune</b> (เทรน 1 ก้าวก่อน → 2 → ... → 12) เพื่อให้โมเดลทนต่อ error สะสมของตัวเอง</li>
+    </ol>
+    <div class="use"><b>ใช้กับ HazeCast ยังไง:</b> สูตร "autoregressive + curriculum เพิ่มก้าว" คือสิ่งที่ Stage B ต้องทำตอน rollout fine-tune สัปดาห์ที่ 5 — ปัญหา drift ที่เรากลัว GraphCast เจอก่อนและแก้ด้วยวิธีนี้</div>
+  </div>
+
+  <!-- FOURCASTNET + STORMCAST brief -->
+  <div class="paper core">
+    <div class="ptitle">3–4. FourCastNet (AFNO) + StormCast — พิมพ์เขียวจากงานเหรียญทองเดิม</div>
+    <div class="pmeta">NVIDIA · <a href="https://arxiv.org/abs/2202.11214">FourCastNet arXiv:2202.11214</a> · <a href="https://arxiv.org/abs/2111.13587">AFNO arXiv:2111.13587</a> · <a href="https://arxiv.org/abs/2408.10958">StormCast arXiv:2408.10958</a></div>
+    <div class="what"><b>คืออะไร:</b> สองโมเดลที่งานเหรียญทอง SS5 ใช้ — FourCastNet ผสมข้อมูลทั้งภาพผ่านโลกความถี่ (FFT→ฟิลเตอร์→iFFT, O(N log N)) ส่วน StormCast คือสูตร "Regression ทายค่าเฉลี่ย + Diffusion เติมรายละเอียด"</div>
+    <div class="use"><b>ใช้กับ HazeCast ยังไง:</b> AFNO block = ตัวเลือก bottleneck ของ Stage B (จับ transport ระยะไกลข้ามแดน) · สูตร mean+residual ของ StormCast = แบบแผนถ้าเราเพิ่ม diffusion sharpening เป็น stretch goal
+    — <b>อธิบายละเอียดครบแล้วในเอกสารก่อนหน้า</b> (concepts-deep-dive.html, math-deepdive-diffusion-fourier.html) จึงไม่ทวนที่นี่</div>
+  </div>
+</section>
+
+<!-- ===== GROUP 2 ===== -->
+<section id="g2" class="anchor">
+  <h2><span class="n">②</span> กลุ่มที่ 2 — พยากรณ์คุณภาพอากาศด้วย Deep Learning (งานสายตรงของเรา)</h2>
+  <p class="lead">สามงานนี้คือวิวัฒนาการของการพยากรณ์ PM2.5: <b>กราฟ+ความรู้โดเมน → Transformer ระดับประเทศ → ใส่สมการฟิสิกส์เข้าไปในโครงข่าย</b></p>
+
+  <!-- PM2.5-GNN -->
+  <div class="paper">
+    <div class="ptitle">5. PM2.5-GNN — คนแรกที่ "เขียนความรู้เรื่องลมและภูเขา" ลงในกราฟ</div>
+    <div class="pmeta">SIGSPATIAL 2020 · <a href="https://arxiv.org/abs/2002.12898">arXiv:2002.12898</a> · <a href="https://github.com/shuowang-ai/PM2.5-GNN">GitHub (โค้ดเปิด)</a> · <a href="https://dl.acm.org/doi/10.1145/3397536.3422208">ACM DL</a></div>
+    <span class="tag">GNN + GRU</span><span class="tag">Domain knowledge</span><span class="tag">เคยใช้งานออนไลน์จริง</span>
+    <div class="what"><b>คืออะไร:</b> โมเดลกราฟพยากรณ์ PM2.5 ของจีนถึง 72 ชม. ที่ฉลาดตรง "วิธีสร้างกราฟ" — ไม่ได้เชื่อมทุกเมืองมั่ว ๆ แต่เชื่อมตามความเป็นไปได้จริงที่มลพิษจะลอยถึงกัน</div>
+    <h3>ทำงานยังไง</h3>
+    <ol class="steps">
+      <li><b>สร้างกราฟด้วยความรู้โดเมน:</b> เมือง = โหนด · ลากเส้นเชื่อมเฉพาะคู่เมืองที่ (ก) ใกล้กันพอ และ (ข) <b>ไม่มีภูเขาขวาง</b> (เช็คความสูงภูมิประเทศตามแนวเส้น!) — ฝุ่นข้ามเทือกเขาไม่ได้ กราฟก็ไม่ควรมีเส้นนั้น</li>
+      <li><b>ใส่ลมลงบนเส้นเชื่อม:</b> attribute ของแต่ละเส้น = ความเร็วลม×ทิศลมฉายลงแนวเส้น + ระยะทาง → เส้นไหน "ลมพัดตามแนว" ส่งอิทธิพลแรง เส้นไหนลมสวนทาง = อิทธิพลต่ำ — <b>นี่คือ advection เวอร์ชันกราฟ</b></li>
+      <li><b>เดินเวลา:</b> GNN ส่งข้อความระหว่างโหนด (ฝุ่นไหลตามเส้น) ทำงานคู่กับ GRU (ความจำเชิงเวลาของแต่ละเมือง) ทำนายทีละชั่วโมงแบบ autoregressive</li>
+      <li>ผล: ชนะ baseline ทุกตัวในยุคนั้น โดยเฉพาะ <b>การทำนายระยะไกล (48–72 ชม.)</b> ที่ตัวไร้โครงสร้าง transport พังหมด — และถูก deploy เป็นบริการจริง</li>
+    </ol>
+    <div class="use"><b>ใช้กับ HazeCast ยังไง:</b> ยืนยันสองดีไซน์ของเรา: (1) ภูมิประเทศต้องอยู่ในโครงสร้างโมเดล (แอ่งเชียงใหม่!) (2) ลมต้องเป็น "ตัวนำทางการไหล" ไม่ใช่แค่ฟีเจอร์แบน ๆ
+    — ต่างกันที่เราทำบน <b>กริดเต็มแผ่น</b> (ครอบพื้นที่ไร้สถานี+ฝั่งเมียนมา) ด้วย advection operator จริง ไม่ใช่กราฟจุดสถานี</div>
+  </div>
+
+  <!-- AIRFORMER -->
+  <div class="paper">
+    <div class="ptitle">6. AirFormer — Transformer ระดับประเทศ + กลไกความไม่แน่นอนในตัว</div>
+    <div class="pmeta">AAAI 2023 · <a href="https://ojs.aaai.org/index.php/AAAI/article/view/26676">AAAI Proceedings</a> · <a href="https://www.zhangjunbo.org/pdf/2023_AAAI_AirFormer.pdf">PDF เต็ม</a></div>
+    <span class="tag">Dartboard attention</span><span class="tag">Stochastic latents</span><span class="tag">1,085 สถานี</span>
+    <div class="what"><b>คืออะไร:</b> Transformer พยากรณ์คุณภาพอากาศ <b>ทั้งประเทศจีน 1,085 สถานีพร้อมกัน</b> ถึง 72 ชม. — แก้สองปัญหา: attention ปกติแพงเกิน (N² ของพันสถานี) และพยากรณ์เดี่ยวไม่บอกความมั่นใจ</div>
+    <h3>ทำงานยังไง</h3>
+    <ol class="steps">
+      <li><b>Stage ล่าง (deterministic):</b> ออกแบบ <b>"Dartboard Spatial Attention"</b> — แต่ละสถานีไม่มองทุกสถานี แต่มองเพื่อนบ้านเป็น "วงแหวน+เสี้ยวทิศ" รอบตัว (เหมือนเป้าปาลูกดอก) → ต้นทุนลดมหาศาล และตรงฟิสิกส์: อิทธิพลฝุ่นมาตามระยะ+ทิศ</li>
+      <li>คู่กับ causal temporal attention เรียนลำดับเวลาของแต่ละสถานี</li>
+      <li><b>Stage บน (stochastic):</b> ตัวแปรแฝงแบบ VAE ซ้อนหลายชั้น จับ "ความไม่แน่นอนแท้จริง" ของอากาศ → สุ่มอนาคตได้หลายแบบ ไม่ใช่เส้นเดียว</li>
+      <li>ผล: ลด error <span class="num">5–8%</span> จาก SOTA เดิมที่ 72 ชม. โดยเฉพาะช่วง "เปลี่ยนกะทันหัน" (sudden change) ที่โมเดลธรรมดาตามไม่ทัน</li>
+    </ol>
+    <div class="use"><b>ใช้กับ HazeCast ยังไง:</b> (1) dartboard = หลักฐานว่า attention เชิงพื้นที่ที่ "เคารพระยะ+ทิศ" ดีกว่า attention ดิบ — สนับสนุนการเลือก U-Net+AFNO แทน ViT เต็มรูป
+    (2) stochastic latents คือทางเลือก uncertainty ที่ถูกกว่า diffusion — เทียบกับ quantile heads ที่เราวางไว้ใน MVP</div>
+  </div>
+
+  <!-- AIRPHYNET -->
+  <div class="paper core">
+    <div class="ptitle">7. AirPhyNet — ใส่ "สมการ advection–diffusion" เข้าไปในโครงข่ายตรง ๆ ★ญาติใกล้ชิดที่สุดของ Stage B</div>
+    <div class="pmeta">ICLR 2024 · <a href="https://arxiv.org/abs/2402.03784">arXiv:2402.03784</a> · <a href="https://openreview.net/forum?id=JW3jTjaaAB">OpenReview</a> · <a href="https://iclr.cc/virtual/2024/poster/18940">ICLR Poster</a></div>
+    <span class="tag">Physics-guided</span><span class="tag">Neural ODE</span><span class="tag">Graph Laplacian diffusion</span><span class="tag">Wind-directed advection</span>
+    <div class="what"><b>คืออะไร:</b> งานที่ใกล้แนวคิด HazeCast ที่สุดในโลกวิชาการตอนนี้ — แทนที่จะให้ NN เดาล้วน ๆ มันบังคับให้ "แกนพลวัต" ของโมเดลเป็น <b>สมการเชิงอนุพันธ์ของการแพร่ (diffusion) และการพา (advection)</b> ของอนุภาคจริง ๆ</div>
+    <h3>ทำงานยังไง</h3>
+    <ol class="steps">
+      <li><b>Encoder:</b> GRU+GNN อ่านประวัติ PM2.5 และอุตุฯ ของเครือข่ายสถานี → บีบเป็น "สถานะความเข้มข้นแฝง" (latent concentration)</li>
+      <li><b>หัวใจ — Physics Core:</b> ให้สถานะแฝงวิวัฒน์ตาม <b>Neural ODE</b> ที่ขวามือของสมการคือ:
+        <code>dC/dt = k_diff · (Graph Laplacian)·C</code> (การแพร่จากที่เข้มไปที่จาง) <code>+ advection ตามทิศลมบนเส้นกราฟ</code> (การพาโดยลม) — สัมประสิทธิ์เรียนรู้จากข้อมูล แต่<b>รูปสมการล็อกตามฟิสิกส์</b></li>
+      <li><b>Solver:</b> แก้ ODE เดินหน้าในเวลาต่อเนื่อง (ไม่ใช่ก้าวกระโดดแบบ RNN) ไปถึง horizon ที่ต้องการ</li>
+      <li><b>Decoder:</b> ถอดสถานะแฝงกลับเป็นค่า PM2.5 รายสถานี</li>
+      <li>ผล: ลด error สูงสุด <span class="num">~10%</span> ที่ 24/48/72 ชม. และ<b>เด่นชัดสุดในสองสถานการณ์ที่เราแคร์ที่สุด: ข้อมูลเบาบาง (sparse) และเหตุการณ์เปลี่ยนกะทันหัน</b> + พลวัตภายในตีความได้เชิงฟิสิกส์</li>
+    </ol>
+    <div class="use"><b>ใช้กับ HazeCast ยังไง:</b> นี่คือหลักฐานเด็ดที่สุดว่า "physics-guided ชนะ data-driven ล้วนตรง onset และที่ข้อมูลน้อย" — ตรงคำวิจารณ์ที่เรากลัวที่สุดพอดี
+    <b>แต่</b> AirPhyNet ยังอยู่บนกราฟสถานี ไม่มีไฟ ไม่มีดาวเทียม ไม่มีสนามเต็มแผ่น ไม่มี attribution → ช่องของเรา = ยกแนวคิดนี้ขึ้นกริด 2 มิติ + เติมไฟ/AOD + Smoke Fingerprint
+    (และต้องอ้างงานนี้ในโปสเตอร์อย่างให้เกียรติ — กรรมการสาย ML จะรู้จักมัน)</div>
+  </div>
+
+  <!-- THAI PRIOR -->
+  <div class="paper">
+    <div class="ptitle">8. TabNet + TROPOMI (ประเทศไทย) — prior art ไทยที่ใกล้เราที่สุด (แต่เป็น "ประมาณค่า" ไม่ใช่ "พยากรณ์")</div>
+    <div class="pmeta">Remote Sensing Applications 2023 · <a href="https://www.sciencedirect.com/science/article/pii/S1309104223002295">ScienceDirect</a></div>
+    <div class="what"><b>คืออะไร:</b> ใช้ TabNet (deep learning ตีความได้สำหรับข้อมูลตาราง) ประมาณ PM2.5 ผิวพื้นทั่วไทยจากก๊าซที่ดาวเทียม TROPOMI วัด (CO, NO₂, aerosol index) ช่วง 2018–2020 — พบว่า <b>CO คือตัวแปรชี้นำสำคัญสุด ซึ่งเชื่อมตรงกับการเผาชีวมวล</b></div>
+    <div class="use"><b>ใช้กับ HazeCast ยังไง:</b> (1) เป็น prior art ไทยที่ต้องอ้างใน gap table — มัน estimate ปัจจุบัน เราพยากรณ์อนาคต (2) บอกใบ้ฟีเจอร์: TROPOMI CO อาจเป็นช่องอินพุตเสริมที่แรงสำหรับ Stage A เพราะผูกกับควันไฟตรง ๆ</div>
+  </div>
+</section>
+
+<!-- ===== GROUP 3 ===== -->
+<section id="g3" class="anchor">
+  <h2><span class="n">③</span> กลุ่มที่ 3 — ทางเลือกสถาปัตยกรรมที่ต้อง "รู้ก่อนเลือก" (ไม่ใช่เลือกตามความเคยชิน)</h2>
+
+  <!-- METNET3 -->
+  <div class="paper alt">
+    <div class="ptitle">9. MetNet-3 — ขั้วตรงข้ามของ autoregressive: ทำนาย "ตรงไปยังเวลาเป้าหมาย" + เรียนจากสถานีเบาบางได้</div>
+    <div class="pmeta">Google · <a href="https://arxiv.org/abs/2306.06079">arXiv:2306.06079</a> ("Deep Learning for Day Forecasts from Sparse Observations") · ใช้งานจริงใน Google Search</div>
+    <span class="tag">Direct multi-horizon</span><span class="tag">Densification</span><span class="tag">เร็ว 2 นาที/1 กม.</span>
+    <div class="what"><b>คืออะไร:</b> โมเดลพยากรณ์ 24 ชม. ที่<b>ไม่วนป้อนตัวเองเลย</b> — บอก lead time ที่ต้องการเป็นอินพุต แล้วทำนายชั่วโมงนั้นตรง ๆ (error ไม่สะสม)
+    และมีเทคนิคที่ตรงปัญหาเราเป๊ะ: เรียน "สนามหนาแน่น" จาก "จุดสังเกตเบาบาง"</div>
+    <h3>ทำงานยังไง</h3>
+    <ol class="steps">
+      <li>อินพุต: เรดาร์+ดาวเทียม (หนาแน่น) + <b>รายงานสถานีอุตุฯ ที่เบาบาง</b> (แปะลงกริดเป็นจุด ๆ) + สถานะ NWP + ภูมิประเทศ</li>
+      <li><b>Densification (เคล็ดลับทอง):</b> ตอนเทรน สุ่ม<b>ปิดบังสถานีบางส่วน</b> แล้วบังคับให้โมเดลทำนายค่าที่สถานีถูกปิด → โมเดลเรียน "การประมาณข้ามจุด" (data assimilation โดยปริยาย) จนคายสนามเต็มแผ่นได้ทั้งที่ truth เป็นแค่จุด</li>
+      <li>โครงข่าย UNet/MaxVit รับ <b>lead time เป็นเงื่อนไข</b> — ถามกี่ชั่วโมงข้างหน้าก็ตอบช็อตเดียว ไม่ง้อการวน</li>
+      <li>ผล: ชนะ HRRR (โมเดลฟิสิกส์ภูมิภาคที่ดีสุดของสหรัฐฯ) ถึง 24 ชม. และรันจริงใน Google</li>
+    </ol>
+    <div class="use"><b>ใช้กับ HazeCast ยังไง (สองจุดใหญ่):</b> (1) เทคนิค densification = วิธี supervise Stage A จากสถานี ~40 จุดที่ถูกต้องตามตำราที่สุด — มีคนพิสูจน์แล้วระดับ production
+    (2) คำวิจารณ์แผนเรา (รอบล่าสุด) บอกว่าเลือก autoregressive เพราะ "ลอกพิมพ์เขียว" — MetNet-3 คือฝั่งตรงข้ามที่ต้องลองเทียบใน W4: <b>AR (สะสม error แต่ consistent เชิงพลวัต) vs Direct (ไม่สะสมแต่แต่ละ lead แยกกัน)</b> ให้ตัวเลขตัดสิน ไม่ใช่ศรัทธา</div>
+  </div>
+
+  <!-- CORRDIFF -->
+  <div class="paper alt">
+    <div class="ptitle">10. CorrDiff — สูตรสำเร็จ "UNet ทายค่าเฉลี่ย + Diffusion แก้ส่วนต่าง" สำหรับ downscaling 25→2 กม.</div>
+    <div class="pmeta">NVIDIA · Communications Earth &amp; Environment 2025 · <a href="https://arxiv.org/abs/2309.15214">arXiv:2309.15214</a> · <a href="https://www.nature.com/articles/s43247-025-02042-5">วารสาร</a> · <a href="https://docs.nvidia.com/physicsnemo/latest/physicsnemo/examples/weather/corrdiff/README.html">โค้ดใน PhysicsNeMo</a></div>
+    <span class="tag">Residual diffusion</span><span class="tag">EDM</span><span class="tag">ไต้หวัน 2 กม.</span>
+    <div class="what"><b>คืออะไร:</b> เจเนอเรทีฟ downscaling — รับสภาพหยาบ 25 กม. แล้วสร้างสนามละเอียด 2 กม. ที่คมและสถิติถูก (สเปกตรัม/การกระจายตรงกับความจริง) ทดสอบกับไต้ฝุ่นไต้หวัน</div>
+    <h3>ทำงานยังไง</h3>
+    <ol class="steps">
+      <li><b>ขั้น 1 UNet regression:</b> เรียน mapping หยาบ→ละเอียดแบบ deterministic — ได้ "ค่าเฉลี่ยที่แม่นแต่เบลอ" (ปัญหา MSE เฉลี่ยทุกความเป็นไปได้)</li>
+      <li><b>ขั้น 2 Diffusion บน residual:</b> เทรน EDM diffusion ให้สร้างเฉพาะ <code>ความจริง − ค่าเฉลี่ย</code> = รายละเอียดความถี่สูงที่หายไป</li>
+      <li><b>Inference:</b> mean + สุ่ม residual หลายครั้ง → ได้ ensemble สนามคมจริง · <span class="num">4.1 วินาที/ตัวอย่าง</span> บน GPU เดียว</li>
+      <li>เคสไต้ฝุ่น: ความชันลม/อุณหภูมิคมขึ้น แถบฝนรอบตาไต้ฝุ่นถูกสังเคราะห์กลับมา — ของที่ regression ล้วนทำไม่ได้</li>
+    </ol>
+    <div class="use"><b>ใช้กับ HazeCast ยังไง:</b> ถ้า stretch goal "sharpening/ensemble" ถูกปลดล็อก นี่คือสูตรที่พิสูจน์แล้วบน GPU เดียว (เร็วพอ Colab) —
+    และเชิงแนวคิด มันยืนยันบทเรียนจาก StormCast: <b>อย่าให้โมเดลเดียวแบกทั้ง "ค่าเฉลี่ย" และ "รายละเอียด" — แยกงานแล้วบวกกัน</b></div>
+  </div>
+
+  <!-- GENCAST -->
+  <div class="paper alt">
+    <div class="ptitle">11. GenCast — พยากรณ์แบบ "ความน่าจะเป็น" ด้วย diffusion ensemble</div>
+    <div class="pmeta">Google DeepMind · Nature 2025 · <a href="https://arxiv.org/abs/2312.15796">arXiv:2312.15796</a></div>
+    <span class="tag">Conditional diffusion</span><span class="tag">Ensemble</span><span class="tag">CRPS</span>
+    <div class="what"><b>คืออะไร:</b> แทนที่จะทำนายอนาคตเส้นเดียว GenCast ใช้ diffusion <b>สุ่มอนาคตที่เป็นไปได้หลายสิบแบบ</b> (ensemble) — ชนะระบบ ensemble ปฏิบัติการของยุโรป (ENS) ใน <span class="num">97.2%</span> ของเป้าหมาย</div>
+    <h3>ทำงานยังไง</h3>
+    <ol class="steps">
+      <li>มอง "การพยากรณ์" เป็นการสุ่มจากการแจกแจง <code>p(อนาคต | ปัจจุบัน)</code> — เทรน conditional diffusion ที่เริ่มจาก noise แล้ว denoise เป็นสถานะอากาศถัดไป (ก้าว 12 ชม.)</li>
+      <li>สุ่มหลายครั้ง = สมาชิก ensemble หลายตัว → คำนวณ "ความน่าจะเป็นที่ฝน/ลมจะเกิน threshold"</li>
+      <li>วัดด้วย CRPS (คะแนนความน่าจะเป็น) ไม่ใช่แค่ RMSE — มาตรฐานใหม่ของการประเมินพยากรณ์</li>
+    </ol>
+    <div class="use"><b>ใช้กับ HazeCast ยังไง:</b> ปลายทางของผลิตภัณฑ์เตือนภัยต้องเป็นความน่าจะเป็น ("โอกาส 80% ที่แม่สายจะแดงพรุ่งนี้") — MVP เราใช้ quantile heads (ถูกกว่า)
+    แต่ GenCast คือเป้าระยะยาวและเป็นเหตุผลที่เราเก็บ CRPS ไว้ในชุดตัวชี้วัดตั้งแต่แรก</div>
+  </div>
+</section>
+
+<!-- ===== GROUP 4 ===== -->
+<section id="g4" class="anchor">
+  <h2><span class="n">④</span> กลุ่มที่ 4 — จากดาวเทียมสู่ PM2.5 ภาคพื้น (วิชาของ Stage A)</h2>
+
+  <!-- VAN DONKELAAR -->
+  <div class="paper data">
+    <div class="ptitle">12. van Donkelaar / ACAG — มาตรฐานโลก 25 ปีของการแปลง AOD → PM2.5 (และบทเรียน "อย่าให้ ML มั่วในที่ไร้สถานี")</div>
+    <div class="pmeta">Washington University ACAG · ACS EST Air 2024 · <a href="https://pubs.acs.org/doi/10.1021/acsestair.3c00054">เปเปอร์</a> · <a href="https://sites.wustl.edu/acag/surface-pm2-5/">ชุดข้อมูลเปิด (ทั้งโลก รายเดือน)</a> · <a href="https://gee-community-catalog.org/projects/global_pm25/">ใช้ใน GEE ได้</a></div>
+    <span class="tag">Geophysical prior</span><span class="tag">CNN bias correction</span><span class="tag">GEOS-Chem</span>
+    <div class="what"><b>คืออะไร:</b> ชุดข้อมูล PM2.5 ทั้งโลกที่ถูกอ้างอิงมากที่สุด (ใช้ใน Global Burden of Disease) — หัวใจคือวิธี 3 ชั้นที่แก้ปัญหา "AOD ไม่ใช่ PM2.5 และสถานีมีไม่ทั่วโลก"</div>
+    <h3>ทำงานยังไง</h3>
+    <ol class="steps">
+      <li><b>Geophysical prior:</b> ใช้โมเดลเคมี GEOS-Chem คำนวณ "อัตราส่วน AOD→PM2.5" (η) รายพื้นที่รายเดือน — เพราะ AOD คือฝุ่นทั้งคอลัมน์อากาศ แต่ PM2.5 คือชั้นที่จมูกคน η ขึ้นกับความสูงชั้นผสม ความชื้น ชนิดฝุ่น</li>
+      <li><b>รวม AOD หลายดาวเทียม</b> (MODIS×2, MISR, VIIRS×2, SeaWiFS — ถ่วงน้ำหนักตามความไม่แน่นอนเทียบ AERONET) × η = PM2.5 เชิงธรณีฟิสิกส์</li>
+      <li><b>CNN เรียนเฉพาะ "bias":</b> โครงข่ายไม่ทาย PM2.5 ตรง ๆ แต่ทายส่วนต่างระหว่างค่าธรณีฟิสิกส์กับสถานีจริง — และ <b>loss ถูกออกแบบให้ยึดกับ prior ในพื้นที่ไร้สถานี</b> (กันโมเดลเพ้อเจ้อนอกเขตที่ตรวจสอบได้ — ปัญหาที่ MSE เปล่า ๆ ทำพัง)</li>
+      <li>ผลลัพธ์: แผนที่รายเดือน 0.01° ทั้งโลก 1998–ปัจจุบัน พร้อมความไม่แน่นอน — เปิดฟรี</li>
+    </ol>
+    <div class="use"><b>ใช้กับ HazeCast ยังไง:</b> ปรัชญา Stage A ของเราคือเวอร์ชันรายชั่วโมงของสูตรนี้: <b>prior จากโมเดล (CAMS) + ML แก้ bias เฉพาะที่ตรวจสอบได้ + ยึด prior ตรงช่องว่างเมียนมา</b>
+    — และ loss แบบ "anchored" ของเขาคือคำตอบตรงสำหรับคำวิจารณ์เรื่อง "9,000 เซลล์ / 40 สถานี" ของเรา</div>
+  </div>
+
+  <!-- HIMAWARI HOURLY -->
+  <div class="paper data">
+    <div class="ptitle">13. PM2.5 รายชั่วโมงจากดาวเทียมค้างฟ้า Himawari — ทำไม "ค้างฟ้า" เปลี่ยนเกม</div>
+    <div class="pmeta">arXiv 2018 (งานบุกเบิกแนวนี้) · <a href="https://arxiv.org/abs/1803.03409">arXiv:1803.03409</a> · ข้อมูลจริง: <a href="https://www.eorc.jaxa.jp/ptree/">JAXA P-Tree (AOD 5 กม./รายชั่วโมง เปิดฟรี)</a></div>
+    <div class="what"><b>คืออะไร:</b> สายงานที่ใช้ AOD จากดาวเทียมค้างฟ้า (ถ่ายทุก 10 นาที ไม่ใช่วันละ 1–2 รอบแบบดาวเทียมโคจรต่ำ) + ML →
+    PM2.5 ผิวพื้น <b>รายชั่วโมงแบบไร้รอยต่อ</b> — จับวัฏจักรรายวันของฝุ่น (เช้าหนัก-บ่ายคลาย) ที่ MODIS มองไม่เห็น</div>
+    <div class="use"><b>ใช้กับ HazeCast ยังไง:</b> Himawari L3 AOD คืออินพุตหลักของ Stage A — สายงานนี้พิสูจน์ว่ามันแปลงเป็น PM2.5 รายชั่วโมงได้จริง
+    พร้อมเตือนข้อจำกัดที่เรารับมาแล้ว: bias สูงใน SEA, ใช้ไม่ได้กลางคืน/ใต้เมฆ/ควันหนาจัด → ต้องมี mask channel เสมอ</div>
+  </div>
+</section>
+
+<!-- ===== GROUP 5 ===== -->
+<section id="g5" class="anchor">
+  <h2><span class="n">⑤</span> กลุ่มที่ 5 — ฟิสิกส์อ้างอิง + บริบทไทย (ครู ตัววัด และบรรพบุรุษของ Smoke Fingerprint)</h2>
+
+  <div class="paper phys">
+    <div class="ptitle">14. WRF-Chem ศึกษาหมอกควันข้ามแดนภาคเหนือ — "ครูฟิสิกส์" ที่เราใช้ตรวจคำตอบ attribution</div>
+    <div class="pmeta">2024 · <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11280843/">PMC11280843 (เปิดอ่านฟรี)</a></div>
+    <div class="what"><b>คืออะไร:</b> รันโมเดลเคมี-อุตุนิยมวิทยาเต็มรูป (WRF-Chem + emission จากไฟ FINN) เหนือภาคเหนือ แล้วทำการทดลองแยกแหล่ง (เปิด/ปิด emission รายภูมิภาค) —
+    ข้อสรุปหลัก: <b>PM2.5 ข้ามแดนเริ่มไหลเข้าตั้งแต่ ม.ค. แรงสุดเดือน มี.ค. และบ่อยครั้งมากกว่าแหล่งในประเทศ</b></div>
+    <h3>ทำงานยังไง (แบบย่อ)</h3>
+    <ol class="steps">
+      <li>ตั้งโดเมนจำลองครอบไทย-เมียนมา-ลาว ป้อนสภาพอุตุฯ ขอบเขต + emission จากจุดไฟดาวเทียม</li>
+      <li>แก้สมการครบ: การพา การแพร่ เคมี การตกสะสม — กิน CPU คลัสเตอร์หลายชั่วโมงต่อ 1 เคส</li>
+      <li>รันซ้ำแบบ "ปิดแหล่งทีละอัน" → ส่วนต่างคือ contribution ของแหล่งนั้น (วิธี attribution มาตรฐานทอง)</li>
+    </ol>
+    <div class="use"><b>ใช้กับ HazeCast ยังไง:</b> (1) นี่คือสิ่งที่เรา "emulate" — ความช้าของมันคือเหตุผลการมีอยู่ของเรา (2) ตัวเลขสัดส่วนข้ามแดนของมันคือ <b>ข้อสอบเฉลย</b> ที่ Smoke Fingerprint ต้องสอบให้ทิศทางตรง (3) วิธี "ปิดแหล่งทีละอัน" = แม่แบบของ occlusion attribution ที่เราเพิ่มเข้าแผนหลังการวิจารณ์</div>
+  </div>
+
+  <div class="paper phys">
+    <div class="ptitle">15. FINNv2.5 NRT สำหรับภาคเหนือ — สะพาน "จุดไฟ → ปริมาณการปล่อย" แบบใกล้เรียลไทม์</div>
+    <div class="pmeta">2025 · <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12846012/">PMC12846012</a></div>
+    <div class="what"><b>คืออะไร:</b> ระบบที่แปลงจุดความร้อน VIIRS เป็น "ปริมาณการปล่อย PM2.5 รายวัน" สำหรับภาคเหนือโดยเฉพาะ: จุดไฟ → ชนิดเชื้อเพลิง (จาก land cover) → มวลที่เผา → คูณ emission factor ต่อชนิดป่า/พืช</div>
+    <div class="use"><b>ใช้กับ HazeCast ยังไง:</b> ดีกว่าที่เราคิดไว้เดิม — แทนที่จะใช้ FRP ดิบเป็นพร็อกซี อาจใช้สูตร FINN (หรือ feed ของมัน) เป็นช่อง "emission โดยประมาณ" ที่มีหน่วยฟิสิกส์จริง → ลดภาระให้ NN เรียนเอง และอ้างเป็น prior art ไทยที่เราต่อยอด (เขาหยุดที่ emission เราพาไปถึง "ความเข้มข้นที่จมูกคน + พยากรณ์ + แหล่งที่มา")</div>
+  </div>
+
+  <div class="paper phys">
+    <div class="ptitle">16. HYSPLIT — เครื่องมือ back-trajectory อายุ 40 ปี: บรรพบุรุษทางความคิดของ Smoke Fingerprint</div>
+    <div class="pmeta">NOAA ARL · <a href="https://www.ready.noaa.gov/HYSPLIT.php">เว็บทางการ (ใช้ฟรีออนไลน์)</a></div>
+    <div class="what"><b>คืออะไร:</b> โมเดล Lagrangian มาตรฐานโลก: ปล่อย "อนุภาคสมมติ" แล้วตามรอยมัน <b>ย้อนเวลา</b>ตามสนามลม → ตอบว่า "อากาศที่จุดนี้ เมื่อ 72 ชม. ก่อนอยู่ที่ไหน" — นักวิจัยหมอกควันทั่วเอเชียใช้พิสูจน์เส้นทางควันข้ามแดนมาหลายสิบปี</div>
+    <div class="use"><b>ใช้กับ HazeCast ยังไง:</b> Smoke Fingerprint ของเราคือญาติ "เดินหน้า + ทั้งกริด + อัตโนมัติรายชั่วโมง" ของ HYSPLIT — ใช้ HYSPLIT รันเคสตรวจสอบไขว้ราคาถูก (ฟรี ออนไลน์) เพื่อ validate ทิศทาง attribution ของเราในเหตุการณ์เด่น ๆ — เป็น sanity check ที่กรรมการสายบรรยากาศเชื่อถือ</div>
+  </div>
+</section>
+
+<!-- ===== READING ORDER ===== -->
+<section id="order" class="anchor">
+  <h2><span class="n">📖</span> ลำดับการอ่านสำหรับคนเริ่มจากศูนย์</h2>
+  <div class="grid g2">
+    <div class="paper" style="border-top-color:var(--green)">
+      <div class="ptitle" style="font-size:16px">สัปดาห์แรก (เข้าใจปัญหา+แนวคิด)</div>
+      <ol class="steps">
+        <li><b>PM2.5-GNN</b> — ง่ายสุด เห็นภาพ "ลม+ภูเขาในโมเดล" ทันที (มีโค้ด GitHub ให้แกะ)</li>
+        <li><b>AirPhyNet</b> — แก่นของ physics-guided ที่เราจะใช้</li>
+        <li><b>WRF-Chem ไทย</b> — เข้าใจปัญหาหมอกควันบ้านเราเชิงฟิสิกส์</li>
+      </ol>
+    </div>
+    <div class="paper" style="border-top-color:var(--blue)">
+      <div class="ptitle" style="font-size:16px">สัปดาห์ถัดมา (ออกแบบระบบจริง)</div>
+      <ol class="steps">
+        <li><b>MetNet-3</b> — เทคนิค densification + ตัดสิน AR vs direct</li>
+        <li><b>van Donkelaar</b> — สูตร anchored loss สำหรับ Stage A</li>
+        <li><b>Aurora</b> — ภาพใหญ่ + วิธีเล่าเรื่องให้กรรมการ ("Nature พิสูจน์แล้วว่าแนวนี้ไปได้")</li>
+        <li><b>AirFormer / CorrDiff / GenCast</b> — อ่านผ่านเพื่อรู้ทางเลือก uncertainty/sharpening</li>
+      </ol>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SYNTHESIS ===== -->
+<section id="synth" class="anchor">
+  <h2><span class="n">🧩</span> ตารางสังเคราะห์ — ชิ้นส่วนไหนของ HazeCast ยืมจากใคร และเราเติมอะไรเอง</h2>
+  <table>
+    <tr><th>ส่วนประกอบ HazeCast</th><th>ยืมหลักฐาน/เทคนิคจาก</th><th>สิ่งที่เราเติมเอง (ความใหม่)</th></tr>
+    <tr><td>ความเชื่อว่า AI emulate เคมีบรรยากาศได้</td><td>Aurora (Nature 2025) — ชนะ CAMS 74% เร็ว 5,000×</td><td>ย่อส่วนจาก global 0.4° → regional 0.1° บน GPU เดียว + เงื่อนไขจุดไฟแบบ explicit</td></tr>
+    <tr><td>Stage A: สนามฝุ่นจากข้อมูลเบาบาง</td><td>MetNet-3 (densification) + van Donkelaar (anchored loss, prior ฟิสิกส์)</td><td>รวมสองสูตรเข้าด้วยกันแบบรายชั่วโมงด้วย Himawari + CAMS สำหรับ SEA</td></tr>
+    <tr><td>Stage B: ฟิสิกส์ advection ในโมเดล</td><td>AirPhyNet (พิสูจน์ physics ชนะตรง onset/sparse) + PM2.5-GNN (ลม+ภูเขา)</td><td>ยกจากกราฟสถานี → กริดเต็มแผ่นด้วย semi-Lagrangian จริง + fire-conditioned</td></tr>
+    <tr><td>การเทรน rollout ให้เสถียร</td><td>GraphCast (curriculum เพิ่มก้าว) + FourCastNet (two-stage)</td><td>เทียบ AR vs direct (MetNet-3) อย่างเป็นระบบก่อนเลือก — ไม่ลอกตามศรัทธา</td></tr>
+    <tr><td>Sharpening / Ensemble (stretch)</td><td>StormCast + CorrDiff (mean+residual diffusion) + GenCast (CRPS)</td><td>ใช้เฉพาะถ้า MVP เสร็จ — วินัย anti-over-engineering</td></tr>
+    <tr><td>Stage C: Smoke Fingerprint</td><td>HYSPLIT (trajectory) + WRF-Chem (ปิดแหล่งทีละอัน = เฉลย)</td><td><b>ชิ้นที่ใหม่สุด:</b> attribution เดินหน้า-ทั้งกริด-รายชั่วโมง จาก advection เชิงเส้น + occlusion บนโมเดลเต็ม — ยังไม่มีใครทำให้หมอกควัน SEA</td></tr>
+    <tr><td>บริบท/ข้อมูลไทย</td><td>TabNet+TROPOMI (ฟีเจอร์ CO) + FINNv2.5 (ไฟ→emission)</td><td>ต่อยอดจาก "ประมาณค่า/emission" → "พยากรณ์+เตือนภัย+แหล่งที่มา" ครบวงจรแรกของไทย</td></tr>
+  </table>
+  <div class="note g"><b>ประโยคสรุปไว้ตอบกรรมการ:</b> "ทุกชิ้นส่วนของเรามีงานระดับ Nature/ICLR/AAAI รองรับว่าทำได้จริง —
+  ความใหม่ของเราไม่ใช่การประดิษฐ์ชิ้นส่วน แต่คือ<b>การประกอบมันเข้าด้วยกันครั้งแรกสำหรับปัญหาหมอกควันข้ามแดนของไทย</b>
+  บนข้อจำกัดจริง (GPU เดียว, open data) พร้อมชั้น attribution ที่ยังไม่มีใครให้"</div>
+</section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    Literature Review สำหรับโปรเจกต์ HazeCast · ลิงก์ทุกตัวผ่านการค้นยืนยัน มิ.ย. 2026 · เอกสารชุดเดียวกัน:
+    geoai-landscape.html · project1-ai-weather-simulation.html · concepts-deep-dive.html · math-deepdive-diffusion-fourier.html · hazecast-master-plan.html
+  </div>
+</footer>
+
+</body>
+</html>

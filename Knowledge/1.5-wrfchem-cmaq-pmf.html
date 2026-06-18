@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.5 — WRF-Chem / CMAQ / PMF เจาะลึก (สอนละเอียด)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>1.5 — WRF-Chem / CMAQ / PMF เจาะลึก</h1>
+<p class="tagline">"มาตรฐานทอง" ที่เราจะแข่งด้วย และยืมมาเป็นเฉลย — ปิด Module 1</p>
+<p class="sub">ต่อจาก 1.4 (เอ่ยถึงเครื่องมือพวกนี้) · บทนี้ทำให้รู้จักจริง ๆ ว่ามันคืออะไร ทำงานยังไง ทำไมช้า · ผูกกับ HazeNet ตลอด</p>
+
+<div class="lead">
+<b>ทำไมต้องรู้จักศัตรู:</b> HazeNet ไม่ได้สร้างมาแทน "ไม่มีอะไรเลย" — มันสร้างมาแทน <b class="k">WRF-Chem / CMAQ</b> (โมเดลฟิสิกส์เคมีบรรยากาศ) และเสริม <b class="k">PMF</b> (สถิติแยกแหล่ง) · ถ้าไม่เข้าใจว่าเครื่องมือเดิม<u>เก่งตรงไหน ช้าตรงไหน</u> เราจะ (1) เคลมจุดเด่นผิด (2) ตั้ง benchmark ผิด (3) ใช้ ground truth ผิด · บทนี้คือ "รู้เขารู้เรา" ก่อนลงสนาม
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. CTM คืออะไร (ภาพใหญ่)</a><br>
+<a href="#p2">2. WRF-Chem — ออนไลน์ ★</a><br>
+<a href="#p3">3. CMAQ — ออฟไลน์</a><br>
+<a href="#p4">4. ทำไมมันช้า (pain ของ CTM)</a><br>
+<a href="#p5">5. Tagged tracer / ISAM แยกแหล่ง</a><br>
+<a href="#p6">6. PMF — receptor เจาะลึก</a><br>
+<a href="#p7">7. ตารางเทียบทุกตัว vs HazeNet ★★</a><br>
+<a href="#p8">8. บทบาทในงานเรา: คู่แข่ง + เฉลย</a><br>
+<a href="#p9">9. caveat การใช้ ground truth</a><br>
+<a href="#cheat">10. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. CTM คืออะไร — ภาพใหญ่ก่อน</h2>
+<p><b>CTM (Chemical Transport Model)</b> = แบบจำลองที่จำลอง "ชะตากรรมของสารในอากาศ" — มันเกิดตรงไหน เคลื่อนไปไหน ทำปฏิกิริยาอะไร หายไปยังไง · พูดอีกอย่าง: <b>CTM คือโปรแกรมที่แก้สมการ ADR (จาก 1.2) ทั้งกริด ทั้งเวลา</b></p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 150" width="96%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker></defs>
+  <rect x="15" y="45" width="120" height="60" rx="7" fill="#1c2330" stroke="#58a6ff"/><text x="75" y="68" fill="#58a6ff" font-size="11.5" text-anchor="middle">อินพุต</text><text x="75" y="86" fill="#9aa7b4" font-size="9.5" text-anchor="middle">อากาศ+ไฟ+ปล่อย</text>
+  <line x1="135" y1="75" x2="195" y2="75" stroke="#9aa7b4" stroke-width="1.8" marker-end="url(#a)"/>
+  <rect x="200" y="35" width="160" height="80" rx="7" fill="#0f1f17" stroke="#3fb950" stroke-width="2"/><text x="280" y="60" fill="#3fb950" font-size="12.5" text-anchor="middle" font-weight="bold">CTM</text><text x="280" y="80" fill="#9aa7b4" font-size="9.5" text-anchor="middle">แก้ ADR ทุกช่อง</text><text x="280" y="96" fill="#9aa7b4" font-size="9.5" text-anchor="middle">ทุก time-step</text>
+  <line x1="360" y1="75" x2="420" y2="75" stroke="#9aa7b4" stroke-width="1.8" marker-end="url(#a)"/>
+  <rect x="425" y="45" width="120" height="60" rx="7" fill="#1c2330" stroke="#f85149"/><text x="485" y="68" fill="#f85149" font-size="11.5" text-anchor="middle">เอาต์พุต</text><text x="485" y="86" fill="#9aa7b4" font-size="9.5" text-anchor="middle">PM2.5 ทุกจุด ทุก ชม.</text>
+</svg>
+</div>
+<p>WRF-Chem และ CMAQ คือ CTM ที่ดังที่สุดสองตัว · ต่างกันที่ "เชื่อมกับโมเดลอากาศยังไง" (ข้อ 2–3)</p>
+<div class="why"><b>เชื่อม HazeNet:</b> เราเรียก HazeNet ว่า "<b>neural CTM</b>" — มันทำงานเดียวกับ CTM (แก้ ADR แล้วได้ PM2.5) แต่แทนที่จะแก้สมการทีละ step ด้วยตัวเลข เรา<b>ให้นิวรอลเรียนรู้ตัวดำเนินการ</b> · นี่คือเหตุผลที่เราต้องเข้าใจ CTM จริงก่อน — เพราะเราเลียนแบบมัน</div>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. WRF-Chem — CTM แบบ "ออนไลน์" <span class="pin">★ ground truth หลักของเรา</span></h2>
+<p><b>WRF</b> = โมเดลพยากรณ์อากาศ (ลม อุณหภูมิ ความชื้น) · <b>WRF-Chem</b> = WRF + โมดูลเคมี (Chem) ที่จำลองฝุ่น/ก๊าซ<b>ไปพร้อมกัน</b>ในการรันเดียว</p>
+<p>"ออนไลน์ (online-coupled)" = อากาศกับเคมีคุยกันทุก time-step · เช่น ควันบังแดด → อุณหภูมิเปลี่ยน → ลมเปลี่ยน → ควันเคลื่อนต่าง · ป้อนกลับกันแบบเรียลไทม์</p>
+<div class="ex"><b>อุปมา:</b> WRF-Chem เหมือนทำกับข้าวที่ "ปรุงรสไปชิมไป" — สภาพอากาศกับฝุ่นปรับตัวเข้าหากันตลอด · สมจริงสุด แต่ก็หนักสุด</div>
+<div class="why"><b>บทบาทในงานเรา:</b> งานวิจัยไทย (PMC11280843, จาก 1.4) ใช้ WRF-Chem + tagged tracer ให้ตัวเลข "เชียงราย ~45% ข้ามแดน" · นี่คือ <b>ground truth หลัก</b>ที่เราจะเทียบ attribution (C2) · WRF-Chem จึงเป็นทั้ง "คู่แข่งที่เราจะเร็วกว่า" และ "ครูที่เราจะเลียนแบบ+ตรวจตัวเอง"</div>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. CMAQ — CTM แบบ "ออฟไลน์"</h2>
+<p><b>CMAQ</b> (ของ US EPA) ก็เป็น CTM แต่ทำงานแบบ "<b>ออฟไลน์ (offline-coupled)</b>": รันโมเดลอากาศ (WRF) ให้เสร็จก่อน → เซฟผลอากาศ → แล้วค่อยป้อนให้ CMAQ คำนวณเคมีทีหลัง · อากาศไม่รับ feedback จากฝุ่น</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 540 120" width="92%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="b" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker></defs>
+  <rect x="20" y="40" width="130" height="46" rx="7" fill="#1c2330" stroke="#58a6ff"/><text x="85" y="60" fill="#58a6ff" font-size="11.5" text-anchor="middle">WRF (อากาศ)</text><text x="85" y="77" fill="#9aa7b4" font-size="9.5" text-anchor="middle">รันจบก่อน</text>
+  <line x1="150" y1="63" x2="215" y2="63" stroke="#9aa7b4" stroke-width="1.8" marker-end="url(#b)"/><text x="182" y="55" fill="#9aa7b4" font-size="9" text-anchor="middle">ไฟล์อากาศ</text>
+  <rect x="220" y="40" width="130" height="46" rx="7" fill="#0f1f17" stroke="#3fb950"/><text x="285" y="60" fill="#3fb950" font-size="11.5" text-anchor="middle">CMAQ (เคมี)</text><text x="285" y="77" fill="#9aa7b4" font-size="9.5" text-anchor="middle">รันทีหลัง</text>
+  <line x1="350" y1="63" x2="415" y2="63" stroke="#9aa7b4" stroke-width="1.8" marker-end="url(#b)"/>
+  <rect x="420" y="40" width="100" height="46" rx="7" fill="#1c2330" stroke="#f85149"/><text x="470" y="67" fill="#f85149" font-size="11.5" text-anchor="middle">PM2.5</text>
+</svg>
+</div>
+<table>
+<tr><th>มิติ</th><th>WRF-Chem (online)</th><th>CMAQ (offline)</th></tr>
+<tr><td>feedback ฝุ่น→อากาศ</td><td>มี (สมจริงกว่า)</td><td>ไม่มี (ง่ายกว่า)</td></tr>
+<tr><td>ความเร็ว</td><td>ช้ากว่า</td><td>เร็วกว่าเล็กน้อย</td></tr>
+<tr><td>แยกแหล่ง</td><td>tagged tracer</td><td>ISAM (โมดูลแยกแหล่ง)</td></tr>
+</table>
+<div class="warn"><b>ไม่ต้องจำรายละเอียดลึก:</b> สิ่งที่ต้องรู้คือ "ทั้งคู่เป็น CTM เชิงตัวเลขที่<u>ช้า</u>" · ความต่าง online/offline เป็นแค่ดีเทลที่ทำให้คุณอ่านเปเปอร์รู้เรื่อง ไม่ใช่สิ่งที่เราต้อง implement</div>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. ทำไม CTM ถึงช้า — pain ที่ HazeNet จะแก้ <span class="pin">★</span></h2>
+<p>CTM แก้สมการ ADR ด้วย<b>วิธีเชิงตัวเลข (numerical solver)</b> ทุกช่องกริด ทุก time-step · เหตุผลที่ช้า:</p>
+<ul>
+<li><b>กริดละเอียด × หลายชั้นความสูง × ราย step เล็ก ๆ</b> → จำนวนการคำนวณมหาศาล</li>
+<li><b>เคมีมีสมการหลายร้อยปฏิกิริยา (stiff equations)</b> → ต้อง step เวลาเล็กมากเพื่อเสถียร</li>
+<li><b>รันบน CPU cluster</b> ไม่ได้ออกแบบมาเพื่อ GPU</li>
+</ul>
+<p>ผลคือ: พยากรณ์ 1 เหตุการณ์อาจใช้<b>หลายชั่วโมงถึงหลายวัน</b>บนเครื่องใหญ่ · ใช้ตอบ "วันนี้ฝุ่นมาจากไหน" แบบทันใช้งานไม่ได้</p>
+<div class="danger"><b>นี่คือ pain ที่ทั้งโปรเจกต์เกาะ:</b> CTM แม่นและน่าเชื่อถือ แต่<b>ช้าเกินจะใช้รายวัน</b> และ<b>หาอนุพันธ์ไม่ได้</b> (counterfactual ต้องรันใหม่) · HazeNet เรียน "พฤติกรรม" ของ CTM ลงในนิวรอล → รันเป็นวินาทีบน GPU + หาอนุพันธ์ได้ (adjoint ฟรี, จาก 0.2) · เร็วขึ้นหลักหมื่นเท่า โดยพยายามรักษาความแม่น</div>
+<div class="why"><b>เชื่อม emulator concept:</b> สิ่งที่เราทำเรียกว่า "<b>neural emulator / surrogate</b>" — เลียนแบบโมเดลฟิสิกส์ที่แพงด้วยนิวรอลที่ถูก · เหมือน FourCastNet/GraphCast เลียนแบบโมเดลพยากรณ์อากาศ · เราทำกับ CTM</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. Tagged Tracer / ISAM — กลไกแยกแหล่งใน CTM</h2>
+<p>จาก 1.4 เราพูดถึง "ติดป้ายสีให้ควัน" แล้ว · ในทางเทคนิคมันคือการเพิ่ม<b>ตัวแปรติดตาม (tracer)</b> หนึ่งชุดต่อแหล่ง แล้วให้ CTM ขนส่งมันไปพร้อมฝุ่นจริง:</p>
+<ul>
+<li><b>WRF-Chem:</b> ใช้ "tagged tracer" — กำหนดโซนต้นทาง แล้วติดตามควันจากแต่ละโซน</li>
+<li><b>CMAQ:</b> ใช้โมดูล "<b>ISAM</b>" (Integrated Source Apportionment Method) — ทำหน้าที่เดียวกัน</li>
+</ul>
+<p>เพราะ 4 พจน์แรกของ ADR เป็นเชิงเส้น (จาก 1.2) ผลรวมของทุก tracer = ฝุ่นรวมพอดี (superposition) · นี่คือหลักการ<u>เดียวกันเป๊ะ</u>ที่ HazeNet ใช้ — เราแค่ทำให้มันเร็วและหาอนุพันธ์ได้</p>
+<div class="warn"><b>จุดเจ็บของ tagged tracer ใน CTM:</b> ยิ่งติดป้ายหลายโซน → ยิ่งเพิ่มตัวแปรที่ต้องขนส่ง → ยิ่งช้าและกินหน่วยความจำทวีคูณ · ใน HazeNet การเพิ่มแหล่งแทบไม่เพิ่มต้นทุน เพราะเป็น batch ของ tensor บน GPU (จาก 0.1) → นี่เป็นข้อได้เปรียบที่จับต้องได้</div>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. PMF — Receptor Model เจาะลึก</h2>
+<p>ทบทวนจาก 1.4: <b>PMF</b> เป็นคนละตระกูล (receptor — ปลายทางย้อนต้นทาง) · เจาะลึกกลไก:</p>
+<ol>
+<li>เก็บตัวอย่างฝุ่นจริงหลายวัน วัด<b>องค์ประกอบเคมี</b>แต่ละตัว (โพแทสเซียม, ซัลเฟต, EC/OC, โลหะ…)</li>
+<li>PMF แยกเมทริกซ์ข้อมูลออกเป็น "<b>factor</b>" = กลุ่มสารที่ขึ้น-ลงพร้อมกัน → แต่ละ factor = "ลายเซ็นแหล่งหนึ่งประเภท"</li>
+<li>ตีความ factor ด้วยความรู้: factor ที่มีโพแทสเซียมสูง = การเผาชีวมวล, วาเนเดียม/นิกเกิล = น้ำมันเตา, ฯลฯ</li>
+</ol>
+<p>ชื่อเต็ม Positive Matrix Factorization — "Positive" เพราะบังคับให้สัดส่วน ≥ 0 (มวลเป็นลบไม่ได้) · คล้ายแนวคิด non-negativity ที่ HazeNet ก็บังคับ (แต่คนละบริบท)</p>
+<div class="ex"><b>ความต่างที่ต้องจำ:</b> PMF บอก "<b>ประเภท</b>แหล่ง" (ชีวมวล/รถ/อุตสาหกรรม) · HazeNet/tagged tracer บอก "<b>ที่ตั้ง</b>แหล่ง" (เมียนมา/ลาว/ไทย) · สองอย่างนี้<u>เสริมกัน</u> ไม่ใช่แทนกัน — PMF ตอบ "เผาอะไร" เราตอบ "เผาที่ไหน"</div>
+<div class="why"><b>บทบาทในงานเรา:</b> PMF เชียงใหม่ (ชีวมวล ~51%) เป็น ground truth <b>เสริม</b> — ยืนยันว่า "ส่วนใหญ่เป็นการเผา" สอดคล้องกับสมมติฐานที่เราเน้น primary smoke จากไฟ · ใช้ cross-check ความสมเหตุสมผล ไม่ใช่ตัวเทียบสัดส่วนภูมิศาสตร์โดยตรง</div>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. ตารางเทียบทุกตัว vs HazeNet <span class="pin">★★</span></h2>
+<table>
+<tr><th>มิติ</th><th>WRF-Chem</th><th>CMAQ+ISAM</th><th>PMF</th><th style="color:#3fb950">HazeNet (เรา)</th></tr>
+<tr><td>ตระกูล</td><td>source (online)</td><td>source (offline)</td><td>receptor</td><td>source (neural)</td></tr>
+<tr><td>แยก "ที่ไหน"</td><td>✅</td><td>✅</td><td>❌</td><td>✅</td></tr>
+<tr><td>แยก "อะไร"</td><td>บางส่วน</td><td>บางส่วน</td><td>✅</td><td>โฟกัส smoke</td></tr>
+<tr><td>ความเร็ว</td><td>ชม.–วัน</td><td>ชม.–วัน</td><td>แล็บ รายเดือน</td><td><b>วินาที</b></td></tr>
+<tr><td>พยากรณ์ล่วงหน้า</td><td>ได้ (ช้า)</td><td>ได้ (ช้า)</td><td>❌ (ย้อนหลัง)</td><td><b>ได้ (เร็ว)</b></td></tr>
+<tr><td>หาอนุพันธ์ (counterfactual)</td><td>❌ รันใหม่</td><td>❌ รันใหม่</td><td>❌</td><td><b>✅ adjoint ฟรี</b></td></tr>
+<tr><td>ฮาร์ดแวร์</td><td>CPU cluster</td><td>CPU cluster</td><td>แล็บเคมี</td><td><b>1 GPU</b></td></tr>
+</table>
+<p>อ่านตารางนี้ตรง ๆ: HazeNet <u>ไม่ได้</u>เก่งทุกช่อง (เคมีละเอียด WRF-Chem ยังลึกกว่า) แต่มันชนะใน 3 ช่องที่สำคัญต่อ <b>การใช้งานจริงรายวัน</b>: เร็ว + พยากรณ์ + หาอนุพันธ์ได้ ในโมเดลเดียว</p>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. บทบาทในงานเรา — คู่แข่ง + ครู + เฉลย</h2>
+<p>เครื่องมือเหล่านี้เล่น <b>3 บทบาท</b>พร้อมกันในโปรเจกต์เรา:</p>
+<ul>
+<li><b style="color:#f85149">คู่แข่ง (baseline):</b> เราต้องแสดงว่า HazeNet เร็วกว่ามาก โดยความแม่นยังแข่งได้ — นี่คือ selling point หลัก</li>
+<li><b style="color:#58a6ff">ครู (reference physics):</b> โครงสร้าง HazeNet เลียนแบบ CTM (operator splitting, advection, tagged tracer) → ทำให้เราได้คุณสมบัติฟิสิกส์มาฟรี ไม่ต้องให้นิวรอลเรียนเองทั้งหมด</li>
+<li><b style="color:#3fb950">เฉลย (ground truth):</b> ผล tagged tracer (~45%/~30%) และ PMF (~51% ชีวมวล) ใช้ตรวจว่า attribution ของเราตรงฟิสิกส์ (validation C2)</li>
+</ul>
+<div class="why"><b>ทำไมต้องชัดเรื่องบทบาท:</b> ในเปเปอร์ A* reviewer จะถามทันทีว่า "แล้วต่างจาก WRF-Chem ยังไง" · คำตอบที่ดีไม่ใช่ "เราดีกว่าทุกอย่าง" (ไม่จริง) แต่คือ "<b>เราเป็น emulator ที่เร็วหลักหมื่นเท่า + หาอนุพันธ์ได้ ทำให้ทำสิ่งที่ CTM ทำไม่ไหวรายวัน (attribution + counterfactual + inversion) ได้จริง โดย validate กับ CTM แล้วใกล้เคียง</b>" — บทนี้ให้คุณตอบแบบนั้นได้</div>
+
+<!-- ============ 9 ============ -->
+<h2 id="p9">9. caveat การใช้ ground truth (ความซื่อสัตย์)</h2>
+<ul>
+<li><b>CTM ก็ไม่ใช่ความจริงสัมบูรณ์</b> — มันเป็นแบบจำลอง มี error ของมันเอง (จากบัญชีการปล่อย, ความละเอียด) · เราใช้มันเป็น "reference" ไม่ใช่ "ความจริง 100%"</li>
+<li><b>คนละความละเอียด/ปี</b> — ผลไทยส่วนใหญ่ ~20 กม. และคนละปีกับเรา → เทียบ "ระดับสัดส่วน" ได้ แต่ "รายวันรายช่องเป๊ะ" ต้องระวัง (ย้ำจาก 1.4)</li>
+<li><b>การวัดจริงคือเฉลยสูงสุด</b> — สำหรับ "PM2.5 พยากรณ์แม่นไหม" เฉลยที่ดีที่สุดคือสถานี Air4Thai จริง ไม่ใช่ CTM · ใช้ CTM เป็นเฉลยเฉพาะ "การแยกแหล่ง" ที่วัดตรงไม่ได้</li>
+</ul>
+<div class="warn"><b>หลักการเลือกเฉลย:</b> "PM2.5 แม่นไหม?" → เทียบ<b>สถานีจริง</b> · "แยกแหล่งถูกไหม?" → เทียบ<b>CTM</b> (เพราะวัดตรงไม่ได้) · "เผาอะไรเป็นหลัก?" → cross-check <b>PMF</b> · เลือกเฉลยให้ตรงกับคำถาม = หัวใจของ error analysis ที่ดี (จะลงลึกใน Module 5)</div>
+
+<!-- ============ cheat ============ -->
+<h2 id="cheat">10. Cheat sheet + แบบฝึกหัด</h2>
+<div class="card">
+<b>สรุปจำ:</b>
+<ul>
+<li><b>CTM</b> = โปรแกรมแก้สมการ ADR ทั้งกริด → ได้ PM2.5 ทุกจุด</li>
+<li><b>WRF-Chem</b> = CTM online (อากาศ+เคมีคุยกัน) · ground truth หลักของเรา (~45% ข้ามแดน)</li>
+<li><b>CMAQ</b> = CTM offline (รันอากาศก่อน) · แยกแหล่งด้วย ISAM</li>
+<li><b>ทำไมช้า</b> = numerical solver ทุก step ทุกช่อง + เคมี stiff + CPU → ชม.–วัน</li>
+<li><b>tagged tracer/ISAM</b> = ติดป้ายควันตามโซน → แยกที่ตั้ง (อาศัย superposition)</li>
+<li><b>PMF</b> = receptor, แยก "ประเภท" (ชีวมวล/น้ำมัน) จากเคมี · ไม่บอกที่ตั้ง</li>
+<li><b>HazeNet</b> = neural CTM: เร็ว(วินาที) + พยากรณ์ + adjoint ฟรี · validate กับ CTM/PMF</li>
+<li><b>เลือกเฉลย:</b> PM2.5→สถานีจริง · แยกแหล่ง→CTM · เผาอะไร→PMF</li>
+</ul>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 1 — เพื่อนบอก "ถ้า WRF-Chem แม่นกว่า ก็ใช้ WRF-Chem สิ จะสร้าง HazeNet ทำไม" · ตอบยังไงใน 2 ประโยค?</p>
+<details><summary>เฉลย</summary>
+<p>(1) WRF-Chem ช้าหลักชั่วโมง–วันต่อเหตุการณ์ ใช้พยากรณ์+แยกแหล่ง<b>รายวันทันใช้งานไม่ได้</b> และหาอนุพันธ์ไม่ได้จึงทำ counterfactual/inversion ไม่ไหว · (2) HazeNet เป็น emulator ที่เรียนพฤติกรรม WRF-Chem มา → เร็วเป็นวินาทีบน GPU เดียว + หาอนุพันธ์ได้ ทำให้ทำสิ่งที่ CTM ทำไม่ไหวรายวันได้จริง โดยความแม่นยัง validate กับ WRF-Chem แล้วใกล้เคียง</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 2 — เราถาม "ฝุ่นเชียงใหม่วันนี้กี่ % มาจากเมียนมา" · ควรใช้ PMF หรือ tagged tracer เป็นเฉลย? เพราะอะไร?</p>
+<details><summary>เฉลย</summary>
+<p><b>tagged tracer (CTM)</b> · เพราะคำถามถาม "<b>ที่ตั้ง</b>" (เมียนมา) ซึ่งเป็นเรื่องภูมิศาสตร์+ลม · PMF บอกได้แค่ "ประเภท" (ชีวมวล) แยกเมียนมา-vs-ไทยไม่ได้เพราะเคมีเหมือนกัน · เลือกเฉลยให้ตรงคำถาม</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 3 — ทำไมการ "เพิ่มแหล่งให้แยก" ถึงแพงใน WRF-Chem แต่แทบฟรีใน HazeNet?</p>
+<details><summary>เฉลย</summary>
+<p>WRF-Chem ต้องเพิ่ม<b>ตัวแปร tracer ใหม่ที่ต้องขนส่งเชิงตัวเลขทุก step</b> → คำนวณ+หน่วยความจำเพิ่มทวีคูณ · HazeNet ทำ tracer เป็น<b>มิติ batch ของ tensor บน GPU</b> (จาก 0.1) → ประมวลผลขนานทีเดียว เพิ่มแหล่งแทบไม่เพิ่มเวลา · ทั้งคู่อาศัย superposition เหมือนกัน แต่ฮาร์ดแวร์+การ implement ต่างกัน</p>
+</details>
+</div>
+
+<div class="lead">
+<b>🎉 จบ 1.5 = จบ Module 1 (ความรู้โดเมน) แล้ว!</b> ตอนนี้คุณเข้าใจครบ: ฝุ่นคืออะไร (1.1), ฟิสิกส์การเคลื่อน (1.2), อากาศที่ขับ (1.3), ปัญหาข้ามแดน+แยกแหล่ง (1.4), และเครื่องมือมาตรฐานทองที่เราจะแข่ง+ยืมเป็นเฉลย (1.5) · คุณตอบ "HazeNet ต่างจาก WRF-Chem ยังไง" ได้แล้ว
+<br><br>
+<b>ขั้นต่อไปแนะนำ — เข้าสู่ Module 2 (แกนคณิต/ฟิสิกส์ของโมเดล):</b> ผมแนะนำ <b>2.5 Superposition</b> (หัวใจที่ 2/3) ที่ทั้ง 1.4 และ 1.5 ปูสะพานไว้แล้ว — เป็นแกนคณิตที่ทำให้ "แยกแหล่งได้เป๊ะ" · หรือเริ่มต้น Module 2 ตามลำดับที่ <b>2.1</b> ก็ได้ บอกเลขถัดไปได้เลยครับ
+</div>
+
+</div>
+</body>
+</html>

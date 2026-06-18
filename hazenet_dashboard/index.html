@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HazeNet · Mission Control</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="brand">🛰️ HazeNet<small>Mission Control · local</small></div>
+    <nav class="nav" id="nav">
+      <button data-sec="overview" class="active">🗺️ Mission Control</button>
+      <button data-sec="data">📦 Data &amp; EDA</button>
+      <button data-sec="training">📈 Training</button>
+      <button data-sec="experiments">🧪 Experiments</button>
+      <button data-sec="attrib">🎯 Attribution</button>
+      <button data-sec="gallery">🖼️ Visualizations</button>
+      <button data-sec="pipeline">🔧 Code &amp; Pipeline</button>
+    </nav>
+    <div style="margin-top:24px;font-size:11px;color:var(--muted);line-height:1.7">
+      <div class="live"><span class="dot" id="hdot"></span> <span id="hstatus">connecting…</span></div>
+      <div style="margin-top:6px" id="hroot"></div>
+      <div style="margin-top:6px">auto-refresh ทุก <b>3 วิ</b></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="statusbar">
+      <span id="clock"></span>
+      <span id="scanned" class="muted"></span>
+      <button class="refresh" onclick="refreshAll(true)">↻ refresh now</button>
+    </div>
+
+    <!-- ===== OVERVIEW ===== -->
+    <section class="section active" id="sec-overview">
+      <h1 class="page">🗺️ Mission Control</h1>
+      <p class="sub">สถานะ pipeline ทั้งหมด · 🟢 พร้อม · 🟡 โค้ด/ข้อมูลเปลี่ยน ควร re-run · 🔴 ยังไม่มีผล</p>
+      <div class="grid g4" id="kpis"></div>
+      <div style="margin-top:18px"></div>
+      <div class="pipe" id="pipe"></div>
+      <div class="gate" id="gateBox" style="margin-top:18px">
+        🎯 <b>Gate ตัดสิน W2:</b> ลด bias ปีฝุ่นน้อย (2021–22) จาก <b>+45</b> → <b>≤ +25</b> µg/m³ ด้วย BLH + emission curve
+        — <span id="gateState" class="muted">ยังไม่วัด (รอ run ที่ log bias ต่อปี)</span>
+      </div>
+    </section>
+
+    <!-- ===== DATA ===== -->
+    <section class="section" id="sec-data">
+      <h1 class="page">📦 Data &amp; EDA</h1>
+      <p class="sub">สรุปจากไฟล์จริง datacube_m2.zarr · grid_m2.nc · target_pm25_m2.csv (cache อัตโนมัติ)</p>
+      <div class="grid g4" id="dataKpis"></div>
+      <div class="grid g2" style="margin-top:16px">
+        <div class="card"><h3>PM2.5 เฉลี่ยรายวัน (ทุกปี)</h3><canvas id="pmChart" height="190"></canvas>
+          <div class="legend"><span><i style="background:var(--cyan)"></i>PM2.5 เฉลี่ยสถานี (µg/m³)</span></div></div>
+        <div class="card"><h3>FRP รวมรายวัน (ไฟ)</h3><canvas id="frpChart" height="190"></canvas>
+          <div class="legend"><span><i style="background:var(--amber)"></i>FRP รวม (MW)</span></div></div>
+      </div>
+      <div class="grid g2" style="margin-top:16px">
+        <div class="card"><h3>ช่องข้อมูลใน datacube (per-channel stats)</h3>
+          <div id="chanTable"></div></div>
+        <div class="card"><h3>PM2.5 รายปี (เห็น non-stationarity)</h3>
+          <div id="yearTable"></div>
+          <p class="muted" style="font-size:12px;margin-top:8px">ค่าเฉลี่ยฝุ่นต่างกันมากข้ามปี = แกนปัญหาที่ต้องแก้ด้วย BLH/curve</p></div>
+      </div>
+    </section>
+
+    <!-- ===== TRAINING ===== -->
+    <section class="section" id="sec-training">
+      <h1 class="page">📈 Training Monitor</h1>
+      <p class="sub">ติดตามการเทรนสด (อัปเดตทุก 3 วิ ถ้าเทรนอยู่) — ต้องใช้ <span class="mono">tracker.py</span> ในสคริปต์เทรน</p>
+      <div class="grid g4" id="trainKpis"></div>
+      <div class="card" style="margin-top:16px">
+        <h3 id="trainTitle">Loss curve</h3>
+        <canvas id="lossChart" height="240"></canvas>
+        <div class="legend"><span><i style="background:var(--blue)"></i>train</span><span><i style="background:var(--amber)"></i>test/val</span></div>
+      </div>
+      <div class="card" style="margin-top:16px"><h3>Run history</h3><div id="runTable"></div>
+        <p class="muted" id="noRun" style="font-size:12.5px">ยังไม่มี run — เพิ่ม <span class="mono">from tracker import Run</span> ในสคริปต์เทรน (ดู README)</p></div>
+    </section>
+
+    <!-- ===== EXPERIMENTS ===== -->
+    <section class="section" id="sec-experiments">
+      <h1 class="page">🧪 Systematic Experiments</h1>
+      <p class="sub">ทะเบียนการทดลองแบบ NASA — ทุกแถวเทียบ baseline ได้ · seed = ผลจริงที่มี + runs ใหม่อัตโนมัติ</p>
+      <div class="card"><div id="expTable"></div></div>
+      <div class="card" style="margin-top:16px">
+        <h3>Baseline ladder (MAE ↓ ยิ่งต่ำยิ่งดี)</h3>
+        <canvas id="expChart" height="200"></canvas>
+      </div>
+    </section>
+
+    <!-- ===== ATTRIBUTION ===== -->
+    <section class="section" id="sec-attrib">
+      <h1 class="page">🎯 Attribution Explorer</h1>
+      <p class="sub">เลือกสถานี + วัน → โมเดล CLNO คำนวณว่าฝุ่นที่นั่นมาจาก "ทิศไหน/ช่องไหน" กี่% (จาก K·E ของ clno_m2.pt)</p>
+      <div class="card">
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:end">
+          <div><div class="muted" style="font-size:12px">สถานี</div>
+            <select id="aSta" style="min-width:280px"></select></div>
+          <div><div class="muted" style="font-size:12px">วัน (เรียงฝุ่นมาก→น้อย)</div>
+            <select id="aDay" style="min-width:200px"></select></div>
+          <button class="refresh" style="background:var(--green);color:#0d1117;font-weight:bold" onclick="runAttrib()">▶ คำนวณ</button>
+          <span id="aMsg" class="muted" style="font-size:12px"></span>
+        </div>
+      </div>
+      <div class="grid g4" id="aKpis" style="margin-top:14px"></div>
+      <div class="grid g2" style="margin-top:14px">
+        <div class="card"><h3>แผนที่อิทธิพล (contribution heatmap)</h3>
+          <canvas id="aHeat" height="300"></canvas>
+          <div class="muted" style="font-size:11.5px;margin-top:6px">⭐ = สถานี · สว่าง = ช่องที่ส่งฝุ่นถึงสถานีนี้มาก</div></div>
+        <div class="card"><h3>ฝุ่นมาจากทิศไหน (8 ทิศ)</h3>
+          <canvas id="aSect" height="220"></canvas>
+          <div id="aNearFar" class="muted" style="font-size:12.5px;margin-top:8px"></div></div>
+      </div>
+      <div class="card" style="margin-top:14px"><h3>ช่องกริดที่ส่งฝุ่นมากสุด (top contributors)</h3>
+        <div id="aTop"></div>
+        <div class="gate" style="margin-top:10px">⚠️ นี่คือ <b>อิทธิพลการพัดพาของควันปฐมภูมิ (primary smoke จากไฟ)</b> ตามโมเดลเชิงเส้น — ไม่รวมฝุ่นทุติยภูมิจากปฏิกิริยาเคมี</div>
+      </div>
+    </section>
+
+    <!-- ===== GALLERY ===== -->
+    <section class="section" id="sec-gallery">
+      <h1 class="page">🖼️ Visualizations</h1>
+      <p class="sub">รูป/อนิเมชั่นทั้งหมดใน figures/ · รูปใหม่ขึ้น "NEW" อัตโนมัติ</p>
+      <div class="gallery" id="gallery"></div>
+    </section>
+
+    <!-- ===== PIPELINE/CODE ===== -->
+    <section class="section" id="sec-pipeline">
+      <h1 class="page">🔧 Code &amp; Pipeline</h1>
+      <p class="sub">สคริปต์ใน src/ แต่ละขั้น + เวลาแก้ล่าสุด + ไฟล์ที่ผลิต</p>
+      <div id="codeList"></div>
+    </section>
+
+  </main>
+</div>
+<script src="/static/app.js"></script>
+</body>
+</html>

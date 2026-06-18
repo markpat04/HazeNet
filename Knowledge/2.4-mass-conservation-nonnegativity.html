@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.4 — Mass Conservation · Non-negativity · Monotone (สอนละเอียด)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.6px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+  .pin.core{border-color:var(--amber);color:var(--amber)}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>2.4 — Mass Conservation · Non-negativity · Monotone <span class="pin core">⭐ CORE</span></h1>
+<p class="tagline">"มวลไม่รั่ว / ควันไม่ติดลบ / ไม่สร้างยอดปลอม" — คุณสมบัติที่เราเคลมว่า "พิสูจน์ได้"</p>
+<p class="sub">ต่อจาก 2.2–2.3 (เกริ่นคุณสมบัติไว้) · บทนี้รวบ 3 คุณสมบัติให้ชัดว่าคืออะไร ทำไมต้องมี และได้มายังไง · ผูกกับ HazeNet ตลอด</p>
+
+<div class="lead">
+<b>ทำไมบทนี้เป็น CORE:</b> จุดขายใหญ่ของ HazeNet คือคำว่า "<b>physics-structured</b>" — เราไม่ได้แค่หวังว่านิวรอลจะเรียนฟิสิกส์ถูก แต่<b>บังคับให้ฟิสิกส์เป็นจริงโดยโครงสร้าง</b> · 3 คุณสมบัติในบทนี้คือสิ่งที่เรา "พิสูจน์ได้" ในเปเปอร์ A*: (1) <b class="k">มวลไม่รั่ว</b> (mass conservation), (2) <b class="k">ควันไม่ติดลบ</b> (non-negativity), (3) <b class="k">ไม่สร้างยอด/หลุมปลอม</b> (monotone) · นิวรอลทั่วไป (เช่น CNN/GNN ดิบ ๆ) ละเมิดทั้งสามได้ง่าย — การการันตีมันคือสิ่งที่ทำให้งานเราต่างและน่าเชื่อถือ
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. ทำไมต้องสนใจคุณสมบัติพวกนี้</a><br>
+<a href="#p2">2. Mass conservation (มวลไม่รั่ว) ★</a><br>
+<a href="#p3">3. Non-negativity (ไม่ติดลบ) ★</a><br>
+<a href="#p4">4. Monotone (ไม่สร้างยอดปลอม) ★</a><br>
+<a href="#p5">5. นิวรอลดิบ ๆ ละเมิดยังไง</a><br>
+<a href="#p6">6. HazeNet การันตีได้ยังไง ★★</a><br>
+<a href="#p7">7. แต่ PM2.5 ไม่อนุรักษ์! (ซื่อสัตย์)</a><br>
+<a href="#p8">8. โค้ด + วิธีพิสูจน์/ทดสอบ</a><br>
+<a href="#cheat">9. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. ทำไมต้องสนใจคุณสมบัติพวกนี้</h2>
+<p>ลองนึกว่าโมเดลพยากรณ์ฝุ่นออกมาแบบนี้: ช่องหนึ่งมี PM2.5 = <b>−15 µg/m³</b> (ติดลบ!) · อีกช่องควันรวมทั้งโดเมน "เพิ่มขึ้นเอง" ทั้งที่ไม่มีไฟใหม่ · ผลพยากรณ์แบบนี้<b>ผิดฟิสิกส์ชัด ๆ</b> และทำลายความเชื่อถือทันที</p>
+<p>คุณสมบัติ 3 ข้อนี้คือ "กฎธรรมชาติ" ที่ผลลัพธ์<b>ต้อง</b>เคารพ · ถ้าโมเดลละเมิด = ผิดแน่นอน · ถ้าการันตีได้ = ตัดความผิดประเภทนี้ทิ้งทั้งหมดตั้งแต่ออกแบบ</p>
+<div class="why"><b>ทำไมสำคัญต่อ A*:</b> reviewer จะถามว่า "โมเดล AI ของคุณเคารพฟิสิกส์ไหม หรือแค่ fit ข้อมูล?" · ถ้าตอบได้ว่า "เราพิสูจน์ได้ว่ามวลไม่รั่ว ควันไม่ติดลบ โดยโครงสร้าง" = แต้มต่อมหาศาล · นี่คือความต่างจาก "นิวรอลกล่องดำ" ทั่วไป</div>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. Mass Conservation — มวลไม่รั่ว <span class="pin">★</span></h2>
+<p>กฎ: <b>ควันไม่หายไปเฉย ๆ และไม่โผล่มาเอง</b> · มวลควันรวมทั้งโดเมนจะเปลี่ยนได้<u>เฉพาะ</u>จาก: (+) ปล่อยใหม่จากไฟ, (−) ตกหาย/ฝนชะ, (±) ไหลเข้า-ออกขอบโดเมน · ส่วน "การเลื่อนตามลม (advection)" <b>ห้ามเปลี่ยนมวลรวม</b> — แค่ย้ายที่</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 520 130" width="94%" xmlns="http://www.w3.org/2000/svg">
+  <rect x="30" y="30" width="200" height="70" rx="8" fill="#1c2330" stroke="#30363d"/>
+  <g fill="#9aa7b4"><circle cx="70" cy="55" r="5"/><circle cx="110" cy="70" r="5"/><circle cx="150" cy="50" r="5"/><circle cx="190" cy="75" r="5"/></g>
+  <text x="130" y="118" fill="#9aa7b4" font-size="11" text-anchor="middle">รวม = 4 ก้อน (t)</text>
+  <text x="262" y="70" fill="#3fb950" font-size="20" text-anchor="middle">→</text>
+  <text x="262" y="48" fill="#58a6ff" font-size="10" text-anchor="middle">ลมหอบ</text>
+  <rect x="290" y="30" width="200" height="70" rx="8" fill="#1c2330" stroke="#30363d"/>
+  <g fill="#9aa7b4"><circle cx="360" cy="50" r="5"/><circle cx="400" cy="65" r="5"/><circle cx="440" cy="55" r="5"/><circle cx="470" cy="78" r="5"/></g>
+  <text x="390" y="118" fill="#3fb950" font-size="11" text-anchor="middle">รวม = 4 ก้อน (t+1) ✓ ย้ายที่ แต่ไม่หาย</text>
+</svg>
+</div>
+<div class="why"><b>HazeNet ได้มาจากไหน:</b> semi-Lagrangian (2.2) ที่ออกแบบให้ "น้ำหนัก interpolation รวม = 1" → การเลื่อนไม่สร้าง/ทำลายมวล · เป็นคุณสมบัติของ 𝒜 โดยตรง · (หมายเหตุ: semi-Lagrangian พื้นฐานอนุรักษ์มวลโดยประมาณดีมาก; ถ้าต้องการเป๊ะ 100% มีเวอร์ชัน "conservative semi-Lagrangian" ให้เลือก — เราจะระบุว่าใช้แบบไหนในเปเปอร์)</div>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. Non-negativity — ความเข้มข้นไม่ติดลบ <span class="pin">★</span></h2>
+<p>กฎที่ชัดที่สุด: <b>ความเข้มข้นฝุ่นเป็นลบไม่ได้</b> · มี PM2.5 = 0 (ไม่มีฝุ่น) ได้ แต่ −5 µg/m³ ไม่มีความหมายในโลกจริง · โมเดลที่พ่นค่าติดลบ = ผิดทันที</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 440 120" width="78%" xmlns="http://www.w3.org/2000/svg">
+  <line x1="40" y1="80" x2="400" y2="80" stroke="#30363d"/>
+  <line x1="40" y1="30" x2="40" y2="90" stroke="#30363d"/>
+  <text x="30" y="84" fill="#9aa7b4" font-size="10" text-anchor="end">0</text>
+  <rect x="80" y="50" width="30" height="30" fill="#3fb950"/><rect x="140" y="40" width="30" height="40" fill="#3fb950"/><rect x="200" y="60" width="30" height="20" fill="#3fb950"/>
+  <text x="155" y="20" fill="#3fb950" font-size="11" text-anchor="middle">✓ ค่าจริง ≥ 0</text>
+  <rect x="300" y="80" width="30" height="22" fill="#f85149"/>
+  <text x="340" y="110" fill="#f85149" font-size="11">✗ ติดลบ (ผิด)</text>
+</svg>
+</div>
+<div class="why"><b>HazeNet ได้มาจากไหน (2 ชั้น):</b> (1) <b>advection</b>: น้ำหนัก interpolation ≥ 0 + ค่าเก่า ≥ 0 → ผลรวม ≥ 0 (พิสูจน์แล้วใน 2.2) · (2) <b>loss</b>: เขียนเป็น <code>C·(1−D)</code> โดยบังคับ <code>0 ≤ D ≤ 1</code> (ใช้ sigmoid) → คูณค่าบวกด้วยเลข 0..1 ยังบวก · (3) <b>emission</b>: บวกค่าบวก (g·E ≥ 0) · ทุกพจน์รักษา ≥ 0 → ผลลัพธ์ ≥ 0 เสมอ โดยโครงสร้าง</div>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. Monotone — ไม่สร้างยอด/หลุมปลอม <span class="pin">★</span></h2>
+<p>กฎละเอียดขึ้น: การเลื่อนควันไม่ควร<b>สร้างค่าสูงสุดใหม่ที่ไม่มีมาก่อน</b> (overshoot) หรือ<b>ค่าต่ำกว่าที่เคยมี</b> (undershoot) · ถ้าควันเข้มสุดตอน t คือ 100 การหอบมันไปไม่ควรทำให้เกิดจุด 130 ขึ้นมาเอง</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 480 130" width="86%" xmlns="http://www.w3.org/2000/svg">
+  <!-- monotone good -->
+  <path d="M30,100 Q90,40 150,100" fill="none" stroke="#3fb950" stroke-width="2"/>
+  <text x="90" y="120" fill="#3fb950" font-size="10" text-anchor="middle">✓ monotone (เนียน)</text>
+  <!-- oscillation bad -->
+  <path d="M280,100 Q300,15 320,100 Q340,115 360,100 Q380,30 400,100" fill="none" stroke="#f85149" stroke-width="2"/>
+  <line x1="270" y1="100" x2="450" y2="100" stroke="#30363d" stroke-dasharray="3 3"/>
+  <text x="365" y="122" fill="#f85149" font-size="10" text-anchor="middle">✗ แกว่ง (ยอด/หลุมปลอม)</text>
+</svg>
+</div>
+<p>ทำไมสำคัญ: scheme ที่ไม่ monotone จะสร้าง "การแกว่ง" รอบ ๆ ขอบควันคม ๆ → เกิดค่าติดลบปลอมและยอดปลอม → ทั้งผิดฟิสิกส์และทำให้ค่า PM2.5 พีคเพี้ยน (สำคัญมากกับวันวิกฤต)</p>
+<div class="why"><b>HazeNet ได้มาจากไหน:</b> semi-Lagrangian แบบ <b>monotone interpolation</b> (เช่น จำกัด slope / ใช้ linear ที่ไม่ overshoot) → การันตีว่าค่าใหม่อยู่<b>ในช่วง min–max ของช่องเพื่อนบ้าน</b>เสมอ ไม่ทะลุออกนอกช่วง · นี่คือ "monotone scheme" ในชื่อบท</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. นิวรอลดิบ ๆ ละเมิดคุณสมบัติพวกนี้ยังไง</h2>
+<p>ทำไมเรื่องนี้ถึงเป็นจุดขาย? เพราะนิวรอลทั่วไป (ConvLSTM, GNN, transformer ดิบ) <b>ไม่รู้จักฟิสิกส์</b> — มันแค่ปรับน้ำหนักให้ output ใกล้ target:</p>
+<table>
+<tr><th>คุณสมบัติ</th><th>นิวรอลดิบทำพลาดยังไง</th></tr>
+<tr><td>Non-negativity</td><td>regression ทั่วไปพ่นค่าติดลบได้สบาย (โดยเฉพาะที่ค่าจริงใกล้ 0)</td></tr>
+<tr><td>Mass conservation</td><td>ไม่มีอะไรบังคับให้ผลรวมคงที่ → "สร้าง/ทำลาย" ควันมั่ว</td></tr>
+<tr><td>Monotone</td><td>output แกว่งรอบขอบคม → ยอด/หลุมปลอม</td></tr>
+</table>
+<p>วิธีแก้แบบ "ลวก ๆ" คือใส่ penalty ใน loss (soft constraint) ให้โมเดล "พยายาม" เคารพฟิสิกส์ · แต่นั่นแค่<b>ลงโทษเมื่อผิด ไม่การันตีว่าไม่ผิด</b> — ยังละเมิดได้</p>
+<div class="danger"><b>ความต่างชี้ขาด:</b> งานอื่นที่ใช้ "soft physics loss" ทำได้แค่ "<b>ส่วนใหญ่</b>เคารพฟิสิกส์" · HazeNet ทำ "<b>เคารพฟิสิกส์เสมอ พิสูจน์ได้</b>" เพราะฝังเป็นโครงสร้าง (hard constraint) ไม่ใช่ penalty · นี่คือประโยคที่จะเขียนในเปเปอร์และเป็นจุดต่างที่ reviewer จับได้ทันที</div>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. HazeNet การันตีได้ยังไง — สรุปรวม <span class="pin">★★</span></h2>
+<p>รวบทุกอย่าง: คุณสมบัติทั้ง 3 มาจาก<b>การออกแบบสมการแกน</b> ไม่ใช่จากการเทรน:</p>
+<div class="card center" style="font-family:'Cambria Math',serif;font-size:16px">
+C<sup>t+1</sup> = <span style="color:#58a6ff">𝒜(u)</span> C<sup>t</sup> + <span style="color:#3fb950">g</span>·E − <span style="color:#f85149">D</span>⊙C<sup>t</sup>
+</div>
+<table>
+<tr><th>คุณสมบัติ</th><th>มาจาก</th></tr>
+<tr><td><b>Non-negativity</b></td><td>𝒜 น้ำหนัก≥0 · g·E≥0 · loss เขียนเป็น C(1−D), 0≤D≤1 (sigmoid)</td></tr>
+<tr><td><b>Mass conservation</b> (ของ advection)</td><td>𝒜 น้ำหนักรวม=1 (semi-Lagrangian)</td></tr>
+<tr><td><b>Monotone</b></td><td>𝒜 ใช้ monotone interpolation (ค่าใหม่อยู่ใน min–max เพื่อนบ้าน)</td></tr>
+<tr><td><b>เชิงเส้นใน C</b> (โบนัส → 2.5)</td><td>ทุกพจน์คูณ/บวก C เชิงเส้น · g,D ทำนายจากอากาศ ไม่ใช่ C</td></tr>
+</table>
+<div class="why"><b>นี่คือความหมายของ "physics-structured":</b> นิวรอล (AFNO) ทำนายแค่ "สัมประสิทธิ์" g, D โดยถูก<b>บีบให้อยู่ในกรอบที่ปลอดภัย</b> (เช่น D ผ่าน sigmoid → 0..1 เสมอ) · ไม่ว่านิวรอลจะทำนายอะไร ผลลัพธ์<b>ไม่มีทางละเมิด</b>คุณสมบัติฟิสิกส์ · เราจึง "พิสูจน์ได้" ด้วยพีชคณิตง่าย ๆ ไม่ต้องอาศัยว่าเทรนสำเร็จ</div>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. แต่เดี๋ยว — PM2.5 จริงไม่อนุรักษ์! (ความซื่อสัตย์ที่สำคัญสุด)</h2>
+<p>นี่คือ caveat ที่ต้องพูดให้ชัดที่สุดในทั้งบท · จาก 1.2: สมการ ADR มีพจน์ที่ 5 คือ <b>R<sub>chem</sub></b> (เคมีในบรรยากาศ) ที่<b>สร้างฝุ่นทุติยภูมิ (secondary aerosol)</b> ขึ้นมาใหม่ · พจน์นี้<b>ไม่อนุรักษ์มวล</b>และ<b>ไม่เชิงเส้น</b></p>
+<div class="danger"><b>เราจึงไม่เคลมเกินจริง:</b> เรา<b>ไม่ได้</b>บอกว่า "PM2.5 ทั้งหมดอนุรักษ์มวล" (ไม่จริง) · เราเคลมเฉพาะ "<b>ควันปฐมภูมิ (primary smoke)</b> ที่ขนส่งด้วย advection/diffusion/loss นั้นอนุรักษ์มวล+ไม่ติดลบ+เชิงเส้น พิสูจน์ได้" · ส่วน secondary เราจัดการแยก (เช่น เป็นพจน์ residual ที่นิวรอลเรียน หรือระบุเป็นข้อจำกัด) · การ<b>ขีดเส้นขอบเขตที่เคลมได้</b>ให้ชัด คือสิ่งที่แยกงาน A* ออกจากงานที่อ้างเกินจริง</div>
+<div class="ex"><b>วิธีพูดในเปเปอร์:</b> "คุณสมบัติเชิงโครงสร้าง (mass-conservation, non-negativity, linearity) ใช้กับ <b>tracers การขนส่งปฐมภูมิ</b> ซึ่งเป็นองค์ประกอบหลักของหมอกควันชีวมวลในภาคเหนือ (สอดคล้อง PMF ~51% ชีวมวล จาก 1.4) · กระบวนการทุติยภูมิถูกจัดการเป็นพจน์แยกและระบุเป็นข้อจำกัด"</div>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. โค้ด + วิธีพิสูจน์/ทดสอบ</h2>
+<pre><code><span class="cm"># บังคับคุณสมบัติด้วยโครงสร้าง ไม่ใช่ penalty</span>
+D = torch.sigmoid(afno_loss(met, static))   <span class="cm"># 0 <= D <= 1  -> non-neg ของ loss</span>
+g = F.softplus(afno_emit(met, static))      <span class="cm"># g >= 0       -> emission ไม่ลบ</span>
+
+C = advect_monotone(C, wind)                <span class="cm"># 𝒜: น้ำหนัก>=0, รวม=1, monotone</span>
+C = C + g * E                               <span class="cm"># เติม (>=0)</span>
+C = C * (<span class="nm">1</span> - D)                          <span class="cm"># หาย (คูณ 0..1)  -> ยัง >=0</span>
+<span class="kw">assert</span> (C &gt;= <span class="nm">0</span>).all()                       <span class="cm"># จริงเสมอโดยโครงสร้าง</span></code></pre>
+<h4>วิธี "ทดสอบ" คุณสมบัติ (สำหรับเปเปอร์)</h4>
+<ul>
+<li><b>Non-negativity:</b> รัน rollout ยาว ๆ แล้ว <code>assert C.min() >= 0</code> ทุก step (จะผ่านเสมอถ้าโครงสร้างถูก)</li>
+<li><b>Mass conservation:</b> ปิด emission+loss เหลือ advection ล้วน → เช็คว่า <code>C.sum()</code> คงที่ทุก step (ภายใน error ตัวเลขเล็ก ๆ)</li>
+<li><b>Monotone:</b> ให้สนามเริ่มเป็น "กล่องสี่เหลี่ยม" (มีขอบคม) หอบไป → เช็คว่าไม่เกิดค่าเกิน max เดิม/ต่ำกว่า min เดิม</li>
+</ul>
+<div class="why"><b>เชื่อม error analysis (Module 5):</b> การทดสอบเหล่านี้คือ "unit test ฟิสิกส์" · ถ้าผ่าน = ตัดความเป็นไปได้ที่ error มาจาก "ละเมิดฟิสิกส์" ทิ้ง → error ที่เหลือมาจากแหล่งอื่น (ลม, การปล่อย, การเรียน) · ช่วยให้<b>แยกแหล่ง error</b>ได้สะอาด</div>
+
+<!-- ============ cheat ============ -->
+<h2 id="cheat">9. Cheat sheet + แบบฝึกหัด</h2>
+<div class="card">
+<b>สรุปจำ:</b>
+<ul>
+<li><b>Mass conservation:</b> ควันไม่หาย/ไม่โผล่เอง · advection แค่ย้ายที่ ไม่เปลี่ยนมวลรวม</li>
+<li><b>Non-negativity:</b> ความเข้มข้น ≥ 0 เสมอ (ติดลบ = ผิดทันที)</li>
+<li><b>Monotone:</b> การเลื่อนไม่สร้างยอด/หลุมปลอม (ไม่แกว่งรอบขอบคม)</li>
+<li><b>นิวรอลดิบ</b> ละเมิดทั้งสามได้ · soft physics loss = "ลงโทษเมื่อผิด" ไม่การันตี</li>
+<li><b>HazeNet = hard constraint:</b> ฝังในโครงสร้างสมการ → <b>พิสูจน์ได้</b> ไม่ใช่หวังให้เทรนถูก</li>
+<li><b>กลไก:</b> 𝒜 (น้ำหนัก≥0,รวม=1,monotone) · g=softplus(≥0) · D=sigmoid(0..1), loss=C(1−D)</li>
+<li><b>★ caveat:</b> PM2.5 จริงไม่อนุรักษ์ (R_chem ทุติยภูมิ) → เคลมเฉพาะ <u>primary smoke</u> เท่านั้น</li>
+<li><b>ทดสอบ:</b> assert C≥0 · sum คงที่ตอน advection ล้วน · ทดสอบกล่องคม monotone</li>
+</ul>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 1 — ทำไม "soft physics loss" (ใส่ penalty ใน loss) ถึงอ่อนกว่า "hard constraint" (ฝังโครงสร้าง) ในการการันตี non-negativity?</p>
+<details><summary>เฉลย</summary>
+<p>soft loss แค่<b>ลงโทษเมื่อโมเดลพ่นค่าติดลบ</b> → โมเดล "พยายาม" หลีกเลี่ยง แต่<b>ยังพ่นค่าติดลบได้</b> (โดยเฉพาะกรณีที่ไม่เคยเห็นตอนเทรน) → การันตีไม่ได้ · hard constraint ฝังให้ผลลัพธ์<b>เป็นบวกโดยพีชคณิต</b> (เช่น คูณค่าบวกด้วย sigmoid 0..1) → ไม่ว่านิวรอลทำนายอะไร ผลก็ ≥ 0 เสมอ → <b>พิสูจน์ได้</b> ไม่ขึ้นกับว่าเทรนสำเร็จไหม</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 2 — loss term เขียนเป็น <code>C·(1−D)</code> โดย D = sigmoid(...) · อธิบายว่าทำไมรูปนี้การันตีทั้ง non-negativity และ "ควันลดลงเท่านั้น ไม่เพิ่ม"</p>
+<details><summary>เฉลย</summary>
+<p>sigmoid บีบ D ให้อยู่ <b>0 ≤ D ≤ 1</b> เสมอ · ดังนั้น <code>(1−D)</code> อยู่ใน <b>0..1</b> · เอา C (ที่ ≥ 0) คูณเลข 0..1 → ผลยัง ≥ 0 (non-negativity ✓) และ ≤ C เดิม (ลดลงเท่านั้น ไม่มีทางทำให้ควันเพิ่มจากพจน์ loss ✓) · ฟิสิกส์ถูก: "การสูญเสีย" ต้องลดควัน ไม่ใช่เพิ่ม</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 3 — เพื่อนเขียนในเปเปอร์ว่า "โมเดลเราอนุรักษ์มวล PM2.5" · ทำไมประโยคนี้อันตราย และควรแก้เป็นอะไร?</p>
+<details><summary>เฉลย</summary>
+<p>อันตรายเพราะ <b>PM2.5 จริงไม่อนุรักษ์มวล</b> — มีฝุ่นทุติยภูมิจาก R_chem ที่สร้างขึ้นใหม่ในบรรยากาศ · reviewer ที่รู้เคมีบรรยากาศจะจับได้ทันทีว่าเคลมเกินจริง → เสียความน่าเชื่อถือ · ควรแก้เป็น: "เราการันตีคุณสมบัติเชิงโครงสร้าง (อนุรักษ์มวล/ไม่ติดลบ/เชิงเส้น) สำหรับ <b>tracers การขนส่งปฐมภูมิ</b> ส่วนกระบวนการทุติยภูมิจัดการแยกและระบุเป็นข้อจำกัด" — ขีดขอบเขตที่เคลมได้ให้ชัด</p>
+</details>
+</div>
+
+<div class="lead">
+<b>จบ 2.4 แล้วคุณควร:</b> เข้าใจ 3 คุณสมบัติฟิสิกส์ (มวลไม่รั่ว / ไม่ติดลบ / ไม่สร้างยอดปลอม), รู้ว่านิวรอลดิบละเมิดได้แต่ HazeNet การันตีด้วย<b>โครงสร้าง (hard constraint)</b> จึง "พิสูจน์ได้" — ผ่าน 𝒜 (น้ำหนัก≥0,รวม=1) + g=softplus + D=sigmoid · และที่สำคัญสุด เข้าใจ caveat ว่าเราเคลมเฉพาะ <b>primary smoke</b> ไม่ใช่ PM2.5 ทั้งหมด
+<br><br>
+<b>ขั้นต่อไปแนะนำ — บทไคลแมกซ์ของ Module 2:</b> <b>2.5 Superposition</b> (⭐CORE 🔴, หัวใจ 2/3) — "เชิงเส้นใน C" ที่ทุกบทใน Module นี้ปูทางไว้ จะกลายเป็นกุญแจที่ทำให้ <code>C = Σ C⁽ˢ⁾</code> เป็นจริง → attribution + counterfactual ทำได้ · บอก "2.5" ได้เลยครับ
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>0.4 — Train/Val/Test & Generalization (สอนละเอียด)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:30px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  pre{background:#0a0e14;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;margin:12px 0;font-size:14px;line-height:1.6}
+  code{font-family:"Consolas","Courier New",monospace}
+  pre code{color:#e6edf3}
+  .cm{color:#6e7a89}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#7ee787}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>0.4 — Train / Val / Test &amp; Generalization</h1>
+<p class="tagline">แบ่งข้อมูลให้ถูก ไม่ให้โมเดล "โกงตัวเอง" — ถ้าพลาดตรงนี้ ตัวเลขทุกอย่างเชื่อไม่ได้</p>
+<p class="sub">ปิดท้ายโมดูล 0 · เน้นเรื่อง data leakage ในข้อมูลเชิงพื้นที่-เวลา (จุดที่งานเราพังง่ายสุด) · เชื่อม 5.2 · ผูกกับ HazeNet ตลอด</p>
+
+<div class="lead">
+<b>หัวใจของบทนี้:</b> เป้าหมายจริงไม่ใช่ "โมเดลเก่งกับข้อมูลที่เคยเห็น" แต่คือ <b class="k">เก่งกับข้อมูลใหม่ที่ไม่เคยเห็น</b> (generalization) · วิธีพิสูจน์คือกันข้อมูลส่วนหนึ่งไว้ "สอบ" · แต่สำหรับข้อมูลแผนที่ฝุ่นรายชั่วโมง การแบ่งแบบสุ่มธรรมดา <u>ทำให้โมเดลแอบเห็นคำตอบ</u> — บทนี้สอนแบ่งให้ถูกจนตัวเลขเชื่อถือได้จริง
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. ทำไมต้องแบ่ง (generalization)</a><br>
+<a href="#p2">2. 3 ก้อน: Train/Val/Test ★</a><br>
+<a href="#p3">3. Overfit vs Underfit</a><br>
+<a href="#p4">4. Data leakage — นักฆ่าเงียบ</a><br>
+<a href="#p5">5. ★ ทำไม random split ผิดสำหรับงานเรา</a><br>
+<a href="#p6">6. แบ่งให้ถูก: temporal + spatial</a><br>
+<a href="#p7">7. Cross-validation (blocked CV)</a><br>
+<a href="#p8">8. ป้องกัน leakage ในทางปฏิบัติ</a><br>
+<a href="#p9">9. เชื่อมกับ HazeNet (แผน split จริง)</a><br>
+<a href="#cheat">10. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. ทำไมต้องแบ่งข้อมูล — เรื่อง "นักเรียนท่องข้อสอบ"</h2>
+<p>นึกภาพนักเรียน 2 คน:</p>
+<ul>
+<li><b>คน A</b> ท่องเฉลยข้อสอบเก่าทุกข้อ → ทำข้อสอบเก่าได้ 100% แต่เจอข้อสอบใหม่ตก</li>
+<li><b>คน B</b> เข้าใจหลักการ → ทำข้อสอบเก่าได้ 85% แต่เจอข้อสอบใหม่ก็ยังได้ 85%</li>
+</ul>
+<p>เราอยากได้ <b>คน B</b> (generalize ได้) แต่ถ้าเราวัดผลด้วย "ข้อสอบเก่า" คน A จะดูเก่งกว่า — <b>นี่คือกับดัก</b> · ทางแก้: เก็บ "ข้อสอบใหม่" ที่โมเดลไม่เคยเห็นไว้วัดผล</p>
+<div class="danger"><b>กฎเหล็กข้อ 1:</b> ห้ามวัดผลโมเดลด้วยข้อมูลที่มันเคยเห็นตอนเทรน — มันจะดูเก่งหลอก ๆ (เรียกว่า "memorization") · การวัดผลที่มีความหมายต้องทำบนข้อมูลที่ <u>ไม่เคยเห็น</u> เท่านั้น</div>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. 3 ก้อน: Train / Validation / Test <span class="pin">★</span></h2>
+<p>เราแบ่งข้อมูลเป็น 3 ส่วน แต่ละส่วนมีหน้าที่ต่างกันชัดเจน:</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 640 150" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <rect x="20" y="50" width="380" height="46" rx="6" fill="#0f1f17" stroke="#3fb950"/><text x="210" y="78" fill="#3fb950" font-size="14" text-anchor="middle" font-weight="bold">Train (~70%)</text>
+  <rect x="408" y="50" width="100" height="46" rx="6" fill="#1c2330" stroke="#e3b341"/><text x="458" y="73" fill="#e3b341" font-size="12.5" text-anchor="middle" font-weight="bold">Val</text><text x="458" y="89" fill="#9aa7b4" font-size="10" text-anchor="middle">~15%</text>
+  <rect x="516" y="50" width="104" height="46" rx="6" fill="#1c2330" stroke="#f85149"/><text x="568" y="73" fill="#f85149" font-size="12.5" text-anchor="middle" font-weight="bold">Test</text><text x="568" y="89" fill="#9aa7b4" font-size="10" text-anchor="middle">~15%</text>
+  <text x="210" y="120" fill="#9aa7b4" font-size="11" text-anchor="middle">โมเดลเรียนจากตรงนี้</text>
+  <text x="458" y="120" fill="#9aa7b4" font-size="10.5" text-anchor="middle">จูน/เลือกโมเดล</text>
+  <text x="568" y="120" fill="#9aa7b4" font-size="10.5" text-anchor="middle">สอบจริง แตะครั้งเดียว</text>
+  <text x="320" y="28" fill="#e6edf3" font-size="13" text-anchor="middle">ข้อมูลทั้งหมด</text>
+</svg>
+</div>
+<table>
+<tr><th>ก้อน</th><th>หน้าที่</th><th>โมเดล "เห็น" ไหม</th></tr>
+<tr><td><b>Train</b></td><td>ปรับพารามิเตอร์ (เรียนรู้) — ที่ใช้ใน gradient descent</td><td>เห็น (เรียนจากมัน)</td></tr>
+<tr><td><b>Validation</b></td><td>จูน hyperparameter (lr, ขนาดโมเดล), ตัดสินใจหยุดเทรน (early stopping), เลือกโมเดลที่ดีสุด</td><td>เห็นทางอ้อม (เราตัดสินใจจากมัน)</td></tr>
+<tr><td><b>Test</b></td><td>วัดผลสุดท้าย "ครั้งเดียว" เพื่อรายงานตัวเลขที่ซื่อสัตย์</td><td><b>ห้ามเห็นจนกว่าจะจบ</b></td></tr>
+</table>
+<div class="danger"><b>กฎเหล็กข้อ 2 — "แตะ test ครั้งเดียว":</b> ถ้าคุณดู test แล้วกลับไปปรับโมเดล ดู test อีก ปรับอีก... = test กลายเป็น validation กลาย ๆ ตัวเลขจะดีหลอก · test มีไว้รายงานผลตอนจบเท่านั้น ทุกการตัดสินใจระหว่างทางใช้ <b>val</b></div>
+<div class="why"><b>ทำไมต้องมี val แยกจาก test:</b> ถ้าใช้ test ทั้งจูนทั้งวัด เราจะ "overfit ต่อ test" โดยไม่รู้ตัว (เลือก setting ที่บังเอิญดีกับ test ชุดนั้น) · val ทำหน้าที่ "สนามซ้อม" ให้จูนได้เต็มที่ ส่วน test เก็บไว้เป็น "สนามจริง"</div>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. Overfitting vs Underfitting (ลึกกว่าใน 0.3)</h2>
+<p>2 โรคของโมเดล อยู่คนละขั้ว — เป้าหมายคือจุดสมดุลตรงกลาง</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 720 200" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <!-- underfit -->
+  <text x="120" y="18" fill="#e3b341" font-size="12.5" text-anchor="middle" font-weight="bold">Underfit (ง่ายไป)</text>
+  <g><circle cx="55" cy="120" r="3" fill="#9aa7b4"/><circle cx="80" cy="95" r="3" fill="#9aa7b4"/><circle cx="105" cy="110" r="3" fill="#9aa7b4"/><circle cx="130" cy="75" r="3" fill="#9aa7b4"/><circle cx="160" cy="85" r="3" fill="#9aa7b4"/><circle cx="185" cy="60" r="3" fill="#9aa7b4"/></g>
+  <line x1="45" y1="115" x2="195" y2="70" stroke="#e3b341" stroke-width="2.5"/>
+  <text x="120" y="170" fill="#9aa7b4" font-size="10">เส้นตรงเกินไป จับ pattern ไม่ได้</text>
+  <text x="120" y="185" fill="#f85149" font-size="10">train แย่ · val แย่</text>
+
+  <!-- good -->
+  <text x="360" y="18" fill="#3fb950" font-size="12.5" text-anchor="middle" font-weight="bold">พอดี (Good)</text>
+  <g><circle cx="295" cy="120" r="3" fill="#9aa7b4"/><circle cx="320" cy="95" r="3" fill="#9aa7b4"/><circle cx="345" cy="110" r="3" fill="#9aa7b4"/><circle cx="370" cy="75" r="3" fill="#9aa7b4"/><circle cx="400" cy="85" r="3" fill="#9aa7b4"/><circle cx="425" cy="60" r="3" fill="#9aa7b4"/></g>
+  <path d="M 290 118 Q 360 80 430 65" fill="none" stroke="#3fb950" stroke-width="2.5"/>
+  <text x="360" y="170" fill="#9aa7b4" font-size="10">จับแนวโน้ม ไม่วิ่งตาม noise</text>
+  <text x="360" y="185" fill="#3fb950" font-size="10">train ดี · val ดี</text>
+
+  <!-- overfit -->
+  <text x="600" y="18" fill="#f85149" font-size="12.5" text-anchor="middle" font-weight="bold">Overfit (ซับซ้อนไป)</text>
+  <g><circle cx="535" cy="120" r="3" fill="#9aa7b4"/><circle cx="560" cy="95" r="3" fill="#9aa7b4"/><circle cx="585" cy="110" r="3" fill="#9aa7b4"/><circle cx="610" cy="75" r="3" fill="#9aa7b4"/><circle cx="640" cy="85" r="3" fill="#9aa7b4"/><circle cx="665" cy="60" r="3" fill="#9aa7b4"/></g>
+  <path d="M 535 120 Q 547 80 560 95 Q 573 118 585 110 Q 598 70 610 75 Q 625 100 640 85 Q 653 55 665 60" fill="none" stroke="#f85149" stroke-width="2"/>
+  <text x="600" y="170" fill="#9aa7b4" font-size="10">วิ่งตามทุกจุด (จำ noise)</text>
+  <text x="600" y="185" fill="#f85149" font-size="10">train ดีมาก · val แย่</text>
+</svg>
+</div>
+<table>
+<tr><th></th><th>Underfit</th><th>Overfit</th></tr>
+<tr><td>อาการ</td><td>train แย่, val แย่</td><td>train ดีมาก, val แย่ (ช่องว่างกว้าง)</td></tr>
+<tr><td>สาเหตุ</td><td>โมเดลง่ายไป / เทรนน้อยไป / lr เล็ก</td><td>โมเดลซับซ้อนไป / ข้อมูลน้อย / เทรนนานไป</td></tr>
+<tr><td>แก้</td><td>เพิ่ม capacity, เทรนนานขึ้น, เพิ่ม feature</td><td>เพิ่มข้อมูล, regularization/dropout, early stopping, ลด capacity</td></tr>
+</table>
+<p class="muted">ศัพท์เชิงทฤษฎี: underfit = "bias สูง" (อคติ มองง่ายไป) · overfit = "variance สูง" (ไวต่อ noise เกินไป) · เป้าหมายคือสมดุล bias-variance</p>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. Data Leakage — นักฆ่าเงียบที่ทำตัวเลขสวยหลอก</h2>
+<p><b>Data leakage</b> = ข้อมูล/ความรู้จาก test แอบรั่วเข้ามาตอนเทรน ทำให้ผลดูดีเกินจริง แล้วพอใช้งานจริงพัง · มันเงียบเพราะ <u>ไม่มี error เด้ง</u> แค่ตัวเลขดีผิดปกติ</p>
+<table>
+<tr><th>รูปแบบ leakage</th><th>เกิดยังไง</th></tr>
+<tr><td><b>Preprocessing leak</b></td><td>คำนวณ mean/std (normalize) จากข้อมูล<u>ทั้งหมด</u>ก่อนแบ่ง → สถิติของ test รั่วเข้า train</td></tr>
+<tr><td><b>Temporal leak</b></td><td>ใช้ข้อมูล<u>อนาคต</u>มาทำนายอดีต (เช่น สุ่มแบ่งเวลา → บางชั่วโมงอนาคตไปอยู่ train)</td></tr>
+<tr><td><b>Spatial leak</b></td><td>จุดที่อยู่<u>ติดกัน</u>ไปอยู่ทั้ง train และ test → โมเดล "ลอกเพื่อนข้าง ๆ"</td></tr>
+<tr><td><b>Duplicate leak</b></td><td>ตัวอย่างซ้ำ/เกือบซ้ำ กระจายอยู่ทั้ง 2 ฝั่ง</td></tr>
+</table>
+<div class="danger"><b>ทำไมเรื่องนี้สำคัญกับงานประกวด/ตีพิมพ์:</b> กรรมการ/reviewer ที่เก่งจะ<b>โจมตี evaluation ก่อนเลย</b> — ถ้า split รั่ว ตัวเลขที่สวยจะถูกตีตกทันที · "ระวัง leakage" คือสิ่งที่แยกงานมืออาชีพออกจากงานมือใหม่</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. ★ ทำไม "random split" ผิดสำหรับข้อมูลของเรา</h2>
+<p>สำหรับข้อมูลทั่วไป (เช่นรูปแมว/หมาที่เป็นอิสระต่อกัน) การสุ่มแบ่งใช้ได้ · แต่ข้อมูล<b>เชิงพื้นที่-เวลา</b>ของเรา จุดที่อยู่ใกล้กัน (ทั้งในเวลาและพื้นที่) <b>เหมือนกันมาก</b> (autocorrelation) — สุ่มแบ่งจะทำให้ test "เกือบเหมือน" train</p>
+
+<div class="center card">
+<svg class="svg" viewBox="0 0 720 230" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <!-- random (bad) -->
+  <text x="170" y="18" fill="#f85149" font-size="13" text-anchor="middle" font-weight="bold">❌ Random split (รั่ว)</text>
+  <g>
+    <!-- 6x6 grid mixed -->
+    <g>
+      <!-- generate grid: alternate-ish mix -->
+      <rect x="60" y="35" width="30" height="30" fill="#0f1f17" stroke="#3fb950"/><rect x="92" y="35" width="30" height="30" fill="#2a1416" stroke="#f85149"/><rect x="124" y="35" width="30" height="30" fill="#0f1f17" stroke="#3fb950"/><rect x="156" y="35" width="30" height="30" fill="#0f1f17" stroke="#3fb950"/><rect x="188" y="35" width="30" height="30" fill="#2a1416" stroke="#f85149"/><rect x="220" y="35" width="30" height="30" fill="#0f1f17" stroke="#3fb950"/>
+      <rect x="60" y="67" width="30" height="30" fill="#2a1416" stroke="#f85149"/><rect x="92" y="67" width="30" height="30" fill="#0f1f17" stroke="#3fb950"/><rect x="124" y="67" width="30" height="30" fill="#0f1f17" stroke="#3fb950"/><rect x="156" y="67" width="30" height="30" fill="#2a1416" stroke="#f85149"/><rect x="188" y="67" width="30" height="30" fill="#0f1f17" stroke="#3fb950"/><rect x="220" y="67" width="30" height="30" fill="#0f1f17" stroke="#3fb950"/>
+      <rect x="60" y="99" width="30" height="30" fill="#0f1f17" stroke="#3fb950"/><rect x="92" y="99" width="30" height="30" fill="#0f1f17" stroke="#3fb950"/><rect x="124" y="99" width="30" height="30" fill="#2a1416" stroke="#f85149"/><rect x="156" y="99" width="30" height="30" fill="#0f1f17" stroke="#3fb950"/><rect x="188" y="99" width="30" height="30" fill="#0f1f17" stroke="#3fb950"/><rect x="220" y="99" width="30" height="30" fill="#2a1416" stroke="#f85149"/>
+      <rect x="60" y="131" width="30" height="30" fill="#0f1f17" stroke="#3fb950"/><rect x="92" y="131" width="30" height="30" fill="#2a1416" stroke="#f85149"/><rect x="124" y="131" width="30" height="30" fill="#0f1f17" stroke="#3fb950"/><rect x="156" y="131" width="30" height="30" fill="#0f1f17" stroke="#3fb950"/><rect x="188" y="131" width="30" height="30" fill="#2a1416" stroke="#f85149"/><rect x="220" y="131" width="30" height="30" fill="#0f1f17" stroke="#3fb950"/>
+    </g>
+  </g>
+  <text x="170" y="185" fill="#9aa7b4" font-size="10.5" text-anchor="middle">test (แดง) ล้อมรอบด้วย train (เขียว)</text>
+  <text x="170" y="200" fill="#f85149" font-size="10.5" text-anchor="middle">→ โมเดลลอกเพื่อนข้าง ๆ = โกง</text>
+
+  <!-- spatial block (good) -->
+  <text x="540" y="18" fill="#3fb950" font-size="13" text-anchor="middle" font-weight="bold">✓ Spatial block (ถูก)</text>
+  <g>
+    <rect x="430" y="35" width="126" height="126" fill="#0f1f17" stroke="#3fb950"/>
+    <rect x="556" y="35" width="94" height="126" fill="#2a1416" stroke="#f85149"/>
+    <!-- grid lines -->
+    <g stroke="#30363d">
+      <line x1="462" y1="35" x2="462" y2="161"/><line x1="494" y1="35" x2="494" y2="161"/><line x1="526" y1="35" x2="526" y2="161"/><line x1="588" y1="35" x2="588" y2="161"/><line x1="620" y1="35" x2="620" y2="161"/>
+      <line x1="430" y1="67" x2="650" y2="67"/><line x1="430" y1="99" x2="650" y2="99"/><line x1="430" y1="131" x2="650" y2="131"/>
+    </g>
+  </g>
+  <text x="493" y="185" fill="#3fb950" font-size="10.5" text-anchor="middle">train = ภูมิภาคหนึ่ง</text>
+  <text x="603" y="185" fill="#f85149" font-size="10.5" text-anchor="middle">test = อีกภูมิภาค</text>
+  <text x="540" y="202" fill="#9aa7b4" font-size="10.5" text-anchor="middle">กันไว้เป็นก้อน → ไม่ลอกกัน</text>
+</svg>
+</div>
+
+<div class="danger"><b>★ จุดที่งานเราพังง่ายสุด:</b> ถ้าสุ่มแบ่งแผนที่ฝุ่นรายชั่วโมง โมเดลจะได้คะแนนสูงปลอม ๆ เพราะมัน "เห็นชั่วโมงข้างเคียง" หรือ "จุดข้างเคียง" ในชุดเทรนอยู่แล้ว · พอเอาไปใช้จริง (พยากรณ์อนาคต/พื้นที่ใหม่) จะพังทันที · <b>นี่คือเหตุผลที่เราต้องแบ่งตามเวลาและตามพื้นที่ ไม่ใช่สุ่ม</b></div>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. แบ่งให้ถูก — Temporal split + Spatial blocking</h2>
+<h4>① Temporal split — เทรนอดีต ทดสอบอนาคต</h4>
+<div class="center card">
+<svg class="svg" viewBox="0 0 660 90" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <rect x="20" y="30" width="360" height="34" rx="5" fill="#0f1f17" stroke="#3fb950"/><text x="200" y="52" fill="#3fb950" font-size="12" text-anchor="middle">Train: 2016–2022</text>
+  <rect x="388" y="30" width="100" height="34" rx="5" fill="#1c2330" stroke="#e3b341"/><text x="438" y="52" fill="#e3b341" font-size="11.5" text-anchor="middle">Val: 2024</text>
+  <rect x="496" y="30" width="150" height="34" rx="5" fill="#2a1416" stroke="#f85149"/><text x="571" y="52" fill="#f85149" font-size="11.5" text-anchor="middle">Test: 2023 + 2025</text>
+  <text x="330" y="20" fill="#9aa7b4" font-size="11" text-anchor="middle">เวลา →</text>
+</svg>
+</div>
+<p>เลียนแบบสถานการณ์จริง: เรามีแค่อดีต ต้องทำนายอนาคต · <b>ห้ามให้อนาคตหลุดเข้า train เด็ดขาด</b></p>
+
+<h4>② Spatial blocking / Leave-stations-out — กันพื้นที่/สถานีเป็นก้อน</h4>
+<p>กันบางสถานี/บางภูมิภาคออกทั้งหมด ไม่ให้โมเดลเห็นตอนเทรน → วัดว่าโมเดลทำนาย "ที่ใหม่" ได้ไหม (สำคัญถ้าจะ deploy ในพื้นที่ที่ไม่มีสถานี)</p>
+<div class="why"><b>เชื่อมกับงานเรา:</b> เราจะใช้ <b>ทั้งสองพร้อมกัน</b> — แบ่งเวลา (test = ปีวิกฤตที่ไม่เคยเห็น) + กันบางสถานีไว้ test เชิงพื้นที่ · ทำให้เคลมได้ว่าโมเดล generalize ทั้ง "เวลาใหม่" และ "พื้นที่ใหม่" (เนื้อหาเต็มของวิธี CV อยู่ในหัวข้อ 5.2)</div>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. Cross-Validation — และทำไม k-fold ปกติใช้ไม่ได้</h2>
+<p><b>k-fold CV</b> = แบ่งข้อมูลเป็น k ก้อน เทรน k ครั้ง สลับให้แต่ละก้อนได้เป็น test ครั้งหนึ่ง → ได้ค่าเฉลี่ย + ความแปรปรวน (น่าเชื่อถือกว่าแบ่งครั้งเดียว)</p>
+<div class="warn"><b>แต่ k-fold แบบสุ่มผิดสำหรับงานเรา</b> (ด้วยเหตุผลเดียวกับส่วน 5) → ต้องใช้ <b>blocked CV</b>: แบ่งก้อนตามบล็อกเวลา/พื้นที่ที่ต่อเนื่องกัน ไม่สุ่มข้ามกัน · เช่น "spatially-blocked CV" และ "leave-one-year-out" · นี่คือมาตรฐานของงาน geospatial และเป็นสิ่งที่เราจะใช้ (รายละเอียด 5.2)</div>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. ป้องกัน Leakage ในทางปฏิบัติ (โค้ดจริง)</h2>
+<h4>กฎทอง: "แบ่งก่อน แล้วค่อยทำอย่างอื่น"</h4>
+<pre><code><span class="cm"># ❌ ผิด — normalize ก่อนแบ่ง (สถิติ test รั่วเข้า train)</span>
+mean, std = data.mean(), data.std()
+data = (data - mean) / std
+train, val, test = split(data)
+
+<span class="cm"># ✅ ถูก — แบ่งก่อน คำนวณสถิติจาก train เท่านั้น</span>
+train, val, test = split(data)
+mean, std = train.mean(), train.std()        <span class="cm"># จาก train เท่านั้น!</span>
+train = (train - mean) / std
+val   = (val   - mean) / std                  <span class="cm"># ใช้สถิติของ train</span>
+test  = (test  - mean) / std                  <span class="cm"># ใช้สถิติของ train</span></code></pre>
+<p>หลักการเดียวกันกับทุก preprocessing ที่ "เรียนรู้จากข้อมูล" (normalize, fill missing, feature scaling) — <b>fit บน train เท่านั้น แล้ว apply ไป val/test</b></p>
+
+<h4>Early stopping — ใช้ val หยุดให้ถูกเวลา</h4>
+<pre><code>best_val = <span class="fn">float</span>(<span class="st">"inf"</span>); patience = <span class="nm">10</span>; wait = <span class="nm">0</span>
+<span class="kw">for</span> epoch <span class="kw">in</span> <span class="fn">range</span>(max_epochs):
+    train_one_epoch(...)
+    val_loss = evaluate(val)
+    <span class="kw">if</span> val_loss &lt; best_val:
+        best_val = val_loss; save(model); wait = <span class="nm">0</span>   <span class="cm"># ดีขึ้น → เซฟ</span>
+    <span class="kw">else</span>:
+        wait += <span class="nm">1</span>
+        <span class="kw">if</span> wait &gt;= patience: <span class="kw">break</span>                     <span class="cm"># val ไม่ดีขึ้นนาน → หยุด (กัน overfit)</span></code></pre>
+<div class="why"><b>เชื่อมกับ 0.3:</b> early stopping คือวิธีจับ "จุดที่ val เริ่มเด้งขึ้น" (overfit) จาก loss curve แล้วหยุดที่จุดดีสุด — ใช้ val ตัดสิน ไม่ใช่ test</div>
+
+<!-- ============ 9 ============ -->
+<h2 id="p9">9. เชื่อมกับ HazeNet — แผน split จริงของเรา</h2>
+<div class="card">
+<table>
+<tr><th>ก้อน</th><th>ช่วง</th><th>เหตุผล</th></tr>
+<tr><td><b>Train</b></td><td>ฤดูแล้ง 2016–2022</td><td>อดีตที่หลากหลาย ให้โมเดลเรียน pattern</td></tr>
+<tr><td><b>Validation</b></td><td>2024</td><td>จูน lr/โมเดล + early stopping</td></tr>
+<tr><td><b>Test</b></td><td><b>2023 + 2025</b> (ปีวิกฤตหนัก)</td><td>วัดบนปีที่ไม่เคยเห็น + เป็นปีที่ pain สูงสุด (มีค่าเทียบ WRF-Chem/PMF ด้วย)</td></tr>
+<tr><td><b>+ กันสถานี</b></td><td>บางสถานีกันไว้ test</td><td>วัด generalization เชิงพื้นที่ (leave-stations-out)</td></tr>
+</table>
+</div>
+<ul>
+<li><b>ทำไมปีวิกฤตเป็น test:</b> ถ้าโมเดลทำนายปีวิกฤตที่ไม่เคยเห็นได้ = พิสูจน์ว่า generalize จริง ไม่ใช่จำ · และตรงกับ pain ที่เราแคร์ที่สุด</li>
+<li><b>normalize:</b> คำนวณ mean/std จาก train (2016–2022) เท่านั้น แล้ว apply ไป val/test</li>
+<li><b>กราฟ val ที่เราดูตอนเทรน</b> ต้องมาจาก split กันรั่วนี้ ไม่งั้นกราฟสวยหลอก</li>
+<li>ทั้งหมดนี้คือฐานของ <b>systematic experiment</b> (แผน master) — split ที่ถูกต้องคือเงื่อนไขที่ทำให้ benchmark/error analysis ทุกอย่างเชื่อถือได้</li>
+</ul>
+
+<!-- ============ CHEAT ============ -->
+<h2 id="cheat">10. Cheat Sheet + แบบฝึกหัด</h2>
+<div class="card">
+<table>
+<tr><th>เรื่อง</th><th>จุดสำคัญ</th></tr>
+<tr><td>3 ก้อน</td><td>Train=เรียน · Val=จูน/หยุด · Test=สอบจริง (แตะครั้งเดียว)</td></tr>
+<tr><td>overfit</td><td>train ดี val แย่ → regularization/early stopping/เพิ่มข้อมูล</td></tr>
+<tr><td>underfit</td><td>train+val แย่ → เพิ่ม capacity/เทรนนานขึ้น</td></tr>
+<tr><td>leakage</td><td>fit preprocessing บน train เท่านั้น</td></tr>
+<tr><td><b>ข้อมูล spatiotemporal</b></td><td><b>ห้าม random split</b> → temporal + spatial blocking</td></tr>
+<tr><td>CV</td><td>ใช้ blocked CV ไม่ใช่ k-fold สุ่ม</td></tr>
+</table>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด</p>
+<ol>
+<li>โมเดลได้ test accuracy 99% แต่ใช้งานจริงพัง — สงสัยอะไรเป็นอันดับแรก?</li>
+<li>ทำไมห้าม normalize ข้อมูลทั้งหมดก่อนแบ่ง train/test?</li>
+<li>เพื่อนสุ่มแบ่งแผนที่ฝุ่นรายชั่วโมง 80/20 แล้วได้ RMSE ต่ำมาก ควรเชื่อไหม เพราะอะไร?</li>
+<li>ทำไมเราเอา "ปีวิกฤต (2023/2025)" เป็น test ไม่ใช่ train?</li>
+<li>Val กับ Test ต่างกันยังไง ทำไมต้องมีทั้งคู่?</li>
+</ol>
+<details>
+<summary style="cursor:pointer;color:var(--cyan)">▶ เฉลย</summary>
+<ol style="margin-top:8px">
+<li>Data leakage — test รั่วเข้า train (ตัวเลขสวยหลอก) ต้องตรวจวิธีแบ่ง/preprocessing</li>
+<li>สถิติ (mean/std) ของ test จะรั่วเข้า train = leakage → fit บน train เท่านั้น</li>
+<li><b>ไม่ควรเชื่อ</b> — random split ทำให้ชั่วโมง/จุดข้างเคียงอยู่ทั้ง train และ test (autocorrelation) โมเดลลอกเพื่อน RMSE ต่ำปลอม → ต้อง temporal + spatial split</li>
+<li>เพื่อพิสูจน์ว่าโมเดล generalize กับปีที่ไม่เคยเห็น + ตรงกับ pain ที่แคร์สุด + มี ground-truth (WRF-Chem/PMF) ให้เทียบ</li>
+<li>Val = สนามซ้อม (ใช้จูน/ตัดสินใจได้เต็มที่) · Test = สนามจริง (แตะครั้งเดียว) · ถ้าใช้ test จูนด้วย จะ overfit ต่อ test ตัวเลขดีหลอก</li>
+</ol>
+</details>
+</div>
+
+<hr>
+<div class="lead">
+<b>จบ 0.4 และจบโมดูล 0 ทั้งหมดแล้ว! 🎉</b> ตอนนี้คุณมีพื้นฐาน ML ครบ: คิดเป็น tensor (0.1) · สร้าง+เทรนโมเดล (0.2) · จูนให้เทรนลง (0.3) · แบ่งข้อมูลให้ผลเชื่อถือได้ (0.4)<br><br>
+<b>ขั้นต่อไป — เลือกได้ 2 ทาง:</b><br>
+• <b>0.5 CNN พื้นฐาน</b> → ปิดพื้นฐานสถาปัตยกรรม ก่อนเข้าโมเดลจริง<br>
+• <b>1.1 PM2.5/AOD/FRP</b> → เปลี่ยนไปสายโดเมน เริ่มเข้าใจข้อมูลจริงของเรา (ผมแนะนำเริ่มสาย 1 ได้แล้ว เพราะพื้นฐาน ML พอแล้ว)
+</div>
+
+<p class="center muted">HazeNet · Knowledge · 0.4 Train/Val/Test &amp; Generalization · — จบโมดูล 0 —</p>
+
+</div>
+</body>
+</html>

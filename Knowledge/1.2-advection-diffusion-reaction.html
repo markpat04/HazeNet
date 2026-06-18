@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.2 — สมการ Advection-Diffusion-Reaction (สอนละเอียด)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .eq{background:#11161d;border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:8px;padding:15px 18px;margin:14px 0;font-size:19px;text-align:center;font-family:"Cambria Math","Segoe UI",serif;overflow-x:auto}
+  .eq .lbl{display:block;color:var(--muted);font-size:12.5px;font-family:"Segoe UI",sans-serif;margin-top:8px;line-height:1.6}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+  .term-adv{color:#58a6ff}.term-dif{color:#bc8cff}.term-emi{color:#ff9b54}.term-los{color:#f85149}.term-che{color:#e3b341}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>1.2 — สมการ Advection-Diffusion-Reaction (ADR)</h1>
+<p class="tagline">แกนฟิสิกส์ที่ร้อยทั้งโปรเจกต์เข้าด้วยกัน · หัวใจที่ 1 ใน 3 (1.2 → 2.5 → 3.5)</p>
+<p class="sub">สอนจากศูนย์ · สร้างสัญชาตญาณก่อนคณิต · แกะทีละพจน์ · ไม่ต้องมีพื้นแคลคูลัสก็เข้าใจได้</p>
+
+<div class="lead">
+<b>อย่าเพิ่งกลัวสมการ!</b> ADR ที่ดูน่ากลัวนี้ จริง ๆ แล้วเป็นแค่ <b class="k">"การทำบัญชีควัน"</b> — มันตอบคำถามเดียว: <i>"ในกล่องอากาศเล็ก ๆ หนึ่งกล่อง ปริมาณฝุ่นเพิ่มหรือลดเพราะอะไรบ้าง?"</i> · คำตอบมี 5 สาเหตุ (ลมพัดเข้า/ออก, กระจาย, ไฟปล่อยเพิ่ม, ตกหาย, เคมีแปลงร่าง) · บทนี้แกะทีละสาเหตุจนคุณอ่านสมการออกทั้งบรรทัด
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. ภาพใหญ่: บัญชีควันในกล่อง</a><br>
+<a href="#p2">2. อ่าน ∂C/∂t (ฝั่งซ้าย)</a><br>
+<a href="#p3">3. เครื่องมือ: ∇ และ ∇·</a><br>
+<a href="#p4">4. พจน์ 1: Advection (ลมพัดพา) ★</a><br>
+<a href="#p5">5. พจน์ 2: Diffusion (กระจาย)</a><br>
+<a href="#p6">6. พจน์ 3: Emission (ปล่อย)</a><br>
+<a href="#p7">7. พจน์ 4: Loss (สูญเสีย)</a><br>
+<a href="#p8">8. พจน์ 5: Chemistry (เคมี)</a><br>
+<a href="#p9">9. รวมทั้งสมการ</a><br>
+<a href="#p10">10. ★ ทำไมสำคัญกับเรา (3 ข้อ)</a><br>
+<a href="#cheat">11. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. ภาพใหญ่ — "บัญชีควันในกล่องอากาศ"</h2>
+<p>นึกภาพแบ่งอากาศเหนือภาคเหนือเป็น <b>กล่องเล็ก ๆ</b> เรียงเป็นตาราง (กริด — เหมือน array ใน 0.1!) · ในแต่ละกล่องมีปริมาณฝุ่น <code>C</code> · คำถามคือ "1 ชั่วโมงผ่านไป ฝุ่นในกล่องนี้เปลี่ยนยังไง?"</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 250" width="92%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker></defs>
+  <!-- the box -->
+  <rect x="210" y="85" width="140" height="90" rx="6" fill="rgba(86,212,221,0.08)" stroke="#56d4dd" stroke-width="2"/>
+  <text x="280" y="125" fill="#56d4dd" font-size="15" text-anchor="middle" font-weight="bold">กล่องอากาศ</text>
+  <text x="280" y="148" fill="#e6edf3" font-size="13" text-anchor="middle">ฝุ่น = C</text>
+
+  <!-- advection in/out -->
+  <line x1="120" y1="130" x2="208" y2="130" stroke="#58a6ff" stroke-width="2.5" marker-end="url(#ar)"/>
+  <text x="160" y="120" fill="#58a6ff" font-size="11" text-anchor="middle">ลมพัดเข้า</text>
+  <line x1="352" y1="130" x2="440" y2="130" stroke="#58a6ff" stroke-width="2.5" marker-end="url(#ar)"/>
+  <text x="396" y="120" fill="#58a6ff" font-size="11" text-anchor="middle">ลมพัดออก</text>
+
+  <!-- emission up from below -->
+  <line x1="245" y1="220" x2="245" y2="177" stroke="#ff9b54" stroke-width="2.5" marker-end="url(#ar)"/>
+  <text x="245" y="238" fill="#ff9b54" font-size="11" text-anchor="middle">ไฟปล่อยเพิ่ม</text>
+
+  <!-- loss down -->
+  <line x1="315" y1="177" x2="315" y2="220" stroke="#f85149" stroke-width="2.5" marker-end="url(#ar)"/>
+  <text x="315" y="238" fill="#f85149" font-size="11" text-anchor="middle">ตกสะสม/ฝนชะ</text>
+
+  <!-- diffusion spreading -->
+  <text x="280" y="70" fill="#bc8cff" font-size="11" text-anchor="middle">กระจายออกทุกทิศ (diffusion)</text>
+  <line x1="240" y1="85" x2="220" y2="65" stroke="#bc8cff" stroke-width="1.8" marker-end="url(#ar)"/>
+  <line x1="320" y1="85" x2="340" y2="65" stroke="#bc8cff" stroke-width="1.8" marker-end="url(#ar)"/>
+
+  <text x="280" y="30" fill="#e3b341" font-size="11" text-anchor="middle">เคมีแปลงร่าง (chemistry)</text>
+</svg>
+</div>
+<p>ฝุ่นในกล่องเปลี่ยนเพราะ <b>5 สาเหตุ</b> นี้พอดี — และสมการ ADR ก็คือการเขียน "5 สาเหตุนี้" เป็นภาษาคณิตเท่านั้นเอง:</p>
+<div class="card">
+<b>การเปลี่ยนของฝุ่น = (ลมพัดเข้า−ออก) + (กระจาย) + (ไฟปล่อย) − (ตกหาย) + (เคมี)</b>
+</div>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. อ่านฝั่งซ้าย: ∂C/∂t</h2>
+<p>ฝั่งซ้ายของสมการคือ <code>∂C/∂t</code> อ่านว่า "อัตราการเปลี่ยนของ C ตามเวลา"</p>
+<ul>
+<li><code>∂</code> (อ่านว่า "partial") = เหมือน <code>d</code> ในอนุพันธ์ แค่บอกว่า "เปลี่ยนเฉพาะตัวแปรนี้ ตัวอื่นคงที่"</li>
+<li><code>∂C/∂t</code> = "ฝุ่นเปลี่ยน<u>เร็วแค่ไหน</u>ต่อหนึ่งหน่วยเวลา" — เป็นบวก = ฝุ่นกำลังเพิ่ม, เป็นลบ = กำลังลด</li>
+</ul>
+<div class="why"><b>คุณรู้จักมันอยู่แล้ว!</b> ใน 0.2–0.3 คุณเจอ "gradient = อัตราการเปลี่ยน/ความชัน" · <code>∂C/∂t</code> ก็คือความชันของ C เทียบกับเวลา — แนวคิดเดียวกัน · ฝั่งซ้าย = "ผลลัพธ์" · ฝั่งขวา = "5 สาเหตุที่ทำให้เกิดผลนั้น"</div>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. เครื่องมือคณิต 2 ตัว: ∇ (gradient) และ ∇· (divergence)</h2>
+<p>ก่อนแกะพจน์ ต้องรู้จัก 2 สัญลักษณ์นี้แบบสัญชาตญาณ (ไม่ต้องท่องสูตร)</p>
+<table>
+<tr><th>สัญลักษณ์</th><th>ชื่อ</th><th>สัญชาตญาณ</th></tr>
+<tr><td><code>∇C</code></td><td>gradient</td><td>"ความชัน + ทิศ" ของ C — ชี้ไปทางที่ฝุ่น<b>เข้มขึ้นเร็วสุด</b> · ฝุ่นเรียบ = ∇C เล็ก · ฝุ่นเปลี่ยนฮวบ = ∇C ใหญ่</td></tr>
+<tr><td><code>∇·(...)</code></td><td>divergence</td><td>"การไหลสุทธิออกจากจุด" — ของไหล<b>ออกมากกว่าเข้า</b> = divergence บวก · เข้ามากกว่าออก = ลบ</td></tr>
+</table>
+<div class="ex"><b>เปรียบเทียบให้เห็นภาพ:</b>
+<ul style="margin:6px 0">
+<li><b>∇C (gradient)</b> = ยืนบนเนินฝุ่น มันบอก "ทางขึ้นเขาชันสุดอยู่ไหน" (เหมือน gradient ใน 0.2 เป๊ะ)</li>
+<li><b>∇· (divergence)</b> = ดูน้ำที่ก๊อก: น้ำพุ่งออกทุกทิศ = divergence บวก (เป็นแหล่ง) · ท่อระบายดูดเข้า = ลบ (เป็นที่จม)</li>
+</ul></div>
+<p class="muted">ทั้งคู่ทำงานบน "สนาม" (field = ค่ากระจายทั่วพื้นที่ เช่นแผนที่ฝุ่น/ลม) — ตรงกับ array 2D ของเราพอดี</p>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. พจน์ที่ 1: Advection — ลมพัดพา <span class="pin">★ สำคัญสุดสำหรับควันข้ามแดน</span></h2>
+<div class="eq">
+<span class="term-adv">− ∇·(<b>u</b>C)</span>
+<span class="lbl"><b>u</b> = ความเร็วลม (สนามลมจาก ERA5) · C = ฝุ่น · <b>u</b>C = "ฟลักซ์ฝุ่นที่ลมพาไป"</span>
+</div>
+<p><b>ความหมาย:</b> ลมหอบฝุ่นจากที่หนึ่งไปอีกที่ — เหมือน<b>สายพานลำเลียง</b> · ถ้าลมพัดฝุ่นเข้ากล่องมากกว่าออก → ฝุ่นในกล่องเพิ่ม</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 150" width="92%" xmlns="http://www.w3.org/2000/svg">
+  <text x="280" y="16" fill="#58a6ff" font-size="12" text-anchor="middle">ก้อนควันเคลื่อน "ตามลม" โดยรูปร่างคงเดิม</text>
+  <line x1="40" y1="120" x2="520" y2="120" stroke="#30363d"/>
+  <!-- bump at t -->
+  <path d="M 80 120 Q 140 50 200 120" fill="none" stroke="#9aa7b4" stroke-width="2"/>
+  <text x="140" y="45" fill="#9aa7b4" font-size="11" text-anchor="middle">ตอนนี้ (t)</text>
+  <!-- bump moved at t+1 -->
+  <path d="M 320 120 Q 380 50 440 120" fill="none" stroke="#58a6ff" stroke-width="2.5"/>
+  <text x="380" y="45" fill="#58a6ff" font-size="11" text-anchor="middle">ชั่วโมงหน้า (t+1)</text>
+  <!-- wind arrow -->
+  <line x1="220" y1="135" x2="300" y2="135" stroke="#56d4dd" stroke-width="2.5" marker-end="url(#ar2)"/>
+  <defs><marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#56d4dd"/></marker></defs>
+  <text x="260" y="150" fill="#56d4dd" font-size="11" text-anchor="middle">ลม u</text>
+</svg>
+</div>
+<p>ในกรณีง่าย 1 มิติ (ลมพัดทิศเดียว ความเร็วคงที่) พจน์นี้ย่อเป็น <code>−u·∂C/∂x</code> = "ฝุ่นเลื่อนไปตามลม" · นี่คือพจน์ที่ <b>ครองทุกอย่าง</b>สำหรับควันข้ามแดน เพราะควันเดินทางไกลตามลมเป็นหลัก</p>
+<div class="why"><b>เชื่อมกับงานเรา:</b> นี่คือพจน์ที่เราจะฝังเป็น <b>"ฟิสิกส์แข็ง" (semi-Lagrangian)</b> ในโมเดล (หัวข้อ 2.2) — ไม่ปล่อยให้เน็ตเดาการเคลื่อนที่ของควันเอง · และมันคือคำตอบของปัญหา receptive field จาก CNN (0.5): ลมขนฝุ่นไกล ๆ ให้เลย ไม่ต้องให้เน็ตเรียน</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. พจน์ที่ 2: Diffusion — การกระจาย</h2>
+<div class="eq">
+<span class="term-dif">+ ∇·(K∇C)</span>
+<span class="lbl">K = สัมประสิทธิ์การกระจายปั่นป่วน · ∇C = ความชันของฝุ่น</span>
+</div>
+<p><b>ความหมาย:</b> ฝุ่นกระจายจากที่<b>เข้มไปที่จาง</b> (ความปั่นป่วนของอากาศคลุกเคล้า) — เหมือนหยดหมึกในน้ำที่ค่อย ๆ จางและกว้างออก · ทำให้ก้อนควัน "เบลอ" และแผ่กว้าง</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 150" width="92%" xmlns="http://www.w3.org/2000/svg">
+  <text x="280" y="16" fill="#bc8cff" font-size="12" text-anchor="middle">ก้อนควัน "เตี้ยลง + กว้างออก" ตามเวลา (กระจาย)</text>
+  <line x1="40" y1="120" x2="520" y2="120" stroke="#30363d"/>
+  <path d="M 230 120 Q 280 40 330 120" fill="none" stroke="#9aa7b4" stroke-width="2"/>
+  <text x="280" y="40" fill="#9aa7b4" font-size="10" text-anchor="middle">t (สูง แคบ)</text>
+  <path d="M 160 120 Q 280 80 400 120" fill="none" stroke="#bc8cff" stroke-width="2.5"/>
+  <text x="430" y="95" fill="#bc8cff" font-size="10">t+1 (เตี้ย กว้าง)</text>
+</svg>
+</div>
+<p>diffusion ทำหน้าที่ตรงข้ามกับ "ความชัน" — ที่ไหนฝุ่นเป็นยอดแหลม (∇C เปลี่ยนเร็ว) มันจะถูกปาดให้เรียบ · ในงานจริงพจน์นี้เล็กกว่า advection มาก (การกระจายช้ากว่าการพัด)</p>
+<div class="why"><b>เชื่อมกับงานเรา:</b> ส่วนนี้กับ K ที่เปลี่ยนตามสภาพอากาศ เป็นส่วนที่เรา<b>ให้เน็ตเรียนรู้</b> (อยู่ในสัมประสิทธิ์ที่ AFNO ทำนาย หัวข้อ 3.5) เพราะการกระจายใต้กริดซับซ้อนเกินจะเขียนตรง ๆ</div>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. พจน์ที่ 3: Emission — การปล่อย (ไฟ)</h2>
+<div class="eq">
+<span class="term-emi">+ E</span>
+<span class="lbl">E = อัตราการปล่อยฝุ่นเข้ามาในกล่อง (จาก FRP ที่เรียนใน 1.1)</span>
+</div>
+<p><b>ความหมาย:</b> ที่ไหนมีไฟ ก็มีฝุ่น<b>เกิดใหม่เติมเข้ามา</b> · พจน์นี้ง่ายสุด — แค่ "บวกเพิ่ม" ตามความแรงไฟ · E มาจาก FRP (ไฟ) ที่เราแปลงเป็นอัตราปล่อยควัน</p>
+<div class="why"><b>เชื่อมกับงานเรา:</b> นี่คือจุดที่เรา <b>"ติดป้ายแหล่ง"</b> — แทนที่จะมี E เดียว เราแยกเป็น E จากเมียนมา, จากลาว, จากอำเภอต่าง ๆ → เป็นจุดเริ่มของ tagged-tracer (หัวข้อ 3.6) ที่ทำให้ระบุแหล่งได้</div>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. พจน์ที่ 4: Loss/Sink — การสูญเสีย</h2>
+<div class="eq">
+<span class="term-los">− L·C</span>
+<span class="lbl">L = อัตราการสูญเสีย (การตกสะสม dry deposition, ฝนชะ wet deposition)</span>
+</div>
+<p><b>ความหมาย:</b> ฝุ่นค่อย ๆ <b>หายไป</b> — ตกลงพื้น หรือถูกฝนชะล้าง · สังเกตว่าเป็น <code>−L·C</code> = "ยิ่งมีฝุ่นมาก ยิ่งหายมาก" (สัดส่วนกับปริมาณที่มี) → ให้พฤติกรรมแบบ "สลายตัว"</p>
+<div class="why"><b>เชื่อมกับงานเรา:</b> L ก็เป็นสัมประสิทธิ์ที่<b>เน็ตเรียนรู้</b> (ขึ้นกับฝน/ความชื้น) — ในสมการแกนเราเขียนเป็น <code>D_θ·C</code> โดย D_θ คืออัตราสูญเสียที่ AFNO ทำนาย (หัวข้อ 3.5)</div>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. พจน์ที่ 5: Chemistry — เคมีแปลงร่าง (พจน์ที่ซื่อสัตย์)</h2>
+<div class="eq">
+<span class="term-che">+ R<sub>chem</sub></span>
+<span class="lbl">การเกิด/สลายฝุ่นจากปฏิกิริยาเคมี (secondary aerosol) — มักไม่เชิงเส้น</span>
+</div>
+<p><b>ความหมาย:</b> ฝุ่นบางส่วน<b>ไม่ได้ถูกปล่อยตรง ๆ แต่เกิดจากปฏิกิริยาเคมี</b>ในอากาศ (เช่น ก๊าซแปลงเป็นอนุภาค = secondary aerosol) · พจน์นี้<b>ซับซ้อนและไม่เชิงเส้น</b> (อาจขึ้นกับ C², หรือสารอื่น)</p>
+<div class="danger"><b>★ จุดที่ต้องซื่อสัตย์ (สำคัญต่อทั้งโปรเจกต์):</b> พจน์ <code>R_chem</code> นี้คือเหตุผลที่ <b>PM2.5 ไม่ใช่ "สารอนุรักษ์" 100%</b> — มันเกิด/หายได้จากเคมี · ดังนั้นเราจะ <u>ไม่บังคับ</u> "อนุรักษ์มวลเคร่งครัด" กับ PM2.5 ทั้งหมด (จะผิดฟิสิกส์) · แต่เราโฟกัส <b>primary smoke</b> (ควันเผาที่ปล่อยตรง ระยะสั้น 24–48 ชม.) ที่ 4 พจน์แรกครอง และให้เน็ตเรียน R_chem แยก · เชื่อมกับวินัยฟิสิกส์ใน <a href="../research/hazenet-v2-research-contribution.html">research-contribution</a></div>
+
+<!-- ============ 9 ============ -->
+<h2 id="p9">9. รวมทั้งสมการ — ตอนนี้คุณอ่านออกทั้งบรรทัด</h2>
+<div class="eq" style="font-size:20px">
+∂C/∂t = <span class="term-adv">−∇·(<b>u</b>C)</span> <span class="term-dif">+ ∇·(K∇C)</span> <span class="term-emi">+ E</span> <span class="term-los">− L·C</span> <span class="term-che">+ R<sub>chem</sub></span>
+</div>
+<table>
+<tr><th>พจน์</th><th>คือ</th><th>ภาษาคน</th><th>ในเรา</th></tr>
+<tr><td>∂C/∂t</td><td>ผลลัพธ์</td><td>ฝุ่นเปลี่ยนเร็วแค่ไหน</td><td>สิ่งที่อยากรู้</td></tr>
+<tr><td class="term-adv">−∇·(uC)</td><td>advection</td><td>ลมพัดเข้า−ออก</td><td>ฟิสิกส์แข็ง (2.2)</td></tr>
+<tr><td class="term-dif">+∇·(K∇C)</td><td>diffusion</td><td>กระจายจากเข้มสู่จาง</td><td>เน็ตเรียน K</td></tr>
+<tr><td class="term-emi">+E</td><td>emission</td><td>ไฟปล่อยเพิ่ม</td><td>จาก FRP, ติดป้ายแหล่ง (3.6)</td></tr>
+<tr><td class="term-los">−L·C</td><td>loss</td><td>ตกสะสม/ฝนชะ</td><td>เน็ตเรียน L</td></tr>
+<tr><td class="term-che">+R_chem</td><td>chemistry</td><td>เคมีแปลงร่าง</td><td>โฟกัส primary, เรียนส่วนนี้แยก</td></tr>
+</table>
+
+<!-- ============ 10 ============ -->
+<h2 id="p10">10. ★ ทำไมสมการนี้สำคัญกับเรา — 3 ข้อ</h2>
+
+<div class="card">
+<h4>① เราจะ "เลียนแบบฟิสิกส์จริง" ไม่ใช่เดาสุ่ม</h4>
+<p>สมการ ADR นี้คือสิ่งที่ <b>WRF-Chem แก้เชิงตัวเลข</b> (แบบจำลองมาตรฐานระดับโลก) · HazeNet เป็น "neural emulator" ที่เคารพโครงสร้างนี้ → เร็วกว่า WRF-Chem มหาศาลแต่ยังอิงฟิสิกส์จริง · ทำให้น่าเชื่อถือและ generalize ได้</p>
+</div>
+
+<div class="card">
+<h4>② ★★ มันเป็น "เชิงเส้นใน C" — กุญแจสู่ attribution (เชื่อม 2.5)</h4>
+<p>ดู 4 พจน์แรกให้ดี: advection, diffusion, emission, loss — <b>ไม่มี C², ไม่มี C×C</b> · ทุกพจน์แค่ "เอา C มาคูณ/ดำเนินการเชิงเส้น" · <b>นี่คือคุณสมบัติที่ทรงพลังที่สุด:</b></p>
+<div class="eq" style="font-size:16px">
+ถ้าสมการเชิงเส้นใน C → C = Σ<sub>s</sub> C⁽ˢ⁾ (แยกตามแหล่งแล้วบวกกลับได้เป๊ะ)
+<span class="lbl">เลียนแบบทำไม? เพราะถ้าแยกควันตามแหล่งกำเนิด แต่ละแหล่งวิ่งตามสมการเดียวกัน → บวกกลับได้พอดี = superposition</span>
+</div>
+<p><b>นี่คือเมล็ดพันธุ์ของหัวใจที่ 2 (2.5):</b> ความเป็นเชิงเส้นนี้คือเหตุผลที่เราระบุแหล่ง (attribution) ได้แม่นแบบ exact และทำ counterfactual ("ดับไฟ s" = ลบ C⁽ˢ⁾) ได้ฟรี · <b>จำพจน์ "เชิงเส้น" นี้ไว้ให้ดี — มันคือทั้งความใหม่ของงานเรา</b></p>
+</div>
+
+<div class="card">
+<h4>③ เราจะ "ฝังบางส่วน เรียนบางส่วน" (เชื่อม 3.5)</h4>
+<p>เราไม่เอาเน็ตเดาทุกพจน์ และไม่เอาฟิสิกส์ล้วน — เราแบ่ง:</p>
+<ul>
+<li><b>ฝังเป็นฟิสิกส์แข็ง:</b> advection (พจน์ที่ครองและรู้แน่)</li>
+<li><b>ให้เน็ตเรียนสัมประสิทธิ์:</b> K (diffusion), L (loss), การปรับ E — เพราะขึ้นกับสภาพอากาศซับซ้อน</li>
+</ul>
+<p>= ได้ทั้งความน่าเชื่อถือของฟิสิกส์ + ความยืดหยุ่นของการเรียนรู้ (นี่คือ operator splitting หัวข้อ 2.3 + conditionally-linear 3.5)</p>
+</div>
+
+<!-- ============ CHEAT ============ -->
+<h2 id="cheat">11. Cheat Sheet + แบบฝึกหัด</h2>
+<div class="card">
+<table>
+<tr><th>สัญลักษณ์</th><th>จำสั้น ๆ</th></tr>
+<tr><td>∂C/∂t</td><td>ฝุ่นเปลี่ยนเร็วแค่ไหน (ผลลัพธ์)</td></tr>
+<tr><td>∇C</td><td>ความชัน+ทิศของฝุ่น</td></tr>
+<tr><td>∇·(...)</td><td>ไหลออกสุทธิ (แหล่ง + / ที่จม −)</td></tr>
+<tr><td class="term-adv">−∇·(uC)</td><td>ลมพัดพา (★ ครองควันข้ามแดน)</td></tr>
+<tr><td class="term-dif">+∇·(K∇C)</td><td>กระจายเข้ม→จาง (เบลอ)</td></tr>
+<tr><td class="term-emi">+E</td><td>ไฟปล่อยเพิ่ม</td></tr>
+<tr><td class="term-los">−L·C</td><td>ตก/ฝนชะ (สลายตัว)</td></tr>
+<tr><td class="term-che">+R_chem</td><td>เคมี (ไม่เชิงเส้น, เราโฟกัส primary)</td></tr>
+</table>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด</p>
+<ol>
+<li>สมการ ADR ตอบคำถามอะไร (พูดเป็นภาษาคน)?</li>
+<li>พจน์ไหน "ครอง" สำหรับควันข้ามแดน และทำไม?</li>
+<li>ทำไม 4 พจน์แรก "เชิงเส้นใน C" ถึงสำคัญกับงานเรา?</li>
+<li>ทำไมเราถึง<b>ไม่</b>บังคับ "อนุรักษ์มวล PM2.5 เคร่งครัด"?</li>
+<li>พจน์ไหนเราฝังเป็นฟิสิกส์แข็ง พจน์ไหนให้เน็ตเรียน?</li>
+</ol>
+<details>
+<summary style="cursor:pointer;color:var(--cyan)">▶ เฉลย</summary>
+<ol style="margin-top:8px">
+<li>"ฝุ่นในกล่องอากาศเปลี่ยนยังไงต่อเวลา และเพราะสาเหตุอะไรบ้าง (ลม/กระจาย/ไฟ/ตก/เคมี)"</li>
+<li>Advection <code>−∇·(uC)</code> — เพราะควันเดินทางไกลหลายร้อย กม. ตามลมเป็นหลัก</li>
+<li>เชิงเส้น → ใช้ superposition <code>C = Σ C⁽ˢ⁾</code> ได้ → ระบุแหล่ง (attribution) แม่น + counterfactual ฟรี = ความใหม่ของงาน</li>
+<li>เพราะ R_chem (secondary aerosol) + การตกสะสม ทำให้ PM2.5 เกิด/หายได้ ไม่อนุรักษ์ 100% → บังคับเคร่งครัด = ผิดฟิสิกส์ · เราโฟกัส primary smoke แทน</li>
+<li>ฝังแข็ง = advection · ให้เน็ตเรียน = K (diffusion), L (loss), การปรับ emission, R_chem</li>
+</ol>
+</details>
+</div>
+
+<hr>
+<div class="lead">
+<b>จบ 1.2 แล้วคุณควร:</b> อ่านสมการ ADR ออกทั้งบรรทัด · เข้าใจ 5 พจน์เป็นภาษาคน · รู้ว่าพจน์ไหนฝังฟิสิกส์/พจน์ไหนเรียน · และที่สำคัญสุด — <b class="k">เห็นว่า "ความเป็นเชิงเส้นใน C" คือกุญแจที่จะปลดล็อก attribution</b><br><br>
+<b>คุณเพิ่งจบหัวใจที่ 1 จาก 3!</b> ขั้นต่อไปคือหัวใจที่ 2: <b>2.5 Superposition</b> — เจาะลึกว่าทำไม "เชิงเส้น → C = Σ C⁽ˢ⁾" และมันทำให้ระบุแหล่ง+counterfactual เป็นจริงได้ยังไง · (หรือถ้าอยากไล่ตามลำดับ ไป <b>1.3 ตัวแปรอุตุนิยม ERA5</b> ก่อนก็ได้)
+</div>
+
+<p class="center muted">HazeNet · Knowledge · 1.2 Advection-Diffusion-Reaction · — หัวใจที่ 1/3 —</p>
+
+</div>
+</body>
+</html>

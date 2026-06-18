@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HazeNet M2 — สรุปแบบเข้าใจง่าย</title>
+<style>
+  :root{
+    --bg:#0f1115; --card:#1a1d24; --card2:#212530;
+    --ink:#e8eaed; --muted:#9aa0aa; --line:#2c313c;
+    --orange:#f97316; --amber:#fbbf24; --red:#ef4444;
+    --green:#22c55e; --blue:#3b82f6; --purple:#a78bfa;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Segoe UI","Sukhumvit Set","Noto Sans Thai",system-ui,sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.75;
+    padding:0 0 80px;
+  }
+  .wrap{max-width:860px;margin:0 auto;padding:0 22px}
+
+  /* ---- header ---- */
+  header{
+    background:linear-gradient(135deg,#7c2d12 0%,#b45309 50%,#92400e 100%);
+    padding:54px 22px 46px; text-align:center; position:relative; overflow:hidden;
+  }
+  header::after{
+    content:""; position:absolute; inset:0;
+    background:radial-gradient(circle at 70% 20%,rgba(255,255,255,.12),transparent 55%);
+  }
+  header h1{font-size:2.05rem;font-weight:800;letter-spacing:-.5px;position:relative}
+  header .sub{color:#ffe9d3;margin-top:10px;font-size:1.05rem;position:relative}
+  header .tag{
+    display:inline-block;margin-top:18px;padding:5px 16px;border-radius:999px;
+    background:rgba(0,0,0,.28);color:#ffd9b3;font-size:.82rem;
+    border:1px solid rgba(255,255,255,.18);position:relative;
+  }
+
+  h2{
+    font-size:1.5rem;font-weight:800;margin:54px 0 6px;
+    display:flex;align-items:center;gap:12px;
+  }
+  h2 .n{
+    flex:none;width:38px;height:38px;border-radius:11px;
+    background:var(--orange);color:#1a1d24;display:grid;place-items:center;
+    font-size:1.1rem;font-weight:900;
+  }
+  h2 + .lead{color:var(--muted);margin-bottom:22px;font-size:1.02rem}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:24px 26px;margin:16px 0;
+  }
+  .card h3{font-size:1.12rem;margin-bottom:10px;color:#fff}
+
+  /* analogy box */
+  .analogy{
+    background:linear-gradient(135deg,rgba(167,139,250,.10),rgba(59,130,246,.08));
+    border:1px solid rgba(167,139,250,.32);border-radius:14px;
+    padding:18px 22px;margin:14px 0;
+  }
+  .analogy .lbl{
+    font-size:.78rem;font-weight:800;letter-spacing:.5px;color:var(--purple);
+    text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:8px;
+  }
+  .analogy p{color:#e0e2e8}
+
+  /* big picture two-row compare */
+  .vs{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}
+  .vs .box{background:var(--card2);border:1px solid var(--line);border-radius:13px;padding:18px}
+  .vs .box h4{font-size:.95rem;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .vs .ord{color:var(--muted)}
+  .vs .ours{border-color:rgba(249,115,22,.5)}
+  .vs .ours h4{color:var(--orange)}
+
+  /* steps */
+  .step{
+    display:flex;gap:16px;padding:16px 0;border-bottom:1px solid var(--line);
+  }
+  .step:last-child{border-bottom:none}
+  .step .ic{
+    flex:none;width:42px;height:42px;border-radius:11px;background:var(--card2);
+    display:grid;place-items:center;font-size:1.3rem;border:1px solid var(--line);
+  }
+  .step .body h4{font-size:1rem;margin-bottom:3px}
+  .step .body p{color:var(--muted);font-size:.95rem}
+  .step .body .num{color:var(--green);font-weight:700}
+
+  /* metrics */
+  .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+  .metric{background:var(--card2);border:1px solid var(--line);border-radius:13px;padding:18px;text-align:center}
+  .metric .v{font-size:1.9rem;font-weight:900;line-height:1}
+  .metric .l{color:var(--muted);font-size:.82rem;margin-top:6px}
+  .metric.good .v{color:var(--green)}
+  .metric.bad .v{color:var(--red)}
+  .metric.mid .v{color:var(--amber)}
+
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.93rem}
+  th,td{padding:11px 12px;text-align:left;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:700;font-size:.82rem;text-transform:uppercase;letter-spacing:.4px}
+  td.r,th.r{text-align:right;font-variant-numeric:tabular-nums}
+  tr.hl td{background:rgba(249,115,22,.08)}
+  tr.hl td:first-child{color:var(--orange);font-weight:700}
+
+  /* problem cards */
+  .prob{border-left:4px solid var(--red);background:var(--card);border-radius:0 14px 14px 0;
+    padding:18px 22px;margin:14px 0;border-top:1px solid var(--line);
+    border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .prob h3{display:flex;align-items:flex-start;gap:10px;font-size:1.08rem}
+  .prob h3 .pn{flex:none;color:var(--red);font-weight:900}
+  .prob .row{margin-top:10px;font-size:.95rem}
+  .prob .row b{color:#fff}
+  .prob .what b{color:#ff8d8d}
+  .prob .why b{color:var(--amber)}
+  .prob .fix b{color:var(--green)}
+  .prob .ana{
+    margin-top:12px;padding:12px 16px;border-radius:10px;
+    background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.25);
+    font-size:.92rem;color:#dcd6f5
+  }
+
+  /* root cause */
+  .rc{display:flex;gap:14px;align-items:flex-start;padding:16px 0;border-bottom:1px solid var(--line)}
+  .rc:last-child{border-bottom:none}
+  .rc .big{flex:none;font-size:2rem;width:54px;text-align:center}
+  .rc h4{font-size:1.05rem;margin-bottom:4px}
+  .rc p{color:var(--muted);font-size:.95rem}
+
+  /* plan */
+  .plan{counter-reset:p}
+  .pcard{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:22px 24px;margin:16px 0;position:relative;overflow:hidden
+  }
+  .pcard::before{
+    counter-increment:p;content:counter(p);
+    position:absolute;top:-18px;right:6px;font-size:6rem;font-weight:900;
+    color:rgba(255,255,255,.035);line-height:1
+  }
+  .pcard .pri{
+    display:inline-block;font-size:.72rem;font-weight:800;letter-spacing:.5px;
+    padding:3px 11px;border-radius:999px;margin-bottom:10px;text-transform:uppercase
+  }
+  .pri.p1{background:rgba(239,68,68,.16);color:#ff8d8d;border:1px solid rgba(239,68,68,.4)}
+  .pri.p2{background:rgba(251,191,36,.16);color:var(--amber);border:1px solid rgba(251,191,36,.4)}
+  .pri.p3{background:rgba(34,197,94,.16);color:#6ee7a0;border:1px solid rgba(34,197,94,.4)}
+  .pcard h3{font-size:1.18rem;margin-bottom:8px}
+  .pcard ul{margin:10px 0 0;padding-left:20px;color:var(--muted)}
+  .pcard ul li{margin:6px 0}
+  .pcard ul li b{color:var(--ink)}
+  .pcard .goal{margin-top:14px;padding:12px 16px;border-radius:10px;
+    background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);
+    font-size:.93rem;color:#c8f0d6}
+
+  .foot{text-align:center;color:var(--muted);font-size:.85rem;margin-top:50px;
+    padding-top:26px;border-top:1px solid var(--line)}
+  .kw{background:rgba(249,115,22,.14);color:#ffb87a;padding:1px 7px;border-radius:6px;
+    font-size:.9em;white-space:nowrap}
+  .emoji{font-style:normal}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌫️ HazeNet M2 — เกิดอะไรขึ้นบ้าง</h1>
+  <div class="sub">สรุปงานที่เพิ่งทำเสร็จ แบบไม่ต้องมีพื้นฐาน อ่านรวดเดียวจบ</div>
+  <div class="tag">domain ไทย + พม่า + ลาวเหนือ · 5 ปี · เทรนเสร็จแล้ว</div>
+</header>
+
+<div class="wrap">
+
+  <!-- ========== 0. ภาพใหญ่ ========== -->
+  <h2><span class="n">?</span>ก่อนอื่น เรากำลังสร้างอะไร</h2>
+  <p class="lead">ถ้ายังไม่ชัด อ่านส่วนนี้ก่อน เพราะที่เหลือจะเข้าใจง่ายขึ้นเยอะ</p>
+
+  <div class="card">
+    <p>เรากำลังสร้างระบบ AI ที่ <b>ทำนายค่าฝุ่น PM2.5</b> ในช่วงหน้าหมอกควัน
+    แต่จุดที่ทำให้มันพิเศษคือ มันไม่ได้บอกแค่ "พรุ่งนี้ฝุ่นเท่าไหร่"
+    แต่บอกได้ด้วยว่า <b>ฝุ่นก้อนนี้มาจากไฟที่ไหน</b></p>
+  </div>
+
+  <div class="analogy">
+    <div class="lbl"><span class="emoji">💡</span> เปรียบเทียบให้เห็นภาพ</div>
+    <p>โมเดล AI ทั่วไป เหมือน<b>นักพยากรณ์อากาศ</b>ที่บอกว่า "พรุ่งนี้ฝุ่น 80"
+    — จบแค่นั้น<br><br>
+    แต่โมเดลของเรา (ชื่อ <span class="kw">CLNO</span>) เหมือน<b>นักสืบ</b>
+    ที่ชี้แผนที่ได้ว่า "ฝุ่น 80 นี้ — 60% มาจากไฟในพม่า, 30% จากไฟในไทย, อีก 10% เป็นฝุ่นพื้นหลังเดิม"</p>
+  </div>
+
+  <div class="card">
+    <h3>หัวใจของมันคือสมการง่ายๆ อันเดียว</h3>
+    <p style="text-align:center;font-size:1.3rem;margin:14px 0;color:#fff">
+      ฝุ่น = <span style="color:var(--blue)">เส้นทางลมพัดควัน</span> ×
+      <span style="color:var(--orange)">ปริมาณไฟ</span> +
+      <span style="color:var(--muted)">ฝุ่นพื้นหลัง</span>
+    </p>
+    <p style="color:var(--muted);font-size:.93rem">
+    พอแยกเป็นชิ้นๆ แบบนี้ โมเดลเลยตอบได้ทั้ง 3 อย่างจากตัวเดียว:
+    <b style="color:var(--ink)">ทำนายฝุ่น</b> ·
+    <b style="color:var(--ink)">หาต้นตอ</b> (ฝุ่นมาจากไฟไหน) ·
+    <b style="color:var(--ink)">ย้อนกลับ</b> (เห็นฝุ่นแล้วเดาว่ามีไฟตรงไหน)</p>
+  </div>
+
+  <!-- ========== 1. M2 ต่างจากเดิมยังไง ========== -->
+  <h2><span class="n">1</span>M2 คืออะไร ต่างจากของเดิมยังไง</h2>
+  <p class="lead">"M2" คือการขยายงานจากกล่องเล็กๆ ให้ใหญ่ขึ้นมากๆ</p>
+
+  <div class="vs">
+    <div class="box">
+      <h4><span class="ord">📦</span> Phase 0 (ของเดิม)</h4>
+      <p style="color:var(--muted);font-size:.92rem">
+      แค่ทดสอบว่า "ทำได้จริงมั้ย"<br><br>
+      • เฉพาะรอบเชียงใหม่<br>
+      • 13 วัน<br>
+      • ตาราง 16×21 ช่อง (เล็ก)</p>
+    </div>
+    <div class="box ours">
+      <h4><span class="emoji">🗺️</span> M2 (ที่เพิ่งทำ)</h4>
+      <p style="color:#e0e2e8;font-size:.92rem">
+      ของจริงระดับภูมิภาค<br><br>
+      • ไทย + พม่า + ลาวเหนือ<br>
+      • 5 ปี (2019–2023)<br>
+      • ตาราง 111×101 ช่อง (<b>ใหญ่กว่า 33 เท่า</b>)</p>
+    </div>
+  </div>
+
+  <div class="analogy">
+    <div class="lbl"><span class="emoji">💡</span> ทำไมต้องรวมพม่ากับลาวด้วย</div>
+    <p>เพราะหมอกควันมัน<b>ข้ามพรมแดน</b> — ไฟที่จุดในพม่า ลมพัดควันมาถึงเชียงใหม่ได้
+    ถ้าโมเดลรู้จักแค่ในไทย มันจะหาต้นตอไม่เจอ เหมือนสืบคดีแต่ดูกล้องวงจรปิดแค่ฝั่งเดียว</p>
+  </div>
+
+  <!-- ========== 2. ทำอะไรไปบ้าง ========== -->
+  <h2><span class="n">2</span>ขั้นตอนที่ทำไปจริงๆ</h2>
+  <p class="lead">7 ขั้น ตั้งแต่โหลดข้อมูลดิบ จนเทรนโมเดลเสร็จ</p>
+
+  <div class="card">
+    <div class="step">
+      <div class="ic">⛰️</div>
+      <div class="body"><h4>1. โหลดข้อมูลภูมิประเทศ (ภูเขา/หุบเขา)</h4>
+        <p>แผนที่ความสูงพื้นดิน <span class="num">108 ชิ้น</span> รวม 4.5 GB
+        — เพราะภูเขากั้นทางลม ทำให้ควันสะสมในหุบเขา</p></div>
+    </div>
+    <div class="step">
+      <div class="ic">🔥</div>
+      <div class="body"><h4>2. โหลดจุดไฟจากดาวเทียม</h4>
+        <p>ดาวเทียมจับความร้อนของไฟ ได้ <span class="num">~2.26 ล้านจุด</span>
+        ตลอด 5 หน้าหมอกควัน — นี่คือ "ต้นตอ" ของควัน</p></div>
+    </div>
+    <div class="step">
+      <div class="ic">😷</div>
+      <div class="body"><h4>3. โหลดค่าฝุ่นจริงจากสถานีวัด</h4>
+        <p><span class="num">99 สถานี</span> 13,345 ค่า — นี่คือ "เฉลย" ที่ใช้สอนและตรวจโมเดล</p></div>
+    </div>
+    <div class="step">
+      <div class="ic">💨</div>
+      <div class="body"><h4>4. โหลดข้อมูลลม</h4>
+        <p>ทิศทาง+ความเร็วลม 132 จุด — บอกว่าควัน "เดินทาง" ไปทางไหน</p></div>
+    </div>
+    <div class="step">
+      <div class="ic">🧊</div>
+      <div class="body"><h4>5. รวมทุกอย่างเป็นก้อนข้อมูลเดียว</h4>
+        <p>เอาภูเขา + ไฟ + ลม + ฝุ่น มาวางซ้อนกันบนตารางเดียว ทุกวัน
+        (ก้อนขนาด 446 วัน × 4 ชั้น × 111 × 101)</p></div>
+    </div>
+    <div class="step">
+      <div class="ic">🧠</div>
+      <div class="body"><h4>6. เทรนโมเดล CLNO</h4>
+        <p>ใช้การ์ดจอ RTX 4050 เทรน 200 รอบ — ให้มันเรียนรู้ความสัมพันธ์ ไฟ→ลม→ฝุ่น</p></div>
+    </div>
+    <div class="step">
+      <div class="ic">📊</div>
+      <div class="body"><h4>7. ตรวจผล + วาดแผนที่</h4>
+        <p>วัดความแม่น และวาดแผนที่ "ต้นตอควัน" ออกมาดู</p></div>
+    </div>
+  </div>
+
+  <!-- ========== 3. ผลที่ได้ ========== -->
+  <h2><span class="n">3</span>ผลที่ได้ (พูดตรงๆ)</h2>
+  <p class="lead">ตัวเลข MAE = โดยเฉลี่ยทายพลาดกี่หน่วย (ยิ่งน้อยยิ่งดี)</p>
+
+  <div class="metrics">
+    <div class="metric good">
+      <div class="v">7.8</div>
+      <div class="l">ทายพลาด ตอน "ซ้อม"<br>(ข้อมูล 2019–2022)</div>
+    </div>
+    <div class="metric bad">
+      <div class="v">55.0</div>
+      <div class="l">ทายพลาด ตอน "สอบจริง"<br>(ปี 2023 ที่ไม่เคยเห็น)</div>
+    </div>
+    <div class="metric mid">
+      <div class="v">81.5</div>
+      <div class="l">RMSE สอบจริง<br>(โทษค่าพลาดหนักๆ)</div>
+    </div>
+  </div>
+
+  <div class="analogy">
+    <div class="lbl"><span class="emoji">⚠️</span> ช่องว่าง 7.8 → 55 นี้บอกอะไร</div>
+    <p>เหมือนเด็กที่<b>ทำข้อสอบเก่าได้ 90 คะแนน แต่สอบจริงได้ 40</b><br>
+    แปลว่ามัน "ท่องจำ" ข้อสอบเก่าได้เก่ง แต่ "เข้าใจหลักการจริง" ยังไม่พอ
+    พอเจอโจทย์ใหม่ที่ไม่เหมือนเดิมก็พลาด — ในวงการ AI เรียกอาการนี้ว่า
+    <span class="kw">overfitting</span></p>
+  </div>
+
+  <div class="card">
+    <h3>เทียบกับโมเดลอื่นๆ</h3>
+    <table>
+      <thead><tr><th>โมเดล</th><th class="r">ทายพลาด (MAE)</th><th>หมายเหตุ</th></tr></thead>
+      <tbody>
+        <tr><td>ทายมั่วๆ (ค่าเฉลี่ย)</td><td class="r">59.8</td><td>เส้นมาตรฐานล่างสุด</td></tr>
+        <tr><td>CLNO Phase 0</td><td class="r">28.1</td><td>กล่องเล็กเชียงใหม่</td></tr>
+        <tr class="hl"><td>CLNO M2 (อันนี้)</td><td class="r">55.0</td><td>domain ใหญ่ขึ้น 33 เท่า</td></tr>
+      </tbody>
+    </table>
+    <p style="color:var(--muted);font-size:.92rem;margin-top:6px">
+    เลข 55 ดูแย่กว่า 28 ก็จริง แต่<b style="color:var(--ink)">เทียบกันตรงๆ ไม่ได้</b>
+    เพราะ M2 ยากกว่ามาก (พื้นที่ใหญ่กว่า 33 เท่า + ปีที่สอบเป็นปีหมอกควันหนักผิดปกติ)</p>
+  </div>
+
+  <!-- ========== 4. ปัญหาที่เจอ ========== -->
+  <h2><span class="n">4</span>ปัญหาที่เจอระหว่างทาง</h2>
+  <p class="lead">5 บั๊กหลักที่ทำให้ติด แต่แก้ได้หมดแล้ว</p>
+
+  <div class="prob">
+    <h3><span class="pn">#1</span> ข้อมูลลมโหลดไม่ได้ (404 ทุกลิงก์)</h3>
+    <div class="row what"><b>เกิดอะไร:</b> แหล่งข้อมูลลมที่ตั้งใจใช้ (NCEP) ลิงก์เสีย โหลดไม่ได้สักไฟล์</div>
+    <div class="row why"><b>เพราะอะไร:</b> URL ที่เดาไว้ไม่ตรงกับของจริง และเว็บนั้นไม่มีไฟล์แบบที่เราต้องการ</div>
+    <div class="row fix"><b>แก้ยังไง:</b> เปลี่ยนไปใช้ <span class="kw">Open-Meteo</span> แทน (ฟรี ไม่ต้องสมัคร) เขียนสคริปต์ใหม่ดึงลม 132 จุดสำเร็จ</div>
+    <div class="ana"><b>📌 บทเรียน:</b> อย่าเชื่อว่าลิงก์ "น่าจะใช้ได้" — ต้องเช็คก่อน และควรมีแหล่งสำรองเสมอ</div>
+  </div>
+
+  <div class="prob">
+    <h3><span class="pn">#2</span> ขอข้อมูลฝุ่นแล้วได้กลับมา 0 แถว (เงียบๆ)</h3>
+    <div class="row what"><b>เกิดอะไร:</b> สั่งขอข้อมูล 2000 รายการต่อครั้ง แต่ระบบตอบกลับว่าผิดพลาด — แล้วโค้ดเรากลับมองว่า "ไม่มีข้อมูล" เฉยๆ ไม่ฟ้อง error</div>
+    <div class="row why"><b>เพราะอะไร:</b> เว็บ OpenAQ จำกัดสูงสุดแค่ <b>1000 ต่อครั้ง</b> ขอ 2000 มันเลยปฏิเสธ</div>
+    <div class="row fix"><b>แก้ยังไง:</b> ลดเหลือ 1000 ต่อครั้ง แล้วขอหลายๆ รอบ (เรียกว่า pagination)</div>
+    <div class="ana"><b>📌 บทเรียน:</b> เวลาขออะไรจาก API ต้องอ่านกติกาเรื่อง "ลิมิต" ก่อน
+    และถ้าเกิดข้อผิดพลาด โค้ดควร "ส่งเสียงร้อง" ไม่ใช่เงียบจนเรานึกว่าไม่มีข้อมูล</div>
+  </div>
+
+  <div class="prob">
+    <h3><span class="pn">#3</span> ได้ข้อมูลแต่ผิดปี (หาย 2019–2022)</h3>
+    <div class="row what"><b>เกิดอะไร:</b> พอขอได้ 1000 รายการ กลับได้แต่ข้อมูลปี 2023–2026 ส่วนปี 2019–2022 ที่ต้องการหายหมด</div>
+    <div class="row why"><b>เพราะอะไร:</b> เว็บมันเรียงข้อมูล "ใหม่สุดก่อน" ขอ 1000 รายการแรกเลยได้แต่ของใหม่ ไปไม่ถึงของเก่า</div>
+    <div class="row fix"><b>แก้ยังไง:</b> ระบุช่วงวันที่ที่ต้องการ + ขอทีละหน้าจนครบ → ได้ครบ 5 ปี</div>
+    <div class="ana"><b>📌 บทเรียน:</b> ต้องรู้ว่าข้อมูล "เรียงจากอะไร" ไม่งั้นได้มาผิดช่วงโดยไม่รู้ตัว
+    เหมือนขอหนังสือ "1000 เล่มล่าสุด" จากห้องสมุด แล้วงงว่าทำไมไม่มีหนังสือปี 2019</div>
+  </div>
+
+  <div class="prob">
+    <h3><span class="pn">#4</span> ตารางได้ขนาดผิด (112 แทนที่จะเป็น 111)</h3>
+    <div class="row what"><b>เกิดอะไร:</b> สร้างตารางพิกัด ได้เกินมา 1 ช่อง ทำให้ขนาดไม่ตรงกัน โปรแกรมพัง</div>
+    <div class="row why"><b>เพราะอะไร:</b> คอมพิวเตอร์คำนวณทศนิยมเพี้ยนนิดหน่อย ทำให้นับเลขเกินมา 1 ตัว</div>
+    <div class="row fix"><b>แก้ยังไง:</b> เปลี่ยนวิธีสร้างตัวเลขให้ "บอกจำนวนช่องตรงๆ" (111 ช่อง) แทนการนับทีละ 0.1</div>
+    <div class="ana"><b>📌 บทเรียน:</b> ทศนิยมในคอมพิวเตอร์ไม่เป๊ะ 100% — ถ้าต้องการจำนวนแน่นอน ให้สั่งจำนวนตรงๆ</div>
+  </div>
+
+  <div class="prob">
+    <h3><span class="pn">#5</span> ไฟล์ภูเขา 1 ไฟล์เสียหาย</h3>
+    <div class="row what"><b>เกิดอะไร:</b> ตอนรวมแผนที่ภูเขา โปรแกรมพังเพราะมีไฟล์ 1 ชิ้นโหลดมาไม่ครบ (เสีย)</div>
+    <div class="row why"><b>เพราะอะไร:</b> ตอนดาวน์โหลดครั้งก่อนเน็ตหลุดกลางคัน ไฟล์เลยไม่สมบูรณ์</div>
+    <div class="row fix"><b>แก้ยังไง:</b> ให้โปรแกรม "ตรวจไฟล์เสียแล้วข้าม" + โหลดไฟล์นั้นใหม่</div>
+    <div class="ana"><b>📌 บทเรียน:</b> ไฟล์ "มีอยู่" ไม่ได้แปลว่า "ใช้ได้" — ควรตรวจความสมบูรณ์ก่อนใช้เสมอ</div>
+  </div>
+
+  <!-- ========== 5. ทำไมคะแนนแย่ ========== -->
+  <h2><span class="n">5</span>ทำไมตอนสอบจริงถึงพลาดเยอะ</h2>
+  <p class="lead">นี่คือเรื่องสำคัญที่สุด — และส่วนใหญ่ <b>ไม่ใช่ความผิดของโมเดล</b> แต่เป็นเรื่องข้อมูล</p>
+
+  <div class="card">
+    <div class="rc">
+      <div class="big">🌋</div>
+      <div><h4>1. ปี 2023 เป็นปีหมอกควันหนักผิดปกติ</h4>
+        <p>ปีที่เอามาสอบ ฝุ่นเฉลี่ย 74 แต่ปีที่ใช้ซ้อมเฉลี่ยแค่ 40
+        — เหมือนซ้อมขับรถวันปกติ แล้วสอบจริงวันรถติดเทศกาล สถานการณ์มันคนละเรื่อง</p></div>
+    </div>
+    <div class="rc">
+      <div class="big">📡</div>
+      <div><h4>2. ฝั่งพม่า/ลาว แทบไม่มีสถานีวัด</h4>
+        <p>จาก 99 สถานี อยู่ในพม่า+ลาวแค่ <b>4 สถานี</b> ที่เหลือ 95 อยู่ในไทย
+        — ทั้งที่ไฟส่วนใหญ่อยู่ฝั่งพม่า! เหมือนสืบคดีหาคนจุดไฟ แต่ไม่มีกล้องในพม่าเลย</p></div>
+    </div>
+    <div class="rc">
+      <div class="big">🔍</div>
+      <div><h4>3. ข้อมูลลมหยาบเกินไป</h4>
+        <p>ลมที่ใช้เป็นแบบ "หยาบ" (1 จุดต่อ ~100 กม.) แต่เราต้องการละเอียด (~10 กม.)
+        — เหมือนพยายามตามรอยควันด้วยแผนที่เบลอๆ มองไม่เห็นว่าควันเลี้ยวซ้ายหรือขวา</p></div>
+    </div>
+  </div>
+
+  <!-- ========== 6. แผนต่อไป ========== -->
+  <h2><span class="n">6</span>แผนแก้ไขต่อไป</h2>
+  <p class="lead">เรียงตามความสำคัญ — แก้ข้อมูลก่อน แล้วค่อยแก้โมเดล</p>
+
+  <div class="plan">
+    <div class="pcard">
+      <span class="pri p1">สำคัญที่สุด</span>
+      <h3>🗂️ แก้ที่ "ข้อมูล" ก่อน</h3>
+      <p style="color:var(--muted)">ใส่ข้อมูลดีๆ เข้าไป สำคัญกว่าปรับโมเดล เพราะ "ขยะเข้า = ขยะออก"</p>
+      <ul>
+        <li><b>หาลมที่ละเอียดกว่านี้</b> — ขอ key ของ ERA5 (ลมจริงระดับ 25 กม.) มาแทนลมหยาบที่ใช้อยู่</li>
+        <li><b>เติมข้อมูลฝั่งพม่า/ลาว</b> — ใช้ข้อมูลฝุ่นจากดาวเทียม (เช่น MODIS, MERRA-2) มาแทนสถานีที่ไม่มี</li>
+      </ul>
+    </div>
+
+    <div class="pcard">
+      <span class="pri p2">รองลงมา</span>
+      <h3>🧠 ปรับ "โมเดล" ไม่ให้ท่องจำ</h3>
+      <p style="color:var(--muted)">แก้อาการ overfitting (ซ้อมเก่งแต่สอบแย่)</p>
+      <ul>
+        <li><b>หยุดเทรนให้ถูกเวลา</b> (early stopping) — ตอนนี้เทรน 200 รอบตายตัว ทั้งที่มันเริ่มท่องจำตั้งแต่รอบ 40</li>
+        <li><b>เพิ่มการ "กันท่องจำ"</b> (dropout / regularisation) ให้แรงขึ้น</li>
+        <li><b>ลดความซับซ้อนโมเดล</b> ให้พอดีกับข้อมูลที่มี</li>
+      </ul>
+    </div>
+
+    <div class="pcard">
+      <span class="pri p3">ทำควบคู่</span>
+      <h3>📊 วัดผลให้ถูกวิธี</h3>
+      <ul>
+        <li><b>แบ่งข้อมูลเป็น 3 ส่วน</b> — ซ้อม / ลองเชิง / สอบจริง (ตอนนี้มีแค่ซ้อม+สอบ)</li>
+        <li><b>ดูทีละสถานี</b> ว่าพลาดหนักที่ไหน บางทีปัญหาอยู่แค่ไม่กี่จุด</li>
+      </ul>
+      <div class="goal">
+        🎯 <b>เป้าหมาย:</b> ทำให้ทายพลาด (MAE) ต่ำกว่า 32 (ชนะ XGBoost)
+        และให้แผนที่ "ต้นตอควัน" แม่นพอจะเชื่อถือได้ → ถึงจะเอาไปนำเสนอ/ตีพิมพ์ได้
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    HazeNet · สรุป M2 · 17 มิ.ย. 2026<br>
+    ไฟล์นี้: <code>reports/m2_summary.html</code> — เปิดด้วยเบราว์เซอร์ได้เลย
+  </div>
+
+</div>
+</body>
+</html>

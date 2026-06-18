@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geospatial Data & AI: 2026 Masterclass</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700;900&family=Prompt:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Mermaid -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({startOnLoad:true, theme: 'dark'});</script>
+
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --text-color: #e2e8f0;
+            --primary: #3b82f6;
+            --secondary: #8b5cf6;
+            --accent: #10b981;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Prompt', 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* Hero Section */
+        .hero {
+            position: relative;
+            padding: 100px 20px;
+            text-align: center;
+            background: radial-gradient(circle at top, rgba(59, 130, 246, 0.15), transparent 60%);
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .hero h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, #60a5fa, #c084fc, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto;
+            color: #94a3b8;
+            animation: fadeInUp 1s ease-out 0.3s both;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+
+        .section-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            margin-bottom: 40px;
+            text-align: center;
+            color: #fff;
+            position: relative;
+        }
+
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            margin: 10px auto 0;
+            border-radius: 2px;
+        }
+
+        /* Glassmorphism Cards */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 30px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 4px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card i {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .card h3 {
+            font-size: 1.5rem;
+            margin-top: 0;
+            color: #fff;
+        }
+
+        .card p {
+            color: #94a3b8;
+            font-size: 0.95rem;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-right: 5px;
+            margin-bottom: 10px;
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .tag.sota {
+            background: rgba(139, 92, 246, 0.2);
+            color: #c084fc;
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        /* Pipeline Flow */
+        .pipeline-container {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 40px;
+            margin: 40px 0;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px;
+            border-top: 1px solid var(--card-border);
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+
+    <section class="hero">
+        <h1>Geospatial Data & GeoAI 2026</h1>
+        <p>คู่มือฉบับสมบูรณ์: แหล่งข้อมูลเปิด (Open Data), การวิเคราะห์เชิงพื้นที่ (Spatial Analysis) และเทคโนโลยี AI ทางภูมิศาสตร์ที่ล้ำสมัยที่สุด (State-of-the-Art)</p>
+    </section>
+
+    <div class="container">
+        <!-- Section 1: Open Data -->
+        <h2 class="section-title">1. แหล่งข้อมูล Open Data (ใช้ฟรี & วิธีดึง)</h2>
+        <div class="grid">
+            <div class="card">
+                <i class="fa-solid fa-satellite"></i>
+                <h3>Copernicus Data Space (ESA)</h3>
+                <span class="tag">ภาพถ่ายดาวเทียม</span> <span class="tag">Sentinel 1, 2, 3, 5P</span>
+                <p>แหล่งรวมข้อมูลดาวเทียมยุโรป ฟรีและอัปเดตตลอดเวลา เหมาะสำหรับดูการใช้ประโยชน์ที่ดิน (Land cover) และมลพิษ (NO2, AOD)</p>
+                <p><strong>วิธีดึง:</strong> ใช้ STAC API (SpatioTemporal Asset Catalog) ผ่านไลบรารี <code>pystac-client</code> ใน Python เพื่อดึงเฉพาะพื้นที่ที่ต้องการโดยไม่ต้องโหลดทั้งโลก</p>
+            </div>
+            
+            <div class="card">
+                <i class="fa-brands fa-google"></i>
+                <h3>Google Earth Engine (GEE)</h3>
+                <span class="tag">Cloud Computing</span> <span class="tag">Petabyte-scale</span>
+                <p>คลังข้อมูลและแพลตฟอร์มวิเคราะห์ที่ทรงพลังที่สุด ฟรีสำหรับการวิจัย รวบรวมทั้ง Landsat, Sentinel, สภาพอากาศ, และความสูงภูมิประเทศ (DEM)</p>
+                <p><strong>วิธีดึง:</strong> ใช้ GEE Python API (<code>import ee</code>) เขียนโค้ดประมวลผลบน Cloud แล้วดึงแค่ผลลัพธ์ (เช่น ภาพที่ผ่านการคำนวณแล้ว) ลงมาที่เครื่อง</p>
+            </div>
+
+            <div class="card">
+                <i class="fa-solid fa-map-location-dot"></i>
+                <h3>OpenStreetMap (OSM)</h3>
+                <span class="tag">Vector Data</span> <span class="tag">ถนน/อาคาร/POI</span>
+                <p>แผนที่แบบ Vector ที่ฝูงชนร่วมกันสร้าง (Crowdsourced) แม่นยำเรื่องถนน ตึก และสถานที่สำคัญ (POI) ทั่วโลก</p>
+                <p><strong>วิธีดึง:</strong> ใช้ไลบรารี <code>osmnx</code> ใน Python โหลดข้อมูลโครงข่ายถนนมาวิเคราะห์เส้นทางได้ทันที</p>
+            </div>
+
+            <div class="card">
+                <i class="fa-brands fa-aws"></i>
+                <h3>Microsoft Planetary / AWS Open Data</h3>
+                <span class="tag">Cloud Native</span> <span class="tag">Cloud-Optimized GeoTIFF</span>
+                <p>เซิร์ฟเวอร์คลาวด์ที่เก็บข้อมูลภูมิศาสตร์ในรูปแบบ COG (Cloud-Optimized GeoTIFF) ทำให้ดึงข้อมูลแค่บางพิกเซลได้โดยไม่ต้องโหลดไฟล์ใหญ่ๆ</p>
+                <p><strong>วิธีดึง:</strong> ใช้ <code>rasterio</code> หรือ <code>xarray</code> อ่านข้อมูลตรงจาก URL ของ S3 Bucket</p>
+            </div>
+        </div>
+
+        <br><br><br>
+
+        <!-- Section 2: Pipeline -->
+        <h2 class="section-title">2. แผนการสอน: วิเคราะห์ข้อมูล Geo ตั้งแต่ต้นจนจบ</h2>
+        
+        <div class="pipeline-container">
+            <h3 style="color: #fff; margin-top: 0;">Roadmap สิ่งที่ต้องรู้และต้องทำเป็น</h3>
+            <p style="color: #94a3b8; margin-bottom: 30px;">การทำงานกับ Geospatial Data ไม่ใช่แค่ข้อมูลตาราง (CSV) แต่มีพิกัด รูปร่าง และระบบฉายแผนที่เข้ามาเกี่ยวข้อง</p>
+            
+            <div class="mermaid">
+                graph TD
+                classDef default fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#e2e8f0;
+                classDef concept fill:#8b5cf6,stroke:#c084fc,color:#fff;
+                classDef code fill:#10b981,stroke:#34d399,color:#fff;
+
+                A[1. พื้นฐาน (Concepts)]:::concept --> B[Vector vs Raster]
+                A --> C[CRS & Map Projections]
+                B --> D(Vector: Point, Line, Polygon <br/> Raster: Grid Pixels)
+                C --> E(EPSG:4326 vs EPSG:3857)
+
+                F[2. การเตรียมข้อมูล (Ingestion & Preprocessing)]:::concept --> G[อ่านข้อมูลด้วย Python]
+                G --> H[Vector: GeoPandas]:::code
+                G --> I[Raster: Rasterio / Xarray]:::code
+                H --> J[Reprojection & Spatial Join]
+                I --> K[Clipping / Masking / Resampling]
+
+                L[3. การวิเคราะห์ (Spatial Analysis)]:::concept --> M[Zonal Statistics]
+                L --> N[Buffer & Proximity]
+                L --> O[Network Analysis / Routing]
+
+                P[4. การแสดงผล (Visualization)]:::concept --> Q[Static: Matplotlib / Cartopy]:::code
+                P --> R[Interactive: Folium / Kepler.gl / Deck.gl]:::code
+                
+                E --> F
+                D --> F
+                J --> L
+                K --> L
+                M --> P
+                N --> P
+                O --> P
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <i class="fa-solid fa-layer-group"></i>
+                <h3>1. เข้าใจประเภทข้อมูลและพิกัด</h3>
+                <p>ต้องแยกให้ออกระหว่าง <strong>Vector</strong> (ตึก, ถนน - ใช้ Geopandas) และ <strong>Raster</strong> (ภาพถ่ายดาวเทียม, อุณหภูมิ - ใช้ Rasterio/Xarray) และสิ่งสำคัญที่สุดคือ <strong>CRS (Coordinate Reference System)</strong> หากจับข้อมูล 2 ชุดที่ CRS ต่างกันมาวางทับกัน มันจะไปอยู่คนละซีกโลก</p>
+            </div>
+            <div class="card">
+                <i class="fa-solid fa-scissors"></i>
+                <h3>2. การทำ Data Preprocessing</h3>
+                <p>ไฟล์ Geo มักจะมีขนาดใหญ่มาก (ระดับ GB) ต้องรู้วิธีทำ Bounding Box ตัดเอาเฉพาะพื้นที่ที่สนใจ (Clipping), การปรับขนาดกริดให้ตรงกัน (Resampling) และการจัดการกับก้อนเมฆที่บังภาพดาวเทียม (Cloud Masking)</p>
+            </div>
+            <div class="card">
+                <i class="fa-solid fa-chart-pie"></i>
+                <h3>3. การวิเคราะห์ (Spatial Join & Zonal Stats)</h3>
+                <p>จุดตัดที่ทำให้ Geo Data ทรงพลังคือการหาความสัมพันธ์เชิงพื้นที่ เช่น การหาค่าเฉลี่ยฝุ่นละออง (Raster) ที่ตกกระทบในแต่ละเขตอำเภอ (Vector) - เทคนิคนี้เรียกว่า Zonal Statistics</p>
+            </div>
+        </div>
+
+        <br><br><br>
+
+        <!-- Section 3: SOTA GeoAI -->
+        <h2 class="section-title">3. State-of-the-Art GeoAI (อัปเดต 2026)</h2>
+        <p style="text-align: center; color: #94a3b8; max-width: 800px; margin: 0 auto 40px;">
+            ยุค 2025-2026 คือยุคของ <strong>"Spatio-Temporal Foundation Models (GFMs)"</strong> <br>
+            โมเดล AI ไม่ได้ถูกสร้างมาเพื่องานเดียวอีกต่อไป แต่เป็นโมเดลยักษ์ที่ถูก Pre-train มาแล้ว และสามารถทำ Zero-shot หรือ Fine-tune ได้ในหลายโดเมน
+        </p>
+
+        <div class="grid">
+            <div class="card">
+                <i class="fa-solid fa-earth-americas"></i>
+                <h3>Earth Observation Foundation Models</h3>
+                <span class="tag sota">Prithvi</span> <span class="tag sota">TerraMind</span> <span class="tag sota">Clay</span>
+                <p><strong>ทำอะไร:</strong> โมเดล AI ยักษ์ที่อ่านข้อมูลจากหลายเซ็นเซอร์ (Multispectral, SAR, Elevation) พร้อมกัน เพื่อตีความพื้นผิวโลก</p>
+                <p><strong>SOTA อย่างไร:</strong> แทนที่จะเทรนโมเดลจับตึก 1 ตัว จับป่า 1 ตัว ปัจจุบันเราใช้ Foundation Model อย่าง <strong>Prithvi (NASA/IBM)</strong> ที่เทรนบนข้อมูลภูมิศาสตร์มหาศาล แล้วค่อยนำมาทำ Fine-tune เล็กน้อยเพื่อทำงานได้ทุกอย่าง (Segmentation, Classification) ในระดับ Global scale</p>
+            </div>
+
+            <div class="card">
+                <i class="fa-solid fa-robot"></i>
+                <h3>Agentic GeoAI & Geo-LLMs</h3>
+                <span class="tag sota">LLMs + GIS</span> <span class="tag sota">AlphaEarth</span>
+                <p><strong>ทำอะไร:</strong> การผสาน Large Language Models (LLMs) เข้ากับเครื่องมือ GIS ทำให้เราสามารถโต้ตอบกับแผนที่ด้วยภาษาพูด</p>
+                <p><strong>SOTA อย่างไร:</strong> ไม่ต้องเขียนโค้ดเพื่อค้นหาข้อมูลอีกต่อไป ระบบ Agentic Workflow จะเปลี่ยนคำสั่งเช่น <em>"หาพิกัดโรงงานที่เสี่ยงน้ำท่วมในอยุธยา"</em> ให้เป็นโค้ด Python (SQL/GEE) ไปรันดึงข้อมูล ตัดภาพดาวเทียม และสรุปผลเป็นตารางกลับมาให้โดยอัตโนมัติ</p>
+            </div>
+
+            <div class="card">
+                <i class="fa-solid fa-wind"></i>
+                <h3>Physics-Informed Spatio-Temporal Models</h3>
+                <span class="tag sota">Neural ODEs</span> <span class="tag sota">HazeNet / GraphCast</span>
+                <p><strong>ทำอะไร:</strong> AI สำหรับพยากรณ์ปรากฏการณ์ที่เปลี่ยนแปลงตามเวลาและสถานที่ (เช่น อากาศ, มลพิษ, น้ำท่วม)</p>
+                <p><strong>SOTA อย่างไร:</strong> ก้าวข้าม Black-box AI แบบเดิมๆ สู่โมเดลที่ถูกจำกัดด้วยกฎทางฟิสิกส์ (Physics constraint) เพื่อไม่ให้ทายผลผิดธรรมชาติ โมเดลสภาพอากาศระดับโลกเปลี่ยนไปใช้ Graph Neural Networks หรือ Fourier Neural Operators ที่เร็วกว่า Supercomputer นับหมื่นเท่า (พยากรณ์ข้ามทวีปได้ในเสี้ยววินาที)</p>
+            </div>
+
+            <div class="card">
+                <i class="fa-solid fa-users-viewfinder"></i>
+                <h3>Human Dynamics & Mobility</h3>
+                <span class="tag sota">PDFM</span> <span class="tag sota">Amazon Chronos-2</span>
+                <p><strong>ทำอะไร:</strong> วิเคราะห์รูปแบบการเคลื่อนที่ของมนุษย์ การกระจายตัวของประชากร และการเกิดอุบัติเหตุ/อาชญากรรม</p>
+                <p><strong>SOTA อย่างไร:</strong> การใช้ <strong>Population Dynamics Foundation Models (PDFM)</strong> ผสานข้อมูลสัญญาณมือถือ, POI, และภาพดาวเทียมเข้าด้วยกัน เพื่อทำนายการเติบโตของเมือง การจราจร และความหนาแน่นประชากรแบบ Real-time ซึ่งโมเดล Time-series ล่าสุดอย่าง Chronos-2 ได้เข้ามามีบทบาทในการทำ Zero-shot forecasting อย่างแม่นยำ</p>
+            </div>
+        </div>
+
+    </div>
+
+    <footer>
+        <p>Curated by Antigravity (Gemini 3.1 Pro) · Prepared for Deep Research & Geospatial Masterclass</p>
+    </footer>
+
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.2 — Neural Operator + AFNO/FourCastNet (สอนละเอียด)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.6px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>3.2 — Neural Operator + AFNO / FourCastNet</h1>
+<p class="tagline">นิวรอลที่เรียน "ตัวดำเนินการ" ในโดเมนความถี่ — backbone ℱθ ตัวทำนาย g, D ของเรา</p>
+<p class="sub">ต่อจาก 3.1 (Fourier) โดยตรง · เอา FFT มาประกอบเป็นนิวรอลจริง · ผูกกับ HazeNet ตลอด</p>
+
+<div class="lead">
+<b>บทนี้ประกอบทุกอย่างเข้าด้วยกัน:</b> 3.1 ให้เครื่องมือ Fourier · บทนี้เอามาสร้าง <b class="k">AFNO</b> = นิวรอลที่เป็น "สมอง" ของ HazeNet · หน้าที่ของมันไม่ใช่พยากรณ์ฝุ่นตรง ๆ แต่<b>ดูสนามอากาศแล้วทำนายสัมประสิทธิ์ g (ปล่อย) และ D (สูญเสีย)</b> ที่ป้อนเข้าสมการแกน (จาก 2.3/2.5) · เราจะเข้าใจว่า "neural operator" ต่างจากนิวรอลธรรมดายังไง ทำไม AFNO เหมาะกับเรา และมันต่อกับฟิสิกส์ของเราอย่างไรโดยไม่ทำลาย superposition
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. "Operator" คืออะไร (ต่างจากฟังก์ชัน) ★</a><br>
+<a href="#p2">2. Neural Operator คืออะไร ★</a><br>
+<a href="#p3">3. FNO — Fourier Neural Operator ★★</a><br>
+<a href="#p4">4. AFNO ต่างจาก FNO ยังไง</a><br>
+<a href="#p5">5. FourCastNet (ที่มา/หลักฐาน)</a><br>
+<a href="#p6">6. AFNO ใน HazeNet: ทำนาย g,D ★★</a><br>
+<a href="#p7">7. ทำไมเลือก AFNO (3 เหตุผล)</a><br>
+<a href="#p8">8. โค้ดโครงสร้าง AFNO block</a><br>
+<a href="#cheat">9. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. "Operator" คืออะไร — ต่างจากฟังก์ชันธรรมดา <span class="pin">★</span></h2>
+<p>นี่คือแนวคิดใหม่ที่ต้องจับให้ได้ก่อน:</p>
+<table>
+<tr><th></th><th>รับเข้า → ออก</th><th>ตัวอย่าง</th></tr>
+<tr><td><b>Function (ฟังก์ชัน)</b></td><td>ตัวเลข → ตัวเลข</td><td>f(3) = 9</td></tr>
+<tr><td><b style="color:#3fb950">Operator (ตัวดำเนินการ)</b></td><td><b>ฟังก์ชันทั้งอัน → ฟังก์ชันทั้งอัน</b></td><td>"หาอนุพันธ์" รับเส้นโค้ง → คืนเส้นโค้งความชัน</td></tr>
+</table>
+<p>operator คือ "เครื่องที่กินทั้งสนาม คืนทั้งสนาม" · เช่น "เอาสนามอุณหภูมิทั้งแผนที่ → คืนสนามลมทั้งแผนที่" · สมการ ADR (1.2) ก็เป็น operator: รับสนามควันตอนนี้ → คืนสนามควันตอนหน้า</p>
+<div class="ex"><b>เชื่อมงานเรา:</b> สิ่งที่เราอยากให้นิวรอลเรียนคือ "<b>operator</b>" — รับสนามอากาศทั้งแผนที่ (ลม, ความชื้น, PBL...) → คืนสนามสัมประสิทธิ์ g, D ทั้งแผนที่ · ไม่ใช่ "ฟังก์ชัน" ที่รับเลขเดียวคืนเลขเดียว · นี่คือเหตุผลที่เราต้อง "neural operator" ไม่ใช่ MLP ธรรมดา</div>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. Neural Operator คืออะไร <span class="pin">★</span></h2>
+<p><b>Neural Operator</b> = นิวรอลที่ออกแบบมาเรียน "operator" (สนาม→สนาม) · จุดเด่นสำคัญคือ <b>resolution-invariant</b> (ไม่ผูกกับความละเอียดกริด) — เทรนที่กริดหนึ่ง ใช้ที่อีกกริดได้ เพราะมันเรียน "กฎฟิสิกส์ที่อยู่เบื้องหลัง" ไม่ใช่ "ค่าต่อพิกเซล"</p>
+<div class="why"><b>ทำไมสำคัญกับเรา:</b> CNN ธรรมดา (0.5) ผูกกับกริดที่เทรน + receptive field เล็ก · Neural operator เรียน "ตัวดำเนินการเชิงฟิสิกส์" → เหมาะกับการ emulate CTM (1.5) ที่เป็น operator แก้สมการ ADR · เราอยากให้นิวรอลเรียน "พฤติกรรมฟิสิกส์" ไม่ใช่จำภาพ</div>
+<p>Neural operator มีหลายแบบ — แบบที่ดังและเหมาะกับสนามอากาศที่สุดคือตระกูล <b>Fourier</b> (FNO → AFNO) เพราะใช้ประโยชน์จาก Convolution Theorem (3.1)</p>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. FNO — Fourier Neural Operator <span class="pin">★★</span></h2>
+<p>FNO คือ neural operator ที่ใช้ FFT เป็นหัวใจ · หนึ่ง "FNO block" ทำ 3 ขั้น (ตรงกับรูปใน 3.1):</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 130" width="98%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a3" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker></defs>
+  <rect x="10" y="45" width="70" height="40" rx="6" fill="#1c2330" stroke="#58a6ff"/><text x="45" y="69" fill="#58a6ff" font-size="10.5" text-anchor="middle">สนาม x</text>
+  <line x1="80" y1="65" x2="103" y2="65" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="105" y="45" width="60" height="40" rx="6" fill="#1c2330" stroke="#e3b341"/><text x="135" y="69" fill="#e3b341" font-size="10.5" text-anchor="middle">FFT</text>
+  <line x1="165" y1="65" x2="188" y2="65" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="190" y="38" width="130" height="54" rx="6" fill="#0f1f17" stroke="#3fb950" stroke-width="2"/><text x="255" y="58" fill="#3fb950" font-size="10.5" text-anchor="middle">คูณน้ำหนัก R</text><text x="255" y="74" fill="#9aa7b4" font-size="9" text-anchor="middle">(เทรนได้, ต่อความถี่)</text>
+  <line x1="320" y1="65" x2="343" y2="65" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="345" y="45" width="60" height="40" rx="6" fill="#1c2330" stroke="#e3b341"/><text x="375" y="69" fill="#e3b341" font-size="10.5" text-anchor="middle">iFFT</text>
+  <line x1="405" y1="65" x2="428" y2="65" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="430" y="45" width="120" height="40" rx="6" fill="#1c2330" stroke="#bc8cff"/><text x="490" y="62" fill="#bc8cff" font-size="9.5" text-anchor="middle">+ เส้นทางท้องถิ่น W</text><text x="490" y="76" fill="#9aa7b4" font-size="8.5" text-anchor="middle">→ activation</text>
+</svg>
+</div>
+<ol>
+<li><b>FFT</b> สนามอินพุตไปโดเมนความถี่ (3.1)</li>
+<li><b>คูณด้วยน้ำหนัก R ที่เทรนได้</b> ต่อแต่ละความถี่ — นี่คือ "convolution global ที่เรียนได้" (Convolution Theorem) · จุดสำคัญ: เก็บแค่<b>ความถี่ต่ำ</b> (modes น้อย ๆ) → ตัดรายละเอียดจุกจิก + ประหยัดพารามิเตอร์</li>
+<li><b>iFFT</b> กลับ + บวก "เส้นทางท้องถิ่น" (linear W ต่อจุด) + ผ่าน activation</li>
+</ol>
+<p>ซ้อนหลาย block = FNO · แต่ละ block เห็นทั้งแผนที่ (global) เพราะ Fourier</p>
+<div class="warn"><b>"modes" คืออะไร (จำคำนี้):</b> FNO ไม่เก็บทุกความถี่ — เก็บแค่ความถี่ต่ำสุด K ตัวแรก (เรียก "Fourier modes") · เหตุผล: ความถี่ต่ำ = โครงสร้างใหญ่ที่สำคัญ (3.1), ความถี่สูง = noise จุกจิก · เก็บน้อย = พารามิเตอร์น้อย = เทรนเร็ว ประหยัด GPU (สำคัญกับข้อจำกัดเรา)</div>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. AFNO ต่างจาก FNO ยังไง</h2>
+<p><b>AFNO (Adaptive Fourier Neural Operator)</b> = FNO เวอร์ชันปรับปรุงให้<b>ขยายขนาด (scale) ได้ดีและประหยัดหน่วยความจำ</b> สำหรับสนามความละเอียดสูง · ปรับ 2 อย่างหลัก:</p>
+<ul>
+<li><b>แชร์น้ำหนักแบบ block-diagonal MLP ในโดเมนความถี่:</b> แทนที่จะมีน้ำหนัก R เต็มก้อน (พารามิเตอร์เยอะ) ใช้ MLP เล็ก ๆ ที่แชร์กัน → พารามิเตอร์น้อยลงมาก</li>
+<li><b>Soft-thresholding (sparsity):</b> ตัดความถี่ที่ไม่สำคัญทิ้ง → เร็วขึ้น ทนต่อ overfit</li>
+</ul>
+<table>
+<tr><th></th><th>FNO</th><th>AFNO</th></tr>
+<tr><td>น้ำหนักในความถี่</td><td>เต็มก้อน (หนัก)</td><td>MLP แชร์ (เบา)</td></tr>
+<tr><td>ความละเอียดสูง</td><td>กินหน่วยความจำ</td><td>ออกแบบมาเพื่อ scale</td></tr>
+<tr><td>ใช้ใน</td><td>งานฟิสิกส์ทั่วไป</td><td><b>FourCastNet</b> (พยากรณ์อากาศโลก)</td></tr>
+</table>
+<div class="why"><b>ทำไมเราเลือก AFNO ไม่ใช่ FNO:</b> เรามี GPU เดียว + 2 เดือน → ต้องการ backbone ที่<b>ประหยัด GPU แต่ยัง global</b> · AFNO ถูกออกแบบมาเพื่อสนามอากาศความละเอียดสูงพอดี (พิสูจน์โดย FourCastNet) → ตรงกับข้อจำกัดและงานเราที่สุด</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. FourCastNet — หลักฐานว่า AFNO เวิร์กกับอากาศ</h2>
+<p><b>FourCastNet</b> (NVIDIA) คือโมเดลพยากรณ์อากาศโลกที่ใช้ AFNO เป็น backbone · มันพยากรณ์ตัวแปรอากาศหลายตัวทั่วโลกที่ 0.25° (เท่า ERA5, จาก 1.3) ได้<b>เร็วกว่าโมเดลฟิสิกส์ดั้งเดิมหลายหมื่นเท่า</b> โดยความแม่นแข่งได้</p>
+<div class="ex"><b>ทำไมเรื่องนี้สำคัญกับเรา:</b> FourCastNet พิสูจน์แล้วว่า "AFNO เรียน operator ของพลวัตบรรยากาศได้จริง และเร็วมาก" · งานเราคือ<b>แนวคิดเดียวกันแต่ขยับไปอีกชั้น</b>: FourCastNet emulate โมเดล<b>อากาศ</b> · HazeNet emulate โมเดล<b>เคมี-ขนส่ง (CTM)</b> และเพิ่มโครงสร้างฟิสิกส์ + attribution · เราต่อยอดจากของที่พิสูจน์แล้ว ไม่ได้เริ่มจากศูนย์</div>
+<div class="warn"><b>หมายเหตุอ้างอิง:</b> ผมระบุชื่องาน (FourCastNet/AFNO/FNO) จากความรู้ · ก่อนเขียนลงเปเปอร์จริง ให้ verify arXiv ID + ปี + ตัวเลขความเร็วให้ตรงเป๊ะอีกครั้ง (ผมเคยแฟลกไว้แล้วในไฟล์ overview)</div>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. AFNO ใน HazeNet — ทำนาย g, D <span class="pin">★★</span></h2>
+<p>นี่คือจุดที่ทุกอย่างต่อกัน · AFNO <b>ไม่ได้</b>พยากรณ์ฝุ่น C โดยตรง · มันทำหน้าที่เดียว: ดูสนามอากาศ+static → ออกสนามสัมประสิทธิ์</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 150" width="98%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a4" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker></defs>
+  <rect x="10" y="35" width="120" height="80" rx="7" fill="#1c2330" stroke="#58a6ff"/><text x="70" y="58" fill="#58a6ff" font-size="11" text-anchor="middle" font-weight="bold">อินพุต</text><text x="70" y="76" fill="#9aa7b4" font-size="9" text-anchor="middle">ลม,ความชื้น,PBL</text><text x="70" y="90" fill="#9aa7b4" font-size="9" text-anchor="middle">FRP, static (DEM)</text>
+  <line x1="130" y1="75" x2="158" y2="75" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#a4)"/>
+  <rect x="160" y="45" width="120" height="60" rx="7" fill="#0f1f17" stroke="#3fb950" stroke-width="2"/><text x="220" y="70" fill="#3fb950" font-size="13" text-anchor="middle" font-weight="bold">AFNO</text><text x="220" y="88" fill="#9aa7b4" font-size="9" text-anchor="middle">ℱθ (เรียน)</text>
+  <line x1="280" y1="75" x2="308" y2="75" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#a4)"/>
+  <rect x="310" y="40" width="110" height="70" rx="7" fill="#1c2330" stroke="#e3b341"/><text x="365" y="62" fill="#e3b341" font-size="11" text-anchor="middle">g (ปล่อย)</text><text x="365" y="84" fill="#f85149" font-size="11" text-anchor="middle">D (สูญเสีย)</text>
+  <line x1="420" y1="75" x2="448" y2="75" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#a4)"/>
+  <rect x="450" y="45" width="100" height="60" rx="7" fill="#1c2330" stroke="#bc8cff"/><text x="500" y="68" fill="#bc8cff" font-size="9.5" text-anchor="middle">สมการแกน</text><text x="500" y="84" fill="#9aa7b4" font-size="8.5" text-anchor="middle">𝒜C+gE−D⊙C</text>
+</svg>
+</div>
+<p>แล้วสมการแกน (ฟิสิกส์ + tracer, จาก 2.3/2.5) เอา g, D ไปคูณกับ C แบบเชิงเส้น · นี่คือการแบ่งงานที่สำคัญ:</p>
+<table>
+<tr><th>ส่วน</th><th>ใครทำ</th><th>เชิงเส้นใน C?</th></tr>
+<tr><td>ทำนาย g, D จากอากาศ</td><td><b>AFNO</b> (ไม่เชิงเส้นได้เต็มที่)</td><td>ไม่เกี่ยว (ไม่แตะ C)</td></tr>
+<tr><td>เอา g,D มาประกอบกับ C</td><td>สมการแกน</td><td><b>เชิงเส้น ✓</b></td></tr>
+</table>
+<div class="danger"><b>นี่คือหัวใจที่ปูสู่ 3.5 (conditionally-linear):</b> ความไม่เชิงเส้นทั้งหมด<b>ถูกกักไว้ใน AFNO ที่ทำงานกับอากาศ</b> · พอ AFNO ออก g, D มาแล้ว (เป็นแค่ "ตัวเลขสัมประสิทธิ์") การประกอบกับ C เป็นเชิงเส้นล้วน → superposition (2.5) รอด → attribution ได้ · ถ้าเผลอเอา AFNO ไปแตะ C โดยตรง (เช่น FFT บน C) ทุกอย่างพัง · <b>กฎทองจาก 2.5/3.1 คือเส้นแบ่งที่ AFNO ห้ามข้าม</b></div>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. ทำไมเลือก AFNO — 3 เหตุผล</h2>
+<ol>
+<li><b>Global receptive field:</b> Fourier เห็นทั้งแผนที่พร้อมกัน (3.1) → จับการพัดพาควันระยะไกลข้ามพรมแดน (1.4) ได้โดยตรง ไม่ต้องซ้อนชั้นเยอะแบบ CNN</li>
+<li><b>ประหยัด GPU + scale ได้:</b> AFNO ออกแบบมาเพื่อสนามความละเอียดสูงโดยพารามิเตอร์ไม่ระเบิด → เหมาะกับ 1 GPU/2 เดือน</li>
+<li><b>พิสูจน์แล้วกับอากาศ:</b> FourCastNet แสดงว่า AFNO emulate พลวัตบรรยากาศได้จริง → ความเสี่ยงต่ำ เราต่อยอดของที่เวิร์ก</li>
+</ol>
+<div class="why"><b>ทางเลือกอื่นที่พิจารณา:</b> U-Net (3.3) — receptive field ดีแต่ยังท้องถิ่นกว่า · GNN — ยืดหยุ่นแต่ตั้ง graph ยุ่ง · Transformer/ViT — global แต่กิน GPU มหาศาล (attention ∝ N²) · AFNO ได้ global เหมือน transformer แต่ถูกกว่ามาก (Fourier ∝ N·logN) = จุดที่ลงตัวที่สุดสำหรับข้อจำกัดเรา · (เราอาจผสม U-Net เป็น decoder — ดู 3.3)</div>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. โค้ดโครงสร้าง AFNO block (อ่านพอเข้าใจ)</h2>
+<pre><code><span class="kw">import</span> torch, torch.nn <span class="kw">as</span> nn
+
+<span class="kw">class</span> <span class="fn">AFNOBlock</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, dim, modes):
+        super().__init__()
+        self.modes = modes               <span class="cm"># เก็บกี่ความถี่ (ต่ำ ๆ)</span>
+        self.mlp = nn.Sequential(        <span class="cm"># MLP เล็กแชร์กัน (หัวใจ "A" ของ AFNO)</span>
+            nn.Linear(dim, dim), nn.GELU(), nn.Linear(dim, dim))
+        self.w = nn.Conv2d(dim, dim, <span class="nm">1</span>)  <span class="cm"># เส้นทางท้องถิ่น</span>
+
+    <span class="kw">def</span> <span class="fn">forward</span>(self, x):                 <span class="cm"># x = สนามอากาศ (B, dim, H, W)</span>
+        z = torch.fft.rfft2(x)           <span class="cm"># 1) ไปโดเมนความถี่ (3.1)</span>
+        z = z[..., :self.modes, :self.modes]   <span class="cm"># เก็บแค่ความถี่ต่ำ</span>
+        z = apply_mlp_complex(z, self.mlp)     <span class="cm"># 2) แปลงต่อความถี่ (เรียนได้)</span>
+        z = soft_threshold(z)            <span class="cm">#    ตัดความถี่ไม่สำคัญ (sparsity)</span>
+        y = torch.fft.irfft2(z, s=x.shape[-<span class="nm">2</span>:])  <span class="cm"># 3) กลับเป็นสนาม</span>
+        <span class="kw">return</span> nn.GELU()(y + self.w(x))  <span class="cm"># + ท้องถิ่น + activation</span>
+
+<span class="cm"># ซ้อนหลาย block = backbone ℱθ</span>
+<span class="cm"># หัวสุดท้าย: Conv -> softplus -> g ;  Conv -> sigmoid -> D  (จาก 2.4)</span></code></pre>
+<div class="why"><b>เชื่อม 2.4 (hard constraint):</b> หัวสุดท้ายของ AFNO ปิดท้ายด้วย <code>softplus</code> (ให้ g ≥ 0) และ <code>sigmoid</code> (ให้ 0 ≤ D ≤ 1) · ไม่ว่า AFNO ข้างในจะออกอะไร สัมประสิทธิ์ที่ส่งเข้าสมการแกนถูกบีบให้อยู่ในกรอบฟิสิกส์เสมอ → non-negativity การันตีได้ (2.4)</div>
+
+<!-- ============ cheat ============ -->
+<h2 id="cheat">9. Cheat sheet + แบบฝึกหัด</h2>
+<div class="card">
+<b>สรุปจำ:</b>
+<ul>
+<li><b>Operator:</b> รับ "สนามทั้งอัน" → คืน "สนามทั้งอัน" (≠ ฟังก์ชันที่รับเลขคืนเลข)</li>
+<li><b>Neural Operator:</b> นิวรอลเรียน operator · resolution-invariant · เรียนกฎฟิสิกส์ ไม่ใช่จำพิกเซล</li>
+<li><b>FNO:</b> FFT → คูณน้ำหนักต่อความถี่ (เก็บแค่ low modes) → iFFT + เส้นทางท้องถิ่น</li>
+<li><b>modes:</b> จำนวนความถี่ต่ำที่เก็บ · น้อย = เบา/เร็ว/กัน overfit</li>
+<li><b>AFNO:</b> FNO ที่เบา+scale ได้ (MLP แชร์ + sparsity) · backbone ของ FourCastNet</li>
+<li><b>FourCastNet:</b> หลักฐานว่า AFNO emulate อากาศได้จริง เร็วมาก → เราต่อยอดสู่ CTM</li>
+<li><b>★★ ใน HazeNet:</b> AFNO ดู<u>อากาศ</u> → ออก g,D · ไม่แตะ C → superposition รอด</li>
+<li><b>3 เหตุผลเลือก:</b> global RF · ประหยัด GPU/scale · พิสูจน์แล้วกับอากาศ</li>
+<li><b>หัวปิดท้าย:</b> softplus(g≥0), sigmoid(D∈0..1) → hard constraint (2.4)</li>
+</ul>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 1 — "operator" ต่างจาก "function" ยังไง และทำไมงานเราต้องการ neural operator ไม่ใช่ MLP ธรรมดา?</p>
+<details><summary>เฉลย</summary>
+<p><b>function</b> รับเลข→คืนเลข (f(3)=9) · <b>operator</b> รับ<b>สนามทั้งอัน</b>→คืน<b>สนามทั้งอัน</b> (เช่น สนามอากาศ→สนามลม) · งานเราต้องรับสนามอากาศทั้งแผนที่ (ลม/ความชื้น/PBL ทุกจุด) แล้วออกสนาม g,D ทั้งแผนที่ พร้อมจับความสัมพันธ์เชิงพื้นที่ (ควันจุดหนึ่งกระทบอีกจุด) → เป็นงาน operator · MLP ธรรมดาจัดการ "ทั้งสนามพร้อมความสัมพันธ์เชิงพื้นที่+resolution invariance" ไม่ได้ดี</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 2 — ทำไม FNO เก็บแค่ "low Fourier modes" และนี่ช่วยข้อจำกัด 1 GPU/2 เดือนของเรายังไง?</p>
+<details><summary>เฉลย</summary>
+<p>ความถี่ต่ำ = โครงสร้างใหญ่ที่สำคัญ (ม่านควันทั่วภาค) · ความถี่สูง = รายละเอียดจุกจิก/noise · เก็บแค่ low modes → <b>พารามิเตอร์น้อยลงมาก</b> → เทรนเร็ว ใช้ GPU/หน่วยความจำน้อย และ<b>กัน overfit</b> (ไม่ไปจำ noise) · ตรงกับข้อจำกัดเรา (1 GPU, 2 เดือน, ข้อมูลจำกัด) พอดี</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 3 — AFNO เป็นนิวรอลที่ "ไม่เชิงเส้น" แต่สมการเราต้อง "เชิงเส้นใน C" เพื่อ superposition · สองอย่างนี้อยู่ด้วยกันได้ยังไง?</p>
+<details><summary>เฉลย</summary>
+<p>เพราะ AFNO<b>ไม่แตะ C เลย</b> · มันรับแต่<b>อากาศ</b> (ไม่เชิงเส้นได้เต็มที่) แล้วออก g, D เป็น "ตัวเลขสัมประสิทธิ์" · จากนั้น<b>สมการแกน</b>ค่อยเอา g, D ไปคูณ/บวกกับ C แบบ<b>เชิงเส้นล้วน</b> · ความไม่เชิงเส้นทั้งหมดถูกกักไว้ฝั่งอากาศ → เมื่อกำหนดอากาศแล้ว สมการเป็นเชิงเส้นใน C → superposition รอด · นี่คือ "conditionally-linear" (หัวใจ 3.5) · ห้าม AFNO แตะ C โดยตรง (เช่น FFT บน C) เด็ดขาด</p>
+</details>
+</div>
+
+<div class="lead">
+<b>จบ 3.2 แล้วคุณควร:</b> เข้าใจว่า operator = สนาม→สนาม, neural operator เรียนกฎฟิสิกส์ (resolution-invariant), FNO ใช้ FFT (เก็บ low modes), AFNO = เวอร์ชันเบา/scale ได้ (backbone FourCastNet), และที่สำคัญสุด — <b>AFNO ใน HazeNet ดูอากาศออก g,D โดยไม่แตะ C</b> → กักความไม่เชิงเส้นไว้ฝั่งอากาศ → superposition รอด · นี่คือสะพานตรงสู่หัวใจ 3.5
+<br><br>
+<b>ขั้นต่อไปแนะนำ:</b> <b>3.3 U-Net</b> (🟡) — สถาปัตยกรรม encoder-decoder ที่เป็นทางเลือก/ส่วนผสมของ backbone (อาจใช้คู่ AFNO เป็น decoder) · หรือกระโดดไป <b>3.5 Conditionally-linear operator</b> (⭐🔴 หัวใจ 3/3 สุดท้าย) ที่ 2.5+3.2 ปูทางครบแล้ว · บอกเลขถัดไปได้เลยครับ
+</div>
+
+</div>
+</body>
+</html>

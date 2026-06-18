@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HazeCast v2 — Decision Engine (แผนโปรเจกต์ฉบับสมบูรณ์)</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#30363d;
+    --text:#e6edf3; --muted:#9aa7b4; --green:#3fb950; --greenدim:#2ea043;
+    --blue:#58a6ff; --purple:#bc8cff; --amber:#e3b341; --red:#f85149;
+    --cyan:#56d4dd;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:"Segoe UI",Tahoma,sans-serif; line-height:1.75;
+    font-size:16px;
+  }
+  .wrap{max-width:1080px; margin:0 auto; padding:32px 20px 80px}
+  h1{font-size:30px; line-height:1.3; margin:0 0 6px}
+  h2{font-size:23px; margin:48px 0 14px; padding-bottom:8px; border-bottom:2px solid var(--border); color:var(--green)}
+  h3{font-size:19px; margin:28px 0 8px; color:var(--cyan)}
+  p{margin:10px 0}
+  .sub{color:var(--muted); font-size:15px; margin:0 0 8px}
+  .lead{background:var(--panel); border:1px solid var(--border); border-left:4px solid var(--green);
+    padding:16px 20px; border-radius:8px; margin:20px 0}
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:18px 22px; margin:16px 0}
+  .card2{background:var(--panel2)}
+  .grid{display:grid; gap:14px}
+  .g2{grid-template-columns:1fr 1fr}
+  @media(max-width:780px){.g2{grid-template-columns:1fr}}
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:15px}
+  th,td{border:1px solid var(--border); padding:9px 12px; text-align:left; vertical-align:top}
+  th{background:var(--panel2); color:var(--green)}
+  code{background:#11161d; border:1px solid var(--border); border-radius:5px; padding:1px 6px; color:var(--amber); font-size:14px}
+  .pill{display:inline-block; font-size:12.5px; padding:2px 10px; border-radius:20px; margin:2px 4px 2px 0; border:1px solid var(--border)}
+  .p-keep{background:rgba(63,185,80,.12); color:var(--green); border-color:var(--green)}
+  .p-cut{background:rgba(248,81,73,.12); color:var(--red); border-color:var(--red)}
+  .p-new{background:rgba(188,140,255,.12); color:var(--purple); border-color:var(--purple)}
+  .p-sota{background:rgba(86,212,221,.12); color:var(--cyan); border-color:var(--cyan)}
+  .layer{border-left:4px solid var(--blue); padding:14px 20px; margin:14px 0; background:var(--panel); border-radius:0 8px 8px 0}
+  .layer .num{font-size:13px; color:var(--blue); font-weight:bold; letter-spacing:1px}
+  .verdict{font-weight:bold}
+  .v-yes{color:var(--green)} .v-half{color:var(--amber)} .v-no{color:var(--red)}
+  ul{margin:8px 0; padding-left:22px} li{margin:4px 0}
+  .warn{border-left:4px solid var(--amber); background:rgba(227,179,65,.07)}
+  .danger{border-left:4px solid var(--red); background:rgba(248,81,73,.07)}
+  .ok{border-left:4px solid var(--green); background:rgba(63,185,80,.07)}
+  .center{text-align:center}
+  .muted{color:var(--muted)}
+  .flow text{font-family:"Segoe UI",Tahoma,sans-serif}
+  .tag{font-size:12px;color:var(--muted)}
+  .ladder li{margin:7px 0}
+  hr{border:none;border-top:1px solid var(--border);margin:28px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>HazeCast v2 — ระบบ "ตัดสินใจ" ไม่ใช่แค่ "พยากรณ์"</h1>
+<p class="sub">แผนฉบับสมบูรณ์: โปรเจกต์ควรมีอะไรบ้าง เพื่อให้แตกต่าง · สร้างสรรค์ · มี impact จริง · ใช้ SOTA · ทำได้ใน 2 เดือน / A100 ตัวเดียว / open data เท่านั้น</p>
+
+<div class="lead">
+<b>แก่นความคิดเดียวที่ต้องจำ:</b> งานเหรียญทอง SS5 คือ "<u>โมเดลพยากรณ์</u>" — ของเราต้องเป็น "<u>ระบบตัดสินใจที่มีโมเดลเป็นเครื่องยนต์</u>"
+ความแตกต่างไม่ได้อยู่ที่ "เปลี่ยนหัวข้อจากอากาศเป็นควัน" แต่อยู่ที่เราต่อ <b>4 ชั้น</b> ที่แต่ละชั้น<b>กินผลผลิตของชั้นก่อนหน้า</b> และมีชั้นที่ <b>มีอยู่ได้เพราะ AI-emulator เร็วเท่านั้น</b> (กายภาพ/WRF-Chem ทำไม่ได้) — นั่นคือความต่างเชิงโครงสร้าง ไม่ใช่เชิงหัวข้อ
+</div>
+
+<h2>เกณฑ์คัดของเข้าโปรเจกต์ (ใช้ตัดสินทุกฟีเจอร์)</h2>
+<p>ทุกอย่างที่จะใส่เข้าโปรเจกต์ต้องผ่าน 4 ข้อนี้ ไม่ผ่าน = ตัดทิ้ง ไม่ว่าจะเท่แค่ไหน</p>
+<div class="card">
+<ol>
+<li><b>ใช้แกนโมเดลเดิม</b> — ต้องต่อยอดเครื่องยนต์ ไม่ใช่โปรเจกต์แปะข้าง</li>
+<li><b>คุณค่าที่เป็นไปไม่ได้ถ้าไม่มีแกนเรา</b> — ถ้าทำได้ด้วย Excel/dashboard ธรรมดา = ไม่นับ</li>
+<li><b>วัดผลของตัวเองได้</b> — มี metric เฉพาะ ไม่ใช่ "ดูดี"</li>
+<li><b>ต้นทุน ≤ ~1 สัปดาห์</b> — ไม่งั้นกินเวลาแกนวิทยาศาสตร์</li>
+</ol>
+</div>
+
+<h2>ภาพรวม: สถาปัตยกรรม 4 ชั้น</h2>
+<div class="card center">
+<svg class="flow" viewBox="0 0 980 520" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#58a6ff"/>
+    </marker>
+  </defs>
+  <!-- data layer -->
+  <rect x="30" y="20" width="920" height="64" rx="8" fill="#1c2330" stroke="#30363d"/>
+  <text x="490" y="44" fill="#9aa7b4" font-size="13" text-anchor="middle">ข้อมูล open-source: FIRMS · Himawari/P-Tree · ERA5 · CAMS · OpenAQ/Air4Thai · DEM/WorldCover · WorldPop · AlphaEarth</text>
+  <text x="490" y="68" fill="#56d4dd" font-size="14" text-anchor="middle" font-weight="bold">⬇ Zarr Datacube (กริด 0.1°, 2016–2025)</text>
+
+  <!-- L1 -->
+  <rect x="60" y="110" width="380" height="86" rx="10" fill="#161b22" stroke="#3fb950" stroke-width="2"/>
+  <text x="250" y="136" fill="#3fb950" font-size="15" font-weight="bold" text-anchor="middle">ชั้น 1 · FORECAST — "เกิดอะไร"</text>
+  <text x="250" y="160" fill="#e6edf3" font-size="13" text-anchor="middle">U-Net+AFNO + Semi-Lagrangian advection</text>
+  <text x="250" y="180" fill="#9aa7b4" font-size="12" text-anchor="middle">พยากรณ์ PM2.5 รายชั่วโมง ถึง 24–48 ชม.</text>
+
+  <!-- L2 -->
+  <rect x="540" y="110" width="380" height="86" rx="10" fill="#161b22" stroke="#3fb950" stroke-width="2"/>
+  <text x="730" y="136" fill="#3fb950" font-size="15" font-weight="bold" text-anchor="middle">ชั้น 2 · FINGERPRINT — "เพราะอะไร"</text>
+  <text x="730" y="160" fill="#e6edf3" font-size="13" text-anchor="middle">Tagged-tracer source attribution</text>
+  <text x="730" y="180" fill="#9aa7b4" font-size="12" text-anchor="middle">ควันมาจากไหน (ไทย/เพื่อนบ้าน/แปลงไหน)</text>
+
+  <!-- L3 -->
+  <rect x="60" y="250" width="380" height="100" rx="10" fill="#161b22" stroke="#bc8cff" stroke-width="2"/>
+  <text x="250" y="276" fill="#bc8cff" font-size="15" font-weight="bold" text-anchor="middle">ชั้น 3 · WHAT-IF — "ควรทำอะไร"</text>
+  <text x="250" y="300" fill="#e6edf3" font-size="13" text-anchor="middle">What-if Engine + Burn-Window Optimizer</text>
+  <text x="250" y="320" fill="#9aa7b4" font-size="12" text-anchor="middle">ลบ/เลื่อนไฟแล้วรันใหม่ในไม่กี่วินาที</text>
+  <text x="250" y="338" fill="#56d4dd" font-size="11.5" text-anchor="middle">★ มีได้เพราะ emulator เร็วเท่านั้น</text>
+
+  <!-- L4 -->
+  <rect x="540" y="250" width="380" height="100" rx="10" fill="#161b22" stroke="#bc8cff" stroke-width="2"/>
+  <text x="730" y="276" fill="#bc8cff" font-size="15" font-weight="bold" text-anchor="middle">ชั้น 4 · COMMUNICATE — "บอกคนยังไง"</text>
+  <text x="730" y="300" fill="#e6edf3" font-size="13" text-anchor="middle">Grounded Thai-LLM (Typhoon) + Health Layer</text>
+  <text x="730" y="320" fill="#9aa7b4" font-size="12" text-anchor="middle">รายงานไทยรายจังหวัด + ถาม-ตอบ (tool-calling)</text>
+  <text x="730" y="338" fill="#56d4dd" font-size="11.5" text-anchor="middle">ทุกตัวเลขมาจากโมเดล ห้าม LLM คิดเอง</text>
+
+  <!-- output -->
+  <rect x="290" y="420" width="400" height="64" rx="10" fill="#1c2330" stroke="#e3b341" stroke-width="2"/>
+  <text x="490" y="446" fill="#e3b341" font-size="15" font-weight="bold" text-anchor="middle">ผลลัพธ์: คำตัดสินใจที่ลงมือได้</text>
+  <text x="490" y="468" fill="#9aa7b4" font-size="12" text-anchor="middle">"ห้ามเผา อ.X พรุ่งนี้ → เชียงใหม่ลดฝุ่น 18% → ลดคนไข้ ER ~40 ราย"</text>
+
+  <!-- arrows -->
+  <line x1="250" y1="84" x2="250" y2="108" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="730" y1="84" x2="730" y2="108" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="440" y1="153" x2="538" y2="153" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="250" y1="196" x2="250" y2="248" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="730" y1="196" x2="730" y2="248" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="440" y1="300" x2="538" y2="300" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="250" y1="350" x2="430" y2="418" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="730" y1="350" x2="550" y2="418" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+</svg>
+</div>
+
+<h2>รายละเอียดแต่ละชั้น — ทำอะไร / SOTA ตรงไหน / ทำให้ของเดิมดีขึ้นยังไง</h2>
+
+<div class="layer">
+<div class="num">ชั้น 1 — FORECAST (แกนวิทยาศาสตร์ · ห้ามตาย)</div>
+<h3 style="margin-top:6px">พยากรณ์ PM2.5 เชิงพื้นที่-เวลา</h3>
+<p><b>เทคโนโลยี:</b> <span class="pill p-keep">U-Net + AFNO hybrid</span> <span class="pill p-keep">Semi-Lagrangian advection (hard constraint)</span> <span class="pill p-keep">softplus non-negativity</span></p>
+<p><b>SOTA ตรงไหน:</b> Neural operator ในโดเมนความถี่ (AFNO = แกน FourCastNet) + การฝัง<u>กายภาพการพัดพา</u>เป็นข้อจำกัดแข็ง ไม่ใช่ปล่อยให้เน็ตเดาเอง — แนวเดียวกับงาน NeurIPS/ICLR สาย physics-informed neural operator</p>
+<p><b>ทำให้ของเดิมดีขึ้น:</b> ระบบ PCD/GISTDA ที่มีอยู่ใช้สถิติ/WRF-Chem ที่หยาบเชิงพื้นที่และช้า — ของเราให้กริดละเอียด 0.1° เร็วระดับวินาที</p>
+<p class="verdict v-yes">คงไว้ 100% — นี่คือหัวใจ ถ้าชั้นนี้ไม่ชนะ baseline ทุกอย่างข้างบนพัง</p>
+</div>
+
+<div class="layer">
+<div class="num">ชั้น 2 — FINGERPRINT (จากแผนเดิม)</div>
+<h3 style="margin-top:6px">Source Attribution — "ควันก้อนนี้มาจากใคร"</h3>
+<p><b>เทคโนโลยี:</b> <span class="pill p-keep">Tagged-tracer / "Smoke Fingerprint"</span> — ติดป้ายแหล่งกำเนิด (เมียนมา/ลาว/ไทยรายอำเภอ) แล้วลากตามสายลม</p>
+<p><b>SOTA ตรงไหน:</b> แทน HYSPLIT back-trajectory ที่ช้าและรันทีละจุด ด้วยการพ่วง attribution เข้าไปใน forward model ครั้งเดียว</p>
+<p><b>ทำให้ของเดิมดีขึ้น:</b> เถียงเรื่อง "ฝุ่นข้ามแดน" ด้วยตัวเลข ไม่ใช่ความรู้สึก — มีน้ำหนักเชิงนโยบาย/การทูตจริง</p>
+<p class="verdict v-yes">คงไว้ — เป็นสะพานบังคับไปสู่ชั้น 3 (ต้องรู้ "ใคร" ก่อนถึงจะ "ลบ" ได้)</p>
+</div>
+
+<div class="layer">
+<div class="num">ชั้น 3 — WHAT-IF (ไอเดีย Digital Twin ของคุณ · ปรับสโคปใหม่)</div>
+<h3 style="margin-top:6px">What-if Engine + Burn-Window Optimizer</h3>
+<p><b>เทคโนโลยี:</b> <span class="pill p-new">Counterfactual simulation</span> <span class="pill p-sota">Scenario search (greedy)</span></p>
+<p><b>ทำอะไร:</b> เพราะชั้น 1 รับ "ไฟ" เป็นอินพุตอยู่แล้ว เรา<b>ลบ/ลด/เลื่อนไฟบางพื้นที่แล้วรันใหม่ในไม่กี่วินาที</b> ตอบคำถามที่ WRF-Chem ต้องใช้คลัสเตอร์รันเป็นวัน:</p>
+<ul>
+<li>"ถ้าห้ามเผา อ.X วันนี้ ฝุ่นเชียงใหม่พรุ่งนี้ลดกี่ %"</li>
+<li><b>Burn-Window Optimizer:</b> ค้นหลายพันสถานการณ์ → จัดตาราง "เผาวันไหน-ที่ไหน คนเมืองดมควันน้อยสุด" ต่อเข้าระบบขออนุญาตเผาที่มีจริง (เช่น FireD ของ มช.)</li>
+</ul>
+<p><b>★ ทำไมถึงต่างเชิงโครงสร้าง:</b> ฟีเจอร์นี้<u>มีอยู่ไม่ได้</u>ถ้าไม่มี AI-emulator ที่รันเป็นวินาที — กายภาพล้วนทำ search หลายพันรอบไม่ไหว นี่คือคุณค่าที่ผ่านเกณฑ์ข้อ 2 แบบสมบูรณ์</p>
+<div class="card danger" style="margin-top:10px">
+<b>วิจารณ์ตรง ๆ (ต้องประกาศข้อจำกัด):</b> การลบไฟ = ถามโมเดลนอก distribution ที่เคยเห็น (causal validity จำกัด) — advection ช่วยเพราะเชิงเส้นต่อแหล่งกำเนิด แต่ต้องเสนอเป็น <b>"first-order intervention estimate"</b> ไม่ใช่คำพยากรณ์ศักดิ์สิทธิ์ · ใช้ greedy search ไม่ใช่ RL หรู (eval ไม่ทันใน 2 เดือน)</div>
+<p class="verdict v-yes">รับ — แต่ <b>ทิ้งคำว่า "Digital Twin"</b> (เฟ้อ โดนยำง่าย เทียบ Earth-2/DestinE ไม่ได้) เรียก <b>"What-if Engine"</b> ตรงกว่า · ต้นทุน ~3–4 วัน</p>
+</div>
+
+<div class="layer">
+<div class="num">ชั้น 4 — COMMUNICATE (ไอเดีย GeoLLM ของคุณ · ปรับสโคปใหม่)</div>
+<h3 style="margin-top:6px">Grounded Thai-LLM + Health-Impact Layer</h3>
+<p><b>เทคโนโลยี:</b> <span class="pill p-new">Typhoon (LLM ไทย open ของ SCB10X)</span> <span class="pill p-sota">Tool-calling / RAG-grounded</span> <span class="pill p-new">Dose-response health model</span></p>
+<p><b>เวอร์ชันที่รอด (ไม่ใช่ GPT อ่าน JSON):</b></p>
+<ul>
+<li><b>Grounded bulletin generator:</b> ทุกเช้า สร้างรายงานไทยรายจังหวัดอัตโนมัติ — LLM ทำหน้าที่<u>เรียบเรียงภาษา</u>อย่างเดียว <b>ทุกตัวเลขมาจาก datacube ผ่าน template</b> คำแนะนำสุขภาพเป็น rule ตายตัวตามเกณฑ์ สธ.</li>
+<li><b>Q&A แบบ tool-calling:</b> ถาม "พรุ่งนี้แม่สายเป็นไง" → LLM เรียกฟังก์ชันคืนตัวเลขจริงจากโมเดล แล้วเรียบเรียง — <b>ห้ามมีตัวเลขจากความจำ LLM เด็ดขาด</b></li>
+<li><b>Health Layer:</b> µg/m³ × WorldPop × dose-response (เปเปอร์เชียงใหม่) → "คาดการณ์ภาระ ER พรุ่งนี้" — เปลี่ยน "ไมโครกรัม" เป็น "จำนวนคนไข้" ที่กรรมการสาย impact ฟังออก</li>
+</ul>
+<p><b>metric ของตัวเอง:</b> <span class="pill p-sota">grounding accuracy</span> = % ประโยคที่ trace กลับไปหาข้อมูลจริงได้ (ไม่ใช่วัด "ฉลาด")</p>
+<div class="card danger" style="margin-top:10px">
+<b>อันตรายที่สุด — ต้องระวัง:</b> นี่คือ<u>โดเมนสุขภาพ</u> LLM hallucinate คำแนะนำผิดครั้งเดียวใน live demo = พังทั้งงาน · ต้องมี <b>canned fallback</b> สำหรับวันเดโม · ซื่อสัตย์ในเอกสารว่าชั้นนี้คือ "last mile of impact" ไม่ใช่วิทยาศาสตร์ใหม่</div>
+<p class="verdict v-half">รับ 50% — ชั้นบาง 1 สัปดาห์ ห้ามให้กินเวลาแกน</p>
+</div>
+
+<h2>ไอเดีย SOTA เพิ่มเติม (ของผมเสนอ + วิจารณ์ตัวเอง)</h2>
+<table>
+<tr><th>ไอเดีย</th><th>ทำอะไร / SOTA</th><th>วิจารณ์ตัวเอง</th><th>คำตัดสิน</th></tr>
+<tr>
+<td><b>AlphaEarth fire-forecast</b><br><span class="tag">stretch</span></td>
+<td>ใช้ AlphaEarth embeddings (ฟรีบน GEE) + ประวัติเผา + ปฏิทินเก็บเกี่ยว ทำนาย "ความน่าจะเป็นเผารายอำเภอสัปดาห์หน้า" → ป้อนเป็น fire scenario โจมตีเพดานใหญ่สุด (ไฟอนาคตไม่รู้) + ตอบ "foundation model 2025 อยู่ไหนใน stack"</td>
+<td>การทำนายไฟยากเป็นโปรเจกต์ย่อยเต็มตัว ถ้าแกนไม่แน่นพอ <b>ตัดทิ้งก่อน</b></td>
+<td class="verdict v-half">W7 stretch เท่านั้น</td>
+</tr>
+<tr>
+<td><b>Health-Impact Layer</b></td>
+<td>(อยู่ในชั้น 4) ถูกสุด คุ้มสุด — แค่คูณเลข แต่เปลี่ยนภาษา impact</td>
+<td>เสี่ยง overclaim ระบาดวิทยา — ต้องใส่ CI + อ้างสัมประสิทธิ์จากเปเปอร์ ไม่ประดิษฐ์เอง</td>
+<td class="verdict v-yes">รับ</td>
+</tr>
+</table>
+
+<h3>สิ่งที่ผม "ปฏิเสธจะเพิ่ม" (วินัยคือจุดขาย)</h3>
+<p>
+<span class="pill p-cut">3D twin visualization</span> สวยแต่ skill = 0 ·
+<span class="pill p-cut">Multi-agent orchestration</span> โรงละคร ·
+<span class="pill p-cut">RL เต็มรูป</span> eval ไม่ทัน 2 เดือน ·
+<span class="pill p-cut">Real-time streaming infra</span> เดโมไม่ต้องการ ·
+<span class="pill p-cut">Diffusion ensemble</span> เกินงบ GPU
+</p>
+<p class="muted">การ "ไม่ใส่" คือสิ่งที่คุณบอกเองว่าต้องการ — งานเหรียญทองชนะด้วย pipeline เดียวที่ทำเป็นเลิศ ไม่ใช่บุฟเฟต์ฟีเจอร์ที่ละ 60%</p>
+
+<h2>Scope Ladder — ลำดับการตัดเมื่อเวลาไม่พอ</h2>
+<div class="card ok">
+<ol class="ladder">
+<li><b>MUST (W1–W5):</b> ชั้น 1 + ชั้น 2 ชนะ baseline ทุกตัว (CSI/POD/FAR/onset-lead) — <u>ถ้าตรงนี้ไม่เสร็จ ทุกอย่างข้างล่างหด</u></li>
+<li><b>SHOULD (W5–W6):</b> ชั้น 3 What-if Engine (greedy) + Health Layer</li>
+<li><b>NICE (W6–W7):</b> ชั้น 4 Grounded Thai-LLM (มี canned fallback)</li>
+<li><b>STRETCH (W7):</b> Burn-Window Optimizer เต็มรูป + AlphaEarth fire-forecast</li>
+<li><b>W8:</b> ablation 3 ชุด, เขียน report, ซ้อมเดโม</li>
+</ol>
+<p style="margin-bottom:0"><b>กฎเหล็ก:</b> ถ้า W5 ชั้น 1 ยังไม่ชนะ baseline → ชั้น 3–4 หดเป็นเดโมแนวคิดทันที <b>แกนวิทยาศาสตร์ห้ามตายเพื่อฟีเจอร์</b></p>
+</div>
+
+<h2>ราคาที่ต้องจ่าย (พูดตรง)</h2>
+<div class="card warn">
+<ul>
+<li>8 สัปดาห์เดิมตึงอยู่แล้ว — เพิ่มชั้น 3+4 = ต้อง<b>ตัด diffusion stretch ตาย</b></li>
+<li>ลด ablation เหลือ 3 ชุด</li>
+<li>ชั้น 3 ใช้ greedy ไม่ใช่ optimizer หรู · ชั้น 4 มี template fallback</li>
+<li>งบ GPU จริง Colab Pro ≈ 15 A100-hr → ต้องวางแผน budget แน่น ไม่ใช่ 60–70 hr ที่เคยเคลม</li>
+<li>AlphaEarth อยู่ท้ายคิวสุด</li>
+</ul>
+</div>
+
+<h2>สรุป: ทำไมโครงนี้ "ดีกว่า" ไม่ใช่ "เหมือน"</h2>
+<div class="lead">
+<table style="margin:0">
+<tr><th>ชั้น</th><th>ตอบคำถาม</th><th>มาจาก</th></tr>
+<tr><td>1. Forecast</td><td><b>เกิดอะไร</b> ที่ไหน เมื่อไหร่</td><td>แกนเดิม (วิทยาศาสตร์หลัก)</td></tr>
+<tr><td>2. Fingerprint</td><td><b>เพราะอะไร</b> ควันมาจากไหน</td><td>แผนเดิม</td></tr>
+<tr><td>3. What-if + Optimizer</td><td><b>ควรทำอะไร</b> มาตรการไหนช่วยสุด</td><td>ไอเดีย Digital Twin (สโคปใหม่)</td></tr>
+<tr><td>4. Grounded Thai-LLM</td><td><b>บอกมนุษย์ยังไง</b> ให้ตัดสินใจได้</td><td>ไอเดีย GeoLLM (สโคปใหม่)</td></tr>
+</table>
+<p style="margin:14px 0 0"><b>งานเหรียญทอง = "โมเดล" · ของเรา = "ระบบตัดสินใจที่มีโมเดลเป็นเครื่องยนต์"</b> และชั้น 3 คือสิ่งที่มีอยู่ได้เพราะ emulator เร็วเท่านั้น — นั่นคือความต่างเชิงโครงสร้างที่ฆ่าคำวิจารณ์ "เปลี่ยนแค่ปัญหา" ที่ราก</p>
+</div>
+
+</div>
+</body>
+</html>

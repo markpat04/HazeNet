@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.9 — Uncertainty: Ensemble / Quantile / CRPS</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .purple-box{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .amber-box{border-left:4px solid var(--amber);background:rgba(227,179,65,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.6px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--amber);color:var(--amber);margin-left:6px}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+
+  /* Calibration diagram */
+  .calib-wrap{display:flex;gap:24px;flex-wrap:wrap;margin:14px 0}
+  .calib-box{flex:1;min-width:180px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px}
+  .calib-title{font-size:13px;font-weight:bold;margin-bottom:8px;text-align:center}
+  .calib-bar{height:14px;border-radius:4px;margin:4px 0;position:relative}
+  .calib-label{font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+
+  /* Quantile band visualizer */
+  .qband{position:relative;height:90px;background:var(--panel2);border-radius:8px;margin:10px 0;overflow:hidden}
+  .qband-fill{position:absolute;left:0;right:0;border-radius:4px}
+  .qband-line{position:absolute;left:0;right:0;height:2px;background:var(--green)}
+  .qband-dot{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--red);transform:translateX(-50%)}
+  .qband-label{position:absolute;font-size:11px;color:var(--muted)}
+
+  /* Method card */
+  .method-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin:20px 0}
+  .method-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .method-num{background:var(--purple);color:white;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;flex-shrink:0}
+  .method-name{font-size:19px;font-weight:bold;color:var(--cyan)}
+  .method-tag{font-size:12px;padding:2px 8px;border-radius:12px;margin-left:6px}
+  .tag-fast{background:rgba(63,185,80,.2);border:1px solid var(--green);color:var(--green)}
+  .tag-slow{background:rgba(248,81,73,.2);border:1px solid var(--red);color:var(--red)}
+  .tag-metric{background:rgba(88,166,255,.2);border:1px solid var(--blue);color:var(--blue)}
+
+  /* CRPS visualization */
+  .crps-row{display:flex;gap:8px;align-items:flex-end;margin:8px 0}
+  .crps-bar-wrap{flex:1;text-align:center}
+  .crps-bar{border-radius:4px 4px 0 0;width:100%}
+  .crps-label{font-size:11px;color:var(--muted);margin-top:2px}
+
+  /* Compare grid */
+  .compare{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:14px 0}
+  @media(max-width:680px){.compare{grid-template-columns:1fr}}
+  .compare-box{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px}
+  .compare-title{font-weight:bold;color:var(--cyan);margin-bottom:8px;font-size:15px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>3.9 — Uncertainty: Ensemble · Quantile · CRPS <span class="pin">🟡 กลาง</span></h1>
+<p class="tagline">บอกความไม่แน่นอนอย่างซื่อสัตย์ — สิ่งที่ทำให้ forecast น่าเชื่อถือและนำไปใช้ได้จริง</p>
+<p class="sub">เชื่อมกับ: 3.8 (ใช้แทน diffusion สำหรับ uncertainty) · 5.1 Metrics (CRPS เป็น metric หลัก)</p>
+
+<div class="lead">
+<b>โจทย์จริง:</b> HazeNet ทำนาย PM2.5 = 145 μg/m³ ที่เชียงใหม่ พรุ่งนี้ 12:00 น.<br>
+แต่ตัวเลขนี้บอกอะไรไม่ได้ว่า "แน่ใจแค่ไหน" — อาจเป็น 90–200 ก็ได้<br><br>
+บทนี้เรียน <b>3 เครื่องมือ</b> ที่เปลี่ยนการทำนายเป็น <em>"145 μg/m³ [90-CI: 110–195 μg/m³]"</em>:<br>
+<b>① Ensemble</b> — รัน model หลายรอบ ดู spread · <b>② Quantile Regression</b> — ทำนาย Q10/Q50/Q90 โดยตรง · <b>③ CRPS</b> — metric วัดคุณภาพ forecast ที่รวม uncertainty<br><br>
+ทั้งสามนี้คือสิ่งที่เรา "ใช้แทน diffusion" (3.8) สำหรับ uncertainty ใน HazeNet
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. ทำไม Uncertainty สำคัญ</a><br>
+<a href="#p2">2. Calibration — uncertainty ที่ซื่อสัตย์</a><br>
+<a href="#p3">3. วิธี ①: Ensemble</a><br>
+<a href="#p4">4. วิธี ②: Quantile Regression</a><br>
+<a href="#p5">5. Pinball Loss — train quantile</a><br>
+<a href="#p6">6. วิธี ③: CRPS — metric วัด forecast</a><br>
+<a href="#p7">7. เปรียบ 3 วิธี</a><br>
+<a href="#p8">8. HazeNet ใช้อะไร + โค้ดเต็ม</a><br>
+<a href="#p9">9. Uncertainty ใช้ประโยชน์ยังไงในทางปฏิบัติ</a><br>
+<a href="#p10">10. ทำไมดีกว่า Diffusion (สรุป 3.8)</a><br>
+<a href="#chk">11. แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. ทำไม Uncertainty สำคัญ — ตัวเลขเดี่ยวไม่เพียงพอ</h2>
+
+<h3>1.1 สถานการณ์จริงที่ต้องตัดสินใจ</h3>
+
+<div class="card">
+<p><b>เย็นวันนี้ โรงเรียนในเชียงใหม่ต้องตัดสินใจ:</b> พรุ่งนี้จะเปิดสอนปกติ หรือหยุดพิเศษเพราะฝุ่น?</p>
+<table>
+<tr><th>HazeNet บอก</th><th>สิ่งที่โรงเรียนต้องรู้</th><th>ผลการตัดสินใจ</th></tr>
+<tr><td>PM2.5 = 145 μg/m³<br><span class="muted">(ตัวเลขเดี่ยว)</span></td><td>ต้องเดาเองว่าแน่ใจแค่ไหน<br>"อาจจะ 80–200 ก็ได้?"</td><td>ไม่แน่ใจ → รอดูก่อน → แจ้งช้า</td></tr>
+<tr><td>PM2.5 = 145 μg/m³<br>90-CI: <b style="color:var(--red)">[120, 185]</b></td><td>85% โอกาสเกิน 120 (เกณฑ์อันตราย)<br>แน่ใจระดับสูง</td><td>แจ้งหยุดตั้งแต่คืนนี้ → เด็กปลอดภัย</td></tr>
+<tr><td>PM2.5 = 145 μg/m³<br>90-CI: <b style="color:var(--green)">[60, 230]</b></td><td>ไม่แน่นอนสูงมาก — อาจดีหรือแย่ก็ได้</td><td>รอข้อมูลเพิ่ม → แจ้งเช้าตรู่แทน</td></tr>
+</table>
+<p class="muted">→ ตัวเลขเดียวกัน (145) แต่ uncertainty ต่างกัน → การตัดสินใจต่างกัน</p>
+</div>
+
+<h3>1.2 ประเภทของ Uncertainty</h3>
+
+<div class="compare" style="grid-template-columns:1fr 1fr">
+<div class="compare-box">
+  <div class="compare-title">Aleatoric Uncertainty</div>
+  <p>ความไม่แน่นอนจาก <b>ธรรมชาติของข้อมูล</b> — ลดไม่ได้ไม่ว่าจะมีข้อมูลมากแค่ไหน</p>
+  <p class="muted">ตัวอย่าง: ลม chaotic ที่ไม่มีทางทำนายได้ 100% · noise ในการวัด PM2.5</p>
+</div>
+<div class="compare-box">
+  <div class="compare-title">Epistemic Uncertainty</div>
+  <p>ความไม่แน่นอนจาก <b>โมเดลที่ไม่รู้พอ</b> — ลดได้ถ้ามีข้อมูลเพิ่ม</p>
+  <p class="muted">ตัวอย่าง: โมเดลไม่เคยเห็น scenario ไฟป่าขนาดใหญ่ใน Laos → ทำนายไม่มั่นใจ</p>
+</div>
+</div>
+
+<div class="why">
+<b>ทำไมแยก 2 ประเภท:</b> ถ้า uncertainty สูงเพราะ <em>aleatoric</em> → เก็บข้อมูลเพิ่มไม่ช่วย · ถ้าสูงเพราะ <em>epistemic</em> → เพิ่ม training data จาก scenario นั้นช่วยได้ · แยกแล้วรู้ว่าต้องแก้อะไร
+</div>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. Calibration — Uncertainty ที่ "ซื่อสัตย์"</h2>
+
+<h3>2.1 Calibration คืออะไร</h3>
+
+<p><b>Calibrated</b> = ถ้าบอกว่า "90% prediction interval" แล้วค่าจริงต้องอยู่ในนั้น <em>90% ของเวลา</em></p>
+
+<div class="calib-wrap">
+<div class="calib-box">
+  <div class="calib-title" style="color:var(--green)">✓ Calibrated (ดี)</div>
+  <div style="font-size:13px;margin-bottom:8px">บอก 90-CI → จริงอยู่ใน 90%</div>
+  <div class="calib-label"><span>Q10</span><span>Q90</span></div>
+  <div class="calib-bar" style="background:rgba(63,185,80,.2);border:1px solid var(--green)"><div style="position:absolute;left:45%;top:2px;bottom:2px;width:2px;background:var(--red);border-radius:2px" title="ค่าจริง"></div></div>
+  <div style="font-size:11px;color:var(--muted);margin-top:4px">ค่าจริง (แดง) อยู่ในช่วง → ถูกต้อง</div>
+</div>
+<div class="calib-box">
+  <div class="calib-title" style="color:var(--red)">✗ Overconfident (แย่)</div>
+  <div style="font-size:13px;margin-bottom:8px">บอก 90-CI แคบ → จริงอยู่ใน 60%</div>
+  <div class="calib-label"><span>Q10</span><span>Q90</span></div>
+  <div class="calib-bar" style="background:rgba(88,166,255,.15);border:1px solid var(--blue);width:40%;margin:4px auto"><div style="position:absolute;right:-30px;top:2px;bottom:2px;width:2px;background:var(--red)"></div></div>
+  <div style="font-size:11px;color:var(--muted);margin-top:4px">ค่าจริงอยู่นอกช่วง → ผิด overconfident</div>
+</div>
+<div class="calib-box">
+  <div class="calib-title" style="color:var(--amber)">⚠ Underconfident (สูญเปล่า)</div>
+  <div style="font-size:13px;margin-bottom:8px">บอก 90-CI กว้างมาก → ไม่มีประโยชน์</div>
+  <div class="calib-label"><span>Q10</span><span>Q90</span></div>
+  <div class="calib-bar" style="background:rgba(227,179,65,.15);border:1px solid var(--amber)"><div style="position:absolute;left:45%;top:2px;bottom:2px;width:2px;background:var(--red)"></div></div>
+  <div style="font-size:11px;color:var(--muted);margin-top:4px">ช่วงกว้างมาก → ครอบคลุมแต่ไม่มีข้อมูล</div>
+</div>
+</div>
+
+<h3>2.2 วัด Calibration ยังไง — Reliability Diagram</h3>
+
+<pre><code><span class="kw">def</span> <span class="fn">reliability_diagram</span>(y_true, quantile_preds, quantiles):
+    <span class="cm">"""
+    y_true:        (N,) ค่าจริง
+    quantile_preds:(N, Q) ทำนาย quantile แต่ละตัว
+    quantiles:     [0.1, 0.25, 0.5, 0.75, 0.9]
+    คำนวณ: สัดส่วนที่ y_true &lt; quantile_pred ควรเท่ากับ quantile นั้น
+    """</span>
+    coverage = []
+    <span class="kw">for</span> i, q <span class="kw">in</span> <span class="fn">enumerate</span>(quantiles):
+        frac = (y_true &lt; quantile_preds[:, i]).<span class="fn">float</span>().<span class="fn">mean</span>()
+        coverage.<span class="fn">append</span>(frac.<span class="fn">item</span>())
+        <span class="fn">print</span>(<span class="fn">f</span><span class="st">"Q{q*100:.0f}: ทำนาย {q:.2f} | จริง {frac:.2f}"</span>)
+    <span class="cm"># Calibrated = ทุกบรรทัด ทำนาย ≈ จริง</span>
+    <span class="kw">return</span> coverage
+
+<span class="cm"># Output ตัวอย่าง (calibrated)</span>
+<span class="out">Q10: ทำนาย 0.10 | จริง 0.09 ✓
+Q25: ทำนาย 0.25 | จริง 0.24 ✓
+Q50: ทำนาย 0.50 | จริง 0.51 ✓
+Q75: ทำนาย 0.75 | จริง 0.76 ✓
+Q90: ทำนาย 0.90 | จริง 0.88 ✓</span></code></pre>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. วิธี ① — Ensemble</h2>
+
+<div class="method-card">
+<div class="method-header">
+  <div class="method-num">①</div>
+  <div>
+    <span class="method-name">Ensemble</span>
+    <span class="method-tag tag-fast">เร็วปานกลาง</span>
+  </div>
+</div>
+<p><b>แนวคิด:</b> รัน N forward passes แต่ละรอบได้ค่าต่างกันนิดหน่อย → spread ของ N predictions คือ uncertainty</p>
+</div>
+
+<h3>3.1 MC Dropout — ฟรีจาก Dropout ที่มีอยู่แล้ว</h3>
+
+<p>ปกติ dropout ปิดตอน inference (<code>model.eval()</code>) → ผลเดิมทุกรอบ<br>
+MC Dropout: เปิด dropout ตอน inference (<code>model.train()</code>) → แต่ละรอบ node ถูกปิดต่างกัน → ผลต่างกัน</p>
+
+<pre><code><span class="kw">import</span> torch
+
+<span class="kw">def</span> <span class="fn">mc_dropout_predict</span>(model, C, met, n_samples=<span class="nm">50</span>):
+    <span class="cm">"""
+    model: HazeNet ที่มี Dropout layer อยู่แล้ว
+    n_samples: จำนวน forward passes
+    """</span>
+    model.<span class="fn">train</span>()   <span class="cm"># เปิด dropout ตอน inference!</span>
+
+    preds = []
+    <span class="kw">with</span> torch.no_grad():
+        <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n_samples):
+            C_pred = <span class="fn">model</span>(C, met)   <span class="cm"># แต่ละรอบ dropout ต่างกัน</span>
+            preds.<span class="fn">append</span>(C_pred)
+
+    preds = torch.<span class="fn">stack</span>(preds)  <span class="cm"># (n_samples, H, W)</span>
+
+    mean   = preds.<span class="fn">mean</span>(<span class="nm">0</span>)     <span class="cm"># (H, W) prediction หลัก</span>
+    std    = preds.<span class="fn">std</span>(<span class="nm">0</span>)      <span class="cm"># (H, W) uncertainty</span>
+    q10    = preds.<span class="fn">quantile</span>(<span class="nm">0.1</span>, dim=<span class="nm">0</span>)
+    q90    = preds.<span class="fn">quantile</span>(<span class="nm">0.9</span>, dim=<span class="nm">0</span>)
+
+    model.<span class="fn">eval</span>()  <span class="cm"># reset กลับ</span>
+    <span class="kw">return</span> mean, std, q10, q90
+
+<span class="cm"># ตัวอย่างผลลัพธ์</span>
+mean, std, q10, q90 = <span class="fn">mc_dropout_predict</span>(hazenet, C_now, met_forecast)
+<span class="out">print(f"PM2.5 at CM: {mean[48,35]:.1f} ± {std[48,35]:.1f} μg/m³")
+# → PM2.5 at CM: 145.3 ± 18.7 μg/m³
+print(f"90-CI: [{q10[48,35]:.0f}, {q90[48,35]:.0f}] μg/m³")
+# → 90-CI: [113, 178] μg/m³</span></code></pre>
+
+<div class="card">
+<p><b>ข้อดี / ข้อจำกัด MC Dropout:</b></p>
+<table>
+<tr><th></th><th>รายละเอียด</th></tr>
+<tr><td style="color:var(--green)"><b>✓ ฟรี</b></td><td>ไม่ต้องเปลี่ยนโมเดลถ้ามี dropout อยู่แล้ว</td></tr>
+<tr><td style="color:var(--green)"><b>✓ เร็ว</b></td><td>n_samples=50 → 50× forward pass (วินาทีบน A100)</td></tr>
+<tr><td style="color:var(--amber)"><b>⚠ Calibration</b></td><td>ไม่รับประกัน calibrated — อาจ overconfident</td></tr>
+<tr><td style="color:var(--amber)"><b>⚠ ต้องมี Dropout</b></td><td>ถ้า architecture ไม่มี dropout ต้องเพิ่มก่อน</td></tr>
+</table>
+</div>
+
+<h3>3.2 Deep Ensemble — แม่นและ calibrated ที่สุด</h3>
+
+<p>Train โมเดล N ตัวอิสระจากกัน (random init ต่างกัน) → รวม prediction</p>
+
+<pre><code><span class="kw">def</span> <span class="fn">deep_ensemble_predict</span>(models, C, met):
+    <span class="cm">"""
+    models: list ของ HazeNet N ตัว (trained independently)
+    """</span>
+    preds = []
+    <span class="kw">with</span> torch.no_grad():
+        <span class="kw">for</span> model <span class="kw">in</span> models:
+            model.<span class="fn">eval</span>()
+            preds.<span class="fn">append</span>(<span class="fn">model</span>(C, met))
+
+    preds  = torch.<span class="fn">stack</span>(preds)  <span class="cm"># (N, H, W)</span>
+    mean   = preds.<span class="fn">mean</span>(<span class="nm">0</span>)
+    var    = preds.<span class="fn">var</span>(<span class="nm">0</span>)        <span class="cm"># epistemic uncertainty</span>
+    <span class="kw">return</span> mean, var
+
+<span class="cm"># ตัวอย่าง: 5 models → สร้าง 5 สมาชิก ensemble</span>
+ensemble_models = [<span class="fn">HazeNet</span>().<span class="fn">to</span>(device) <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">5</span>)]
+<span class="cm"># ... train แต่ละตัวแยก ...</span>
+mean_pred, var_pred = <span class="fn">deep_ensemble_predict</span>(ensemble_models, C_now, met_forecast)</code></pre>
+
+<div class="warn">
+<b>ข้อจำกัด Deep Ensemble:</b> 5 models = 5× RAM + 5× training time · บน A100 ที่จำกัด: ใช้ 3–5 models สูงสุด · อาจไม่ feasible ถ้าโมเดลใหญ่มาก
+</div>
+
+<h3>3.3 Physical Ensemble — เปลี่ยน met forcing</h3>
+
+<pre><code><span class="cm"># วิธีที่ 3: เปลี่ยน meteorology input เล็กน้อย → ได้ physics-based spread</span>
+<span class="kw">def</span> <span class="fn">physical_ensemble</span>(model, C, met_base, n_members=<span class="nm">10</span>, met_noise=<span class="nm">0.05</span>):
+    preds = []
+    <span class="kw">with</span> torch.no_grad():
+        <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n_members):
+            met_perturbed = met_base * (<span class="nm">1</span> + met_noise * torch.<span class="fn">randn_like</span>(met_base))
+            preds.<span class="fn">append</span>(<span class="fn">model</span>(C, met_perturbed))
+    <span class="kw">return</span> torch.<span class="fn">stack</span>(preds)
+<span class="cm"># spread สะท้อน sensitivity ต่อความไม่แน่นอนของ ERA5</span></code></pre>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. วิธี ② — Quantile Regression</h2>
+
+<div class="method-card">
+<div class="method-header">
+  <div class="method-num">②</div>
+  <div>
+    <span class="method-name">Quantile Regression</span>
+    <span class="method-tag tag-fast">เร็ว (1 pass)</span>
+  </div>
+</div>
+<p><b>แนวคิด:</b> แทนที่จะทำนาย mean ตัวเดียว → ทำนาย Q10, Q25, Q50, Q75, Q90 พร้อมกัน<br>
+ได้ทั้ง forecast หลักและ uncertainty interval ใน <b>forward pass เดียว</b></p>
+</div>
+
+<h3>4.1 Quantile คืออะไร</h3>
+
+<div class="card">
+<p>Q<sub>τ</sub>(Y) = ค่าที่ "มี τ×100% โอกาส Y จะต่ำกว่านี้"</p>
+<table>
+<tr><th>Quantile</th><th>ความหมายสำหรับ PM2.5</th><th>ใช้ทำ</th></tr>
+<tr><td><b>Q10 = 95 μg/m³</b></td><td>10% โอกาส PM2.5 &lt; 95 → มั่นใจ 90% ว่าสูงกว่า 95</td><td>Lower bound ระวัง</td></tr>
+<tr><td><b>Q50 = 145 μg/m³</b></td><td>50% โอกาส PM2.5 &lt; 145 (ค่า median)</td><td>Forecast หลัก</td></tr>
+<tr><td><b>Q90 = 185 μg/m³</b></td><td>90% โอกาส PM2.5 &lt; 185 → 10% โอกาสเกิน</td><td>Upper bound เสี่ยง</td></tr>
+</table>
+<p class="muted">→ "PM2.5 พรุ่งนี้จะเป็น 145 [95–185]" บอกข้อมูลมากกว่า "145" เยอะมาก</p>
+</div>
+
+<h3>4.2 สถาปัตยกรรม Quantile HazeNet</h3>
+
+<pre><code><span class="kw">import</span> torch.nn <span class="kw">as</span> nn
+
+<span class="kw">class</span> <span class="fn">QuantileHazeNet</span>(nn.Module):
+    <span class="cm">"""HazeNet ที่ output หลาย quantiles พร้อมกัน"""</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, base_hazenet, quantiles=(<span class="nm">0.1</span>, <span class="nm">0.25</span>, <span class="nm">0.5</span>, <span class="nm">0.75</span>, <span class="nm">0.9</span>)):
+        <span class="fn">super</span>().__init__()
+        self.base   = base_hazenet
+        self.quantiles = quantiles
+        self.n_q    = <span class="fn">len</span>(quantiles)
+
+        <span class="cm"># เพิ่ม head สำหรับ quantile output</span>
+        self.q_head = nn.<span class="fn">Conv2d</span>(
+            in_channels=<span class="nm">1</span>,          <span class="cm"># C_pred 1 channel</span>
+            out_channels=self.n_q,   <span class="cm"># n_q quantiles</span>
+            kernel_size=<span class="nm">1</span>
+        )
+
+    <span class="kw">def</span> <span class="fn">forward</span>(self, C, met):
+        C_mean = self.base(C, met)           <span class="cm"># (H, W) — mean prediction</span>
+        C_mean_4d = C_mean.<span class="fn">unsqueeze</span>(<span class="nm">0</span>).<span class="fn">unsqueeze</span>(<span class="nm">0</span>)  <span class="cm"># (1, 1, H, W)</span>
+        q_preds = self.q_head(C_mean_4d)     <span class="cm"># (1, n_q, H, W)</span>
+        <span class="kw">return</span> q_preds.<span class="fn">squeeze</span>(<span class="nm">0</span>)            <span class="cm"># (n_q, H, W)</span>
+        <span class="cm"># q_preds[0] = Q10, [1] = Q25, [2] = Q50, [3] = Q75, [4] = Q90</span>
+
+<span class="cm"># inference: 1 forward pass ได้ทุก quantile</span>
+model_q = <span class="fn">QuantileHazeNet</span>(hazenet)
+q_preds = <span class="fn">model_q</span>(C_now, met_forecast)  <span class="cm"># (5, 128, 128)</span>
+<span class="fn">print</span>(<span class="fn">f</span><span class="st">"Q10={q_preds[0,48,35]:.1f}, Q50={q_preds[2,48,35]:.1f}, Q90={q_preds[4,48,35]:.1f}"</span>)
+<span class="out"># → Q10=113.2, Q50=145.3, Q90=177.8</span></code></pre>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. Pinball Loss — วิธีเทรน Quantile Regression</h2>
+
+<h3>5.1 ทำไมไม่ใช้ MSE</h3>
+
+<div class="danger">
+<b>ปัญหา:</b> ถ้า train ด้วย MSE → โมเดลเรียนแค่ mean → ทุก quantile ออก mean เหมือนกัน → ไม่มีข้อมูล uncertainty<br>
+ต้องใช้ loss ที่<b>บังคับให้แต่ละ quantile ประมาณ quantile ที่ถูกต้อง</b>
+</div>
+
+<h3>5.2 Pinball Loss (Quantile Loss)</h3>
+
+<p>สำหรับ quantile τ ∈ (0,1) และ error e = y_true − ŷ_q:</p>
+
+<pre><code><span class="cm">-- Pinball Loss สำหรับ quantile τ --</span>
+L_τ(y, ŷ) = τ · max(y − ŷ, 0)  +  (1−τ) · max(ŷ − y, 0)
+              ↑                       ↑
+        โทษเมื่อ y &gt; ŷ           โทษเมื่อ ŷ &gt; y
+        (ทำนายต่ำเกิน)            (ทำนายสูงเกิน)
+
+เมื่อ τ = 0.9: โทษสูงเมื่อ under-predict (y &gt; ŷ) → Q90 จะสูงขึ้น
+เมื่อ τ = 0.1: โทษสูงเมื่อ over-predict (ŷ &gt; y) → Q10 จะต่ำลง</code></pre>
+
+<div class="card">
+<p><b>ตัวอย่างตัวเลข:</b> y_true = 150, ŷ = 130</p>
+<table>
+<tr><th>Quantile τ</th><th>e = y−ŷ = +20</th><th>L_τ</th><th>ผลลัพธ์</th></tr>
+<tr><td>τ = 0.10</td><td>max(+20,0)=20 · 0.1 + max(−20,0)=0 · 0.9</td><td>2.0</td><td>โทษน้อย (Q10 ที่ 130 ก็ OK)</td></tr>
+<tr><td>τ = 0.50</td><td>20 · 0.5 + 0 · 0.5</td><td>10.0</td><td>โทษกลาง (Q50 ควรใกล้ median)</td></tr>
+<tr><td>τ = 0.90</td><td>20 · 0.9 + 0 · 0.1</td><td>18.0</td><td>โทษมาก → Q90 จะถูกดันสูงขึ้น</td></tr>
+</table>
+<p class="muted">→ gradient จาก L_0.9 ดัน ŷ_Q90 สูงขึ้น → หลังเทรนแล้ว Q90 จะมีค่าสูงกว่า Q50 → ถูกต้อง</p>
+</div>
+
+<pre><code><span class="kw">def</span> <span class="fn">pinball_loss</span>(pred_q, target, quantiles):
+    <span class="cm">"""
+    pred_q:    (n_q, H, W) — prediction แต่ละ quantile
+    target:    (H, W)       — ค่าจริง PM2.5
+    quantiles: [0.1, 0.25, 0.5, 0.75, 0.9]
+    """</span>
+    target_q = target.<span class="fn">unsqueeze</span>(<span class="nm">0</span>).<span class="fn">expand_as</span>(pred_q)  <span class="cm"># (n_q, H, W)</span>
+    tau = torch.<span class="fn">tensor</span>(quantiles).<span class="fn">view</span>(<span class="nm">-1</span>, <span class="nm">1</span>, <span class="nm">1</span>).<span class="fn">to</span>(pred_q.device)
+
+    err = target_q - pred_q
+    loss = torch.<span class="fn">max</span>(tau * err, (tau - <span class="nm">1</span>) * err)  <span class="cm"># element-wise</span>
+    <span class="kw">return</span> loss.<span class="fn">mean</span>()
+
+<span class="cm"># Training loop</span>
+optimizer = torch.optim.<span class="fn">Adam</span>(model_q.<span class="fn">parameters</span>(), lr=<span class="nm">1e-3</span>)
+<span class="kw">for</span> batch_C, batch_y <span class="kw">in</span> dataloader:
+    q_preds = <span class="fn">model_q</span>(batch_C, batch_met)  <span class="cm"># (n_q, H, W)</span>
+    loss = <span class="fn">pinball_loss</span>(q_preds, batch_y, quantiles=[<span class="nm">0.1</span>, <span class="nm">0.25</span>, <span class="nm">0.5</span>, <span class="nm">0.75</span>, <span class="nm">0.9</span>])
+    optimizer.<span class="fn">zero_grad</span>()
+    loss.<span class="fn">backward</span>()
+    optimizer.<span class="fn">step</span>()</code></pre>
+
+<h3>5.3 Quantile Crossing — ปัญหาที่ต้องระวัง</h3>
+
+<div class="warn">
+<b>Quantile Crossing:</b> บางครั้งโมเดลทำนาย Q10 &gt; Q50 ซึ่งผิดตรรกะ (Q10 ต้องน้อยกว่า Q50 เสมอ)<br><br>
+<b>วิธีแก้:</b> Sort quantiles ตอน inference หรือใช้ monotone constraint
+<pre><code><span class="cm"># Fix crossing ง่ายๆ: sort หลัง inference</span>
+q_preds_fixed, _ = q_preds.<span class="fn">sort</span>(dim=<span class="nm">0</span>)  <span class="cm"># (n_q, H, W) sorted ascending</span></code></pre>
+</div>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. วิธี ③ — CRPS (Continuous Ranked Probability Score)</h2>
+
+<div class="method-card">
+<div class="method-header">
+  <div class="method-num">③</div>
+  <div>
+    <span class="method-name">CRPS</span>
+    <span class="method-tag tag-metric">Metric (ไม่ใช่ method)</span>
+  </div>
+</div>
+<p><b>สำคัญ:</b> CRPS <em>ไม่ใช่</em> วิธีสร้าง uncertainty — แต่คือ <b>metric วัดว่า probabilistic forecast ดีแค่ไหน</b><br>
+ใช้ใน evaluation (Module 5) เพื่อเปรียบเทียบโมเดลต่างๆ</p>
+</div>
+
+<h3>6.1 CRPS คืออะไร — ความหมายง่ายๆ</h3>
+
+<p>CRPS = วัด "ระยะห่าง" ระหว่าง <b>forecast distribution F</b> กับ <b>ค่าจริง y</b></p>
+
+<div class="card">
+<p>สำหรับ deterministic forecast (ไม่มี uncertainty):</p>
+<pre><code>CRPS(point, y) = |point − y| = MAE</code></pre>
+<p>CRPS ลด degeneracy เป็น MAE ถ้า forecast deterministic → ทำให้เทียบ probabilistic กับ deterministic ได้ตรงๆ</p>
+<p>สำหรับ probabilistic forecast (ensemble หรือ quantile):</p>
+<pre><code>CRPS(F, y) = E[|X − y|] − ½·E[|X − X'|]
+              ↑              ↑
+         ความแม่น        spread ของ ensemble</code></pre>
+<p>term แรก = accuracy (ใกล้ truth ได้โบนัส) · term สอง = sharpness (ensemble spread ที่เหมาะสม)</p>
+</div>
+
+<h3>6.2 คุณสมบัติที่ทำให้ CRPS ดี</h3>
+
+<div class="card">
+<table>
+<tr><th>คุณสมบัติ</th><th>ความหมาย</th></tr>
+<tr><td><b>Proper scoring rule</b></td><td>"โกง" ไม่ได้ — ถ้าแกล้งบอก interval กว้างๆ CRPS จะแย่ลง ไม่ใช่ดีขึ้น</td></tr>
+<tr><td><b>ลด degeneracy เป็น MAE</b></td><td>เทียบ probabilistic กับ deterministic forecast ได้ในหน่วยเดียวกัน</td></tr>
+<tr><td><b>Sensitive to calibration</b></td><td>overconfident หรือ underconfident → CRPS สูงขึ้น</td></tr>
+<tr><td><b>หน่วยเดียวกับ target</b></td><td>CRPS หน่วย μg/m³ → แปลความหมายได้ง่าย</td></tr>
+</table>
+</div>
+
+<h3>6.3 การคำนวณ CRPS จาก Ensemble</h3>
+
+<pre><code><span class="kw">def</span> <span class="fn">crps_ensemble</span>(obs, ensemble):
+    <span class="cm">"""
+    obs:      (H, W) — ค่าที่วัดได้จริง
+    ensemble: (N, H, W) — N ensemble members
+    returns:  (H, W) — CRPS แต่ละ pixel (lower = better)
+    """</span>
+    N = ensemble.shape[<span class="nm">0</span>]
+
+    <span class="cm"># Term 1: E[|X − y|] = mean absolute error vs obs</span>
+    accuracy = (ensemble - obs.<span class="fn">unsqueeze</span>(<span class="nm">0</span>)).<span class="fn">abs</span>().<span class="fn">mean</span>(<span class="nm">0</span>)  <span class="cm"># (H, W)</span>
+
+    <span class="cm"># Term 2: ½·E[|X − X'|] = mean spread ระหว่างสมาชิก ensemble</span>
+    spread = (ensemble.<span class="fn">unsqueeze</span>(<span class="nm">0</span>) - ensemble.<span class="fn">unsqueeze</span>(<span class="nm">1</span>)).<span class="fn">abs</span>()
+    spread = spread.<span class="fn">mean</span>((<span class="nm">0</span>, <span class="nm">1</span>)) / <span class="nm">2</span>  <span class="cm"># (H, W)</span>
+
+    crps = accuracy - spread  <span class="cm"># (H, W)</span>
+    <span class="kw">return</span> crps
+
+<span class="cm"># ตัวอย่าง</span>
+crps_map = <span class="fn">crps_ensemble</span>(obs=pm25_truth, ensemble=hazenet_ensemble)
+<span class="out">print(f"Mean CRPS: {crps_map.mean():.2f} μg/m³")
+# → Mean CRPS: 12.43 μg/m³  (เทียบกับ MAE ~15 μg/m³)</span>
+<span class="cm"># CRPS &lt; MAE แปลว่า probabilistic forecast ให้ข้อมูลมากกว่า point forecast</span></code></pre>
+
+<h3>6.4 CRPS จาก Quantile (ไม่ต้องมี ensemble)</h3>
+
+<pre><code><span class="kw">def</span> <span class="fn">crps_from_quantiles</span>(obs, q_preds, quantiles):
+    <span class="cm">"""
+    CRPS ≈ 2 × mean pinball loss (ทุก quantile)
+    obs:        (H, W)
+    q_preds:    (n_q, H, W)
+    quantiles:  [0.1, 0.25, ...]
+    """</span>
+    obs_exp = obs.<span class="fn">unsqueeze</span>(<span class="nm">0</span>).<span class="fn">expand_as</span>(q_preds)
+    tau      = torch.<span class="fn">tensor</span>(quantiles).<span class="fn">view</span>(<span class="nm">-1</span>,<span class="nm">1</span>,<span class="nm">1</span>)
+
+    pinball = torch.<span class="fn">max</span>(tau * (obs_exp - q_preds),
+                         (tau-<span class="nm">1</span>) * (obs_exp - q_preds))
+
+    crps_approx = <span class="nm">2</span> * pinball.<span class="fn">mean</span>(<span class="nm">0</span>)  <span class="cm"># (H, W)</span>
+    <span class="kw">return</span> crps_approx</code></pre>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. เปรียบเทียบ 3 วิธี</h2>
+
+<div class="compare">
+<div class="compare-box">
+  <div class="compare-title">① Ensemble</div>
+  <table style="font-size:13px">
+    <tr><td style="color:var(--green)">✓</td><td>ง่าย implement</td></tr>
+    <tr><td style="color:var(--green)">✓</td><td>ไม่ต้องเปลี่ยน loss</td></tr>
+    <tr><td style="color:var(--amber)">~</td><td>speed: N× passes</td></tr>
+    <tr><td style="color:var(--amber)">~</td><td>calibration ไม่รับประกัน</td></tr>
+    <tr><td style="color:var(--red)">✗</td><td>Deep ensemble: N× RAM</td></tr>
+  </table>
+  <p class="muted" style="font-size:13px">เหมาะ: quick prototype หรือ MC Dropout เพิ่มเติม</p>
+</div>
+<div class="compare-box">
+  <div class="compare-title">② Quantile Regression</div>
+  <table style="font-size:13px">
+    <tr><td style="color:var(--green)">✓</td><td>1 forward pass ได้ทุก quantile</td></tr>
+    <tr><td style="color:var(--green)">✓</td><td>Asymmetric uncertainty ได้</td></tr>
+    <tr><td style="color:var(--green)">✓</td><td>Calibration ดีกว่า ensemble</td></tr>
+    <tr><td style="color:var(--amber)">~</td><td>ต้องเปลี่ยน loss (pinball)</td></tr>
+    <tr><td style="color:var(--amber)">~</td><td>Quantile crossing</td></tr>
+  </table>
+  <p class="muted" style="font-size:13px">เหมาะ: <b>HazeNet หลัก</b> — fast + calibrated</p>
+</div>
+<div class="compare-box">
+  <div class="compare-title">③ CRPS</div>
+  <table style="font-size:13px">
+    <tr><td style="color:var(--blue)">ℹ</td><td>คือ metric ไม่ใช่ method</td></tr>
+    <tr><td style="color:var(--green)">✓</td><td>Proper scoring rule</td></tr>
+    <tr><td style="color:var(--green)">✓</td><td>หน่วยเดียวกับ PM2.5</td></tr>
+    <tr><td style="color:var(--green)">✓</td><td>เทียบ prob vs det ได้</td></tr>
+    <tr><td style="color:var(--amber)">~</td><td>คำนวณหนักกว่า MAE</td></tr>
+  </table>
+  <p class="muted" style="font-size:13px">เหมาะ: <b>evaluation metric</b> ใน Module 5</p>
+</div>
+</div>
+
+<table>
+<tr><th>เกณฑ์</th><th>MC Dropout</th><th>Deep Ensemble</th><th>Quantile Reg</th></tr>
+<tr><td><b>Inference speed</b></td><td>N× pass</td><td>N× pass</td><td style="color:var(--green)"><b>1× pass</b></td></tr>
+<tr><td><b>Extra RAM</b></td><td>ต่ำ</td><td>N× model</td><td style="color:var(--green)"><b>ต่ำมาก</b></td></tr>
+<tr><td><b>Calibration</b></td><td>ปานกลาง</td><td style="color:var(--green)"><b>ดี</b></td><td style="color:var(--green)"><b>ดี</b></td></tr>
+<tr><td><b>Asymmetric CI</b></td><td>ไม่ได้</td><td>ไม่ได้</td><td style="color:var(--green)"><b>ได้</b></td></tr>
+<tr><td><b>Training change</b></td><td>ไม่เปลี่ยน loss</td><td>ไม่เปลี่ยน loss</td><td>ต้องใช้ pinball</td></tr>
+<tr><td><b>A100 feasibility</b></td><td style="color:var(--green)">✓</td><td style="color:var(--amber)">3–5 models</td><td style="color:var(--green)">✓</td></tr>
+</table>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. HazeNet ใช้อะไร — คำแนะนำและโค้ดเต็ม</h2>
+
+<h3>8.1 คำแนะนำสำหรับ HazeNet</h3>
+
+<div class="green-box">
+<b>แนะนำ Primary: Quantile Regression</b><br>
+เหตุผล: 1 forward pass ได้ทั้ง Q10/Q50/Q90 → เหมาะกับ operational system · calibration ดี · asymmetric CI จับ "wildfire spike" ที่ upper tail หนักกว่าได้<br><br>
+<b>แนะนำ Secondary: MC Dropout</b><br>
+เหตุผล: ฟรีถ้ามี Dropout อยู่แล้ว · ใช้เป็น epistemic uncertainty checker<br><br>
+<b>Evaluation: CRPS</b><br>
+ใช้เป็น metric หลักแทน MAE เพื่อรายงาน probabilistic forecast quality
+</div>
+
+<h3>8.2 โค้ดเต็ม — Training + Inference + Evaluation</h3>
+
+<pre><code><span class="kw">import</span> torch
+<span class="kw">import</span> torch.nn <span class="kw">as</span> nn
+
+QUANTILES = [<span class="nm">0.1</span>, <span class="nm">0.25</span>, <span class="nm">0.5</span>, <span class="nm">0.75</span>, <span class="nm">0.9</span>]
+
+<span class="cm"># ─── Loss ────────────────────────────────────────</span>
+<span class="kw">def</span> <span class="fn">pinball_loss</span>(q_preds, target, quantiles=QUANTILES):
+    target_exp = target.<span class="fn">unsqueeze</span>(<span class="nm">0</span>).<span class="fn">expand_as</span>(q_preds)
+    tau = torch.<span class="fn">tensor</span>(quantiles, device=q_preds.device).<span class="fn">view</span>(<span class="nm">-1</span>,<span class="nm">1</span>,<span class="nm">1</span>)
+    err = target_exp - q_preds
+    <span class="kw">return</span> torch.<span class="fn">max</span>(tau * err, (tau - <span class="nm">1</span>) * err).<span class="fn">mean</span>()
+
+<span class="cm"># ─── Training ─────────────────────────────────────</span>
+<span class="kw">def</span> <span class="fn">train_quantile_hazenet</span>(model_q, dataloader, n_epochs=<span class="nm">50</span>):
+    opt = torch.optim.<span class="fn">Adam</span>(model_q.<span class="fn">parameters</span>(), lr=<span class="nm">1e-3</span>)
+    <span class="kw">for</span> epoch <span class="kw">in</span> <span class="fn">range</span>(n_epochs):
+        total_loss = <span class="nm">0</span>
+        <span class="kw">for</span> C, met, y_true <span class="kw">in</span> dataloader:
+            q_preds = <span class="fn">model_q</span>(C, met)              <span class="cm"># (n_q, H, W)</span>
+            q_preds_sorted, _ = q_preds.<span class="fn">sort</span>(<span class="nm">0</span>)   <span class="cm"># fix crossing</span>
+            loss = <span class="fn">pinball_loss</span>(q_preds_sorted, y_true)
+            opt.<span class="fn">zero_grad</span>(); loss.<span class="fn">backward</span>(); opt.<span class="fn">step</span>()
+            total_loss += loss.<span class="fn">item</span>()
+        <span class="kw">if</span> epoch % <span class="nm">10</span> == <span class="nm">0</span>:
+            <span class="fn">print</span>(<span class="fn">f</span><span class="st">"Epoch {epoch}: pinball_loss={total_loss/len(dataloader):.4f}"</span>)
+
+<span class="cm"># ─── Inference ────────────────────────────────────</span>
+<span class="kw">def</span> <span class="fn">forecast_with_uncertainty</span>(model_q, C_now, met_forecast):
+    model_q.<span class="fn">eval</span>()
+    <span class="kw">with</span> torch.no_grad():
+        q_preds = <span class="fn">model_q</span>(C_now, met_forecast)
+        q_preds_sorted, _ = q_preds.<span class="fn">sort</span>(<span class="nm">0</span>)   <span class="cm"># (n_q, H, W)</span>
+
+    q10, q25, q50, q75, q90 = q_preds_sorted
+
+    <span class="cm"># สำหรับสถานีเชียงใหม่</span>
+    cm = (<span class="nm">48</span>, <span class="nm">35</span>)
+    <span class="fn">print</span>(<span class="fn">f</span><span class="st">"PM2.5 Forecast ที่เชียงใหม่:"</span>)
+    <span class="fn">print</span>(<span class="fn">f</span><span class="st">"  Q50 (median) : {q50[cm]:.1f} μg/m³"</span>)
+    <span class="fn">print</span>(<span class="fn">f</span><span class="st">"  80-CI (Q10-Q90): [{q10[cm]:.1f}, {q90[cm]:.1f}]"</span>)
+    <span class="fn">print</span>(<span class="fn">f</span><span class="st">"  50-CI (Q25-Q75): [{q25[cm]:.1f}, {q75[cm]:.1f}]"</span>)
+    <span class="kw">return</span> q_preds_sorted
+
+<span class="cm"># ─── Evaluation ───────────────────────────────────</span>
+<span class="kw">def</span> <span class="fn">evaluate_crps</span>(model_q, test_loader):
+    crps_total, n = <span class="nm">0.0</span>, <span class="nm">0</span>
+    <span class="kw">with</span> torch.no_grad():
+        <span class="kw">for</span> C, met, y_true <span class="kw">in</span> test_loader:
+            q_preds = <span class="fn">model_q</span>(C, met)
+            q_preds_sorted, _ = q_preds.<span class="fn">sort</span>(<span class="nm">0</span>)
+            crps = <span class="fn">crps_from_quantiles</span>(y_true, q_preds_sorted, QUANTILES)
+            crps_total += crps.<span class="fn">mean</span>().<span class="fn">item</span>()
+            n += <span class="nm">1</span>
+    <span class="fn">print</span>(<span class="fn">f</span><span class="st">"CRPS = {crps_total/n:.3f} μg/m³"</span>)
+    <span class="kw">return</span> crps_total / n</code></pre>
+
+<!-- ============ 9 ============ -->
+<h2 id="p9">9. Uncertainty ใช้ประโยชน์ยังไงในทางปฏิบัติ</h2>
+
+<h3>9.1 Decision Threshold แบบ Probabilistic</h3>
+
+<div class="card">
+<p>เกณฑ์ WHO: PM2.5 &gt; 75 μg/m³ = อันตราย · PM2.5 &gt; 150 μg/m³ = อันตรายมาก</p>
+<table>
+<tr><th>Forecast</th><th>P(PM2.5 > 150)</th><th>การตัดสินใจ</th></tr>
+<tr><td>Q50=145, 80-CI=[130,185]</td><td>~40%</td><td>เตือน "เฝ้าระวัง" · รอดูก่อนหยุดโรงเรียน</td></tr>
+<tr><td>Q50=145, 80-CI=[140,152]</td><td>~80%</td><td>เตือน "อันตรายสูง" · ปิดโรงเรียน</td></tr>
+<tr><td>Q50=145, 80-CI=[60,230]</td><td>~30%</td><td>เตือน "ไม่แน่นอนสูง" · รอข้อมูลเพิ่ม</td></tr>
+</table>
+</div>
+
+<h3>9.2 Uncertainty เป็น "ความมั่นใจของ Fire Alert"</h3>
+
+<pre><code><span class="cm"># Fire alert probability at station</span>
+<span class="kw">def</span> <span class="fn">fire_alert_probability</span>(q_preds, threshold=<span class="nm">150.0</span>):
+    <span class="cm">"""ประมาณ P(PM2.5 > threshold) จาก quantile predictions"""</span>
+    q10, q25, q50, q75, q90 = q_preds
+    <span class="cm"># linear interpolation ระหว่าง quantiles</span>
+    <span class="cm"># ถ้า Q90 &lt; threshold → P ≈ 0 · ถ้า Q10 &gt; threshold → P ≈ 1</span>
+    above_q90 = (q90 > threshold).<span class="fn">float</span>() * <span class="nm">0.95</span>
+    above_q75 = (q75 > threshold).<span class="fn">float</span>() * <span class="nm">0.75</span>
+    above_q50 = (q50 > threshold).<span class="fn">float</span>() * <span class="nm">0.50</span>
+    <span class="kw">return</span> (above_q90 + above_q75 + above_q50) / (<span class="nm">0.95</span>+<span class="nm">0.75</span>+<span class="nm">0.5</span>)
+
+prob_alert = <span class="fn">fire_alert_probability</span>(q_preds_sorted)
+<span class="out">print(f"P(PM2.5 > 150 μg/m³) ที่เชียงใหม่ = {prob_alert[48,35]:.1%}")
+# → P(PM2.5 > 150 μg/m³) ที่เชียงใหม่ = 72.3%</span></code></pre>
+
+<h3>9.3 Uncertainty Map — รู้ว่าโมเดลมั่นใจตรงไหนบ้าง</h3>
+
+<pre><code><span class="cm"># width of 80% CI = measure of uncertainty ที่แต่ละ pixel</span>
+ci_width = q90 - q10  <span class="cm"># (H, W)</span>
+
+<span class="cm"># pixel ที่ uncertainty สูงสุด = โมเดลมั่นใจน้อยที่สุด</span>
+uncertain_pixels = ci_width > ci_width.<span class="fn">quantile</span>(<span class="nm">0.9</span>)
+<span class="out">print(f"10% พื้นที่ที่ไม่แน่นอนสูงสุด: CI width > {ci_width.quantile(0.9):.1f} μg/m³")</span>
+
+<span class="cm"># ใช้ประโยชน์: พื้นที่ที่ uncertainty สูง = ควรเพิ่มสถานีวัด / ไม่ควรออกนโยบายแข็งกร้าว</span></code></pre>
+
+<!-- ============ 10 ============ -->
+<h2 id="p10">10. ทำไมดีกว่า Diffusion สำหรับ HazeNet (สรุป 3.8)</h2>
+
+<table>
+<tr><th>เกณฑ์</th><th>Quantile Reg + Ensemble</th><th>Diffusion</th></tr>
+<tr><td><b>Speed (inference)</b></td><td style="color:var(--green)">✓ 1–50× forward pass</td><td style="color:var(--red)">✗ 50–1000× pass ต่อ sample</td></tr>
+<tr><td><b>Superposition (3.6)</b></td><td style="color:var(--green)">✓ ยังใช้ได้ (quantile head linear)</td><td style="color:var(--red)">✗ non-linear decoder ทำลาย</td></tr>
+<tr><td><b>Adjoint (3.7)</b></td><td style="color:var(--green)">✓ backprop ผ่านได้</td><td style="color:var(--red)">✗ 1000 steps → impractical</td></tr>
+<tr><td><b>Calibration</b></td><td style="color:var(--green)">✓ pinball loss รับประกัน</td><td style="color:var(--amber)">~ ต้อง tune เพิ่ม</td></tr>
+<tr><td><b>Deterministic baseline</b></td><td style="color:var(--green)">✓ Q50 reproducible</td><td style="color:var(--red)">✗ stochastic ทุก run</td></tr>
+<tr><td><b>Visual diversity</b></td><td style="color:var(--amber)">~ ไม่มี sample diversity</td><td style="color:var(--green)">✓ ดีกว่า</td></tr>
+</table>
+
+<div class="green-box">
+<b>สรุปคำตอบกรรมการ (1 ประโยค):</b><br>
+"เราได้ calibrated probabilistic forecast ผ่าน quantile regression และ MC dropout ซึ่งให้ uncertainty interval ใน 1 forward pass โดยยังคงรักษา superposition property สำหรับ source attribution และ differentiability สำหรับ adjoint inversion — สิ่งที่ diffusion model ไม่สามารถให้พร้อมกันได้"
+</div>
+
+<!-- ============ 11 ============ -->
+<h2 id="chk">11. แบบฝึกหัด</h2>
+
+<div class="chk">
+<p class="q">Q1: Calibration Check</p>
+<p>ทดสอบ 1000 วัน: โมเดลบอก "90% prediction interval" ปรากฏว่าค่าจริงอยู่ในนั้น 650 วัน จาก 1000 วัน<br>
+โมเดลนี้ over- หรือ under-confident? และควรแก้อย่างไร?</p>
+<details><summary>ดูเฉลย</summary>
+<p><b>Overconfident</b> — บอก 90% CI แต่ครอบคลุมแค่ 65% → interval แคบเกินไป<br>
+วิธีแก้: ① ใช้ temperature scaling (ขยาย interval ด้วย factor) ② เพิ่ม regularization ระหว่าง train ③ ใช้ conformal prediction เป็น post-processing calibration ④ ตรวจ pinball loss ว่า train ด้วย quantile ถูกต้องหรือไม่</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">Q2: Pinball Loss Calculation</p>
+<p>y_true = 180 μg/m³, ŷ_Q90 = 160 μg/m³<br>
+คำนวณ Pinball Loss สำหรับ τ = 0.9<br>
+แล้วตอบว่า gradient จะดัน Q90 ขึ้นหรือลง?</p>
+<details><summary>ดูเฉลย</summary>
+<p>e = y_true − ŷ = 180 − 160 = +20 (under-predict)<br>
+L_0.9 = max(0.9 × 20, (0.9−1) × 20) = max(18, −2) = <b>18</b><br>
+∂L/∂ŷ = −τ = −0.9 เมื่อ y > ŷ → gradient เป็นลบ → optimizer update: ŷ += lr × 0.9<br>
+→ <b>Q90 ถูกดันสูงขึ้น</b> → ครั้งหน้าจะ predict สูงกว่า 160 เพื่อ cover y=180 ได้</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">Q3: CRPS vs MAE</p>
+<p>Deterministic model: MAE = 20 μg/m³<br>
+Quantile model: CRPS = 14 μg/m³<br>
+แปลความหมายการเปรียบเทียบนี้ได้ว่าอะไร?</p>
+<details><summary>ดูเฉลย</summary>
+<p>CRPS ลด degeneracy เป็น MAE สำหรับ deterministic forecast — ดังนั้นเทียบหน่วยเดียวกันได้ตรงๆ<br>
+CRPS 14 &lt; MAE 20: probabilistic forecast ให้ข้อมูลมีคุณค่ากว่า point forecast<br>
+เหตุผล: ถึงแม้ Q50 อาจมี error ใกล้เคียง MAE แต่การรู้ว่า "จะสูงถึง Q90 หรือเปล่า" ช่วยลด penalty ใน CRPS<br>
+ใน report: "probabilistic forecast achieves CRPS of 14 μg/m³ vs deterministic MAE of 20 μg/m³ (30% improvement)"</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">Q4: Asymmetric Uncertainty</p>
+<p>ทำไม wildfire PM2.5 forecast ถึงมักมี upper tail หนักกว่า lower tail? (กล่าวคือ Q90−Q50 &gt; Q50−Q10)<br>
+และ quantile regression จับ asymmetry นี้ได้ไหม? MC Dropout?</p>
+<details><summary>ดูเฉลย</summary>
+<p><b>เหตุผล asymmetry:</b> PM2.5 มีขอบเขตล่าง = 0 (ไม่ติดลบ) แต่ขอบเขตบนไม่จำกัด · ไฟป่าขนาดใหญ่หรือลมพัดตรงมาอาจทำให้ PM2.5 พุ่งสูงผิดคาดอย่างมาก → distribution บิดเบ้ขวา (right-skewed)<br>
+<b>Quantile regression: จับได้</b> — เรียนจากข้อมูลจริงที่ asymmetric โดยตรง → Q90−Q50 &gt; Q50−Q10 ได้อัตโนมัติ<br>
+<b>MC Dropout: จับได้บางส่วน</b> — spread มักสมมาตรกว่า เพราะ dropout เป็น symmetric perturbation → asymmetry น้อยกว่าความเป็นจริง</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">Q5: Proper Scoring Rule</p>
+<p>โมเดล A บอก "90-CI: [100, 400]" (กว้างมาก) เพื่อให้ครอบคลุมค่าจริงเกือบทุกครั้ง<br>
+โมเดล B บอก "90-CI: [130, 170]" (แคบแต่ calibrated จริง)<br>
+CRPS ให้คะแนนโมเดลไหนดีกว่า และทำไม?</p>
+<details><summary>ดูเฉลย</summary>
+<p><b>โมเดล B ได้ CRPS ดีกว่า</b><br>
+เหตุผล: CRPS เป็น proper scoring rule — term spread (½E[|X−X'|]) ใน CRPS ลงโทษ ensemble ที่กว้างเกินไปโดยตรง<br>
+โมเดล A: accuracy term ต่ำ (ครอบ truth เสมอ) แต่ spread term สูงมาก (range 300 μg/m³) → CRPS รวมสูง<br>
+โมเดล B: accuracy ดี + spread ต่ำ → CRPS ต่ำกว่า<br>
+นี่คือเหตุผลที่ CRPS ดีกว่า "interval score" ธรรมดา — ไม่สามารถโกงด้วยการขยาย interval</p>
+</details>
+</div>
+
+<hr>
+<p class="center muted">3.9 Uncertainty · ย้อนไป <a href="3.8-diffusion-models-why-not.html" style="color:var(--blue)">3.8 Diffusion</a> · โมดูล 3 เสร็จสมบูรณ์ · ต่อไป: <b>Module 4 — Data Pipeline (4.1 แหล่งข้อมูล)</b></p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.5 — Superposition (หัวใจ 2/3) (สอนละเอียด)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.6px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+  .pin.core{border-color:var(--amber);color:var(--amber)}
+  .pin.heart{border-color:var(--red);color:var(--red)}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+  .big{font-size:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>2.5 — Superposition (หลักการบวกซ้อน) <span class="pin core">⭐ CORE</span> <span class="pin heart">❤ หัวใจ 2/3</span></h1>
+<p class="tagline">ทำไม C = Σ C⁽ˢ⁾ ถึงเป็นจริง — กุญแจที่ทำให้ attribution + counterfactual เป็นไปได้</p>
+<p class="sub">ไคลแมกซ์ของ Module 2 · ทุกบท (2.1–2.4) ปูทางมาสู่บทนี้ · นี่คือเหตุผลทางคณิตศาสตร์ที่ HazeNet "แยกแหล่งได้เป๊ะ"</p>
+
+<div class="lead">
+<b>ทำไมบทนี้คือ "หัวใจที่ 2":</b> ทั้งโปรเจกต์ขายของอยู่ 3 อย่าง — พยากรณ์, <b>แยกแหล่ง (attribution, C2)</b>, และ counterfactual · สองอย่างหลัง<u>เป็นไปไม่ได้เลย</u>ถ้าไม่มี superposition · superposition คือหลักการว่า "ถ้าระบบเป็น<b>เชิงเส้น</b> ผลของหลายสาเหตุรวมกัน = ผลของแต่ละสาเหตุบวกกัน" · เพราะ Module 2 ทั้งหมดออกแบบให้สมการ<b>เชิงเส้นใน C</b> (2.2 ทำ 𝒜 เชิงเส้น, 2.3 splitting คงเชิงเส้น, 2.4 บังคับฟิสิกส์โดยไม่ทำลายเชิงเส้น) → superposition จึงใช้ได้ → <code>C = Σ C⁽ˢ⁾</code> เป็นจริง · บทนี้คือที่ที่ทุกอย่างมาบรรจบ
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. เชิงเส้นคืออะไร (รากฐาน) ★</a><br>
+<a href="#p2">2. Superposition คืออะไร ★★</a><br>
+<a href="#p3">3. พิสูจน์ง่าย ๆ ว่าทำไมจริง</a><br>
+<a href="#p4">4. แปลงเป็น "ติดป้ายควัน" ★★</a><br>
+<a href="#p5">5. ทำไม = attribution ฟรี (C2)</a><br>
+<a href="#p6">6. ทำไม = counterfactual ได้</a><br>
+<a href="#p7">7. เส้นตายของ superposition</a><br>
+<a href="#p8">8. โค้ด tagged tracer</a><br>
+<a href="#p9">9. caveat (R_chem ทำลายมัน)</a><br>
+<a href="#cheat">10. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. "เชิงเส้น (linear)" คืออะไร — รากฐาน <span class="pin">★</span></h2>
+<p>ระบบ <b>f</b> เป็น "เชิงเส้น" ถ้ามันมี 2 คุณสมบัติ:</p>
+<div class="card">
+<p class="big center" style="font-family:'Cambria Math',serif">
+① f(a + b) = f(a) + f(b) &nbsp;&nbsp;<span class="muted">(บวกก่อนหรือหลังก็เท่ากัน)</span><br><br>
+② f(k·a) = k·f(a) &nbsp;&nbsp;<span class="muted">(คูณค่าคงที่ก่อนหรือหลังก็เท่ากัน)</span>
+</p>
+</div>
+<div class="ex"><b>ตัวอย่างเชิงเส้น:</b> "คูณ 3" → f(x)=3x · f(2+5)=3(7)=21 = f(2)+f(5)=6+15=21 ✓ · <b>ตัวอย่างไม่เชิงเส้น:</b> "ยกกำลังสอง" → f(x)=x² · f(2+5)=49 ≠ f(2)+f(5)=4+25=29 ✗</div>
+<p>หัวใจคือ: <b>ระบบเชิงเส้น "แยกส่วน" ได้</b> — คุณแยกอินพุตเป็นชิ้น ๆ ประมวลแต่ละชิ้น แล้วเอาผลมาบวกกัน ได้คำตอบเดียวกับประมวลทั้งก้อน · ระบบไม่เชิงเส้นทำแบบนี้ไม่ได้ (ชิ้นส่วนมัน "กวน" กันเอง)</p>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. Superposition คืออะไร <span class="pin">★★</span></h2>
+<p><b>Superposition principle</b> = ผลโดยตรงของความเชิงเส้น · ถ้าระบบเชิงเส้น และมีหลาย "สาเหตุ" (แหล่งควัน) ป้อนเข้าพร้อมกัน → <b>ผลรวม = ผลของแต่ละสาเหตุบวกกัน</b></p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 230" width="96%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker></defs>
+  <!-- separate runs -->
+  <text x="140" y="20" fill="#9aa7b4" font-size="12" text-anchor="middle" font-weight="bold">รันแยกแหล่ง</text>
+  <rect x="20" y="35" width="90" height="36" rx="6" fill="#1c2330" stroke="#f85149"/><text x="65" y="58" fill="#f85149" font-size="11" text-anchor="middle">E พม่า</text>
+  <line x1="110" y1="53" x2="140" y2="53" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="142" y="35" width="60" height="36" rx="6" fill="#0f1f17" stroke="#3fb950"/><text x="172" y="58" fill="#3fb950" font-size="12" text-anchor="middle">𝒜</text>
+  <line x1="202" y1="53" x2="232" y2="53" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#a)"/>
+  <text x="265" y="58" fill="#f85149" font-size="12">C⁽พม่า⁾</text>
+
+  <rect x="20" y="95" width="90" height="36" rx="6" fill="#1c2330" stroke="#58a6ff"/><text x="65" y="118" fill="#58a6ff" font-size="11" text-anchor="middle">E ลาว</text>
+  <line x1="110" y1="113" x2="140" y2="113" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="142" y="95" width="60" height="36" rx="6" fill="#0f1f17" stroke="#3fb950"/><text x="172" y="118" fill="#3fb950" font-size="12" text-anchor="middle">𝒜</text>
+  <line x1="202" y1="113" x2="232" y2="113" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#a)"/>
+  <text x="265" y="118" fill="#58a6ff" font-size="12">C⁽ลาว⁾</text>
+
+  <text x="170" y="165" fill="#e3b341" font-size="22" text-anchor="middle">+</text>
+  <text x="280" y="200" fill="#3fb950" font-size="13" text-anchor="middle" font-weight="bold">= C รวม</text>
+
+  <!-- equals -->
+  <text x="350" y="115" fill="#e3b341" font-size="24" text-anchor="middle">=</text>
+
+  <!-- combined run -->
+  <text x="470" y="20" fill="#9aa7b4" font-size="12" text-anchor="middle" font-weight="bold">รันรวมทีเดียว</text>
+  <rect x="390" y="80" width="100" height="50" rx="6" fill="#1c2330" stroke="#bc8cff"/><text x="440" y="103" fill="#bc8cff" font-size="11" text-anchor="middle">E พม่า+ลาว</text><text x="440" y="120" fill="#9aa7b4" font-size="9.5" text-anchor="middle">รวมกันก่อน</text>
+  <line x1="490" y1="105" x2="510" y2="105" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="512" y="85" width="40" height="40" rx="6" fill="#0f1f17" stroke="#3fb950"/><text x="532" y="110" fill="#3fb950" font-size="12" text-anchor="middle">𝒜</text>
+  <text x="470" y="160" fill="#3fb950" font-size="13" text-anchor="middle" font-weight="bold">= C รวม (เท่ากันเป๊ะ)</text>
+</svg>
+</div>
+<div class="card center big" style="font-family:'Cambria Math',serif">
+ถ้า E = E⁽¹⁾ + E⁽²⁾ + … &nbsp; แล้ว &nbsp; C = C⁽¹⁾ + C⁽²⁾ + … = <b style="color:#3fb950">Σ C⁽ˢ⁾</b>
+</div>
+<p>"รันควันแต่ละแหล่งแยกกันแล้วบวก" ให้ผล<b>เท่ากันเป๊ะ</b>กับ "รันทุกแหล่งรวมทีเดียว" · นี่คือ superposition · และมันจริง<u>ก็ต่อเมื่อ</u>ระบบเชิงเส้น</p>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. พิสูจน์ง่าย ๆ ว่าทำไมมันจริงในสมการเรา</h2>
+<p>จำสมการแกน (เขียนรวมพจน์ที่เชิงเส้นใน C เป็น operator <b>ℒ</b>):</p>
+<div class="card center" style="font-family:'Cambria Math',serif;font-size:16px">
+C<sup>t+1</sup> = 𝒜·C<sup>t</sup> + g·E − D⊙C<sup>t</sup> &nbsp;=&nbsp; ℒ(C<sup>t</sup>) + g·E
+</div>
+<p>โดย ℒ(C) = 𝒜C − D⊙C เป็น<b>เชิงเส้นใน C</b> (จาก 2.2, 2.4) · ทีนี้ปล่อย 2 แหล่ง: ให้ C⁽¹⁾ แก้สมการที่มีแค่ E⁽¹⁾ และ C⁽²⁾ แก้ที่มีแค่ E⁽²⁾ · บวกกัน:</p>
+<pre><code>C⁽¹⁾ᵗ⁺¹ = ℒ(C⁽¹⁾ᵗ) + g·E⁽¹⁾
+C⁽²⁾ᵗ⁺¹ = ℒ(C⁽²⁾ᵗ) + g·E⁽²⁾
+<span class="cm">────────────────────────── บวกกัน</span>
+C⁽¹⁾ᵗ⁺¹+C⁽²⁾ᵗ⁺¹ = ℒ(C⁽¹⁾ᵗ)+ℒ(C⁽²⁾ᵗ) + g·(E⁽¹⁾+E⁽²⁾)
+              <span class="cm"># ℒ เชิงเส้น => ℒ(a)+ℒ(b)=ℒ(a+b)</span>
+              = ℒ(C⁽¹⁾ᵗ+C⁽²⁾ᵗ) + g·E_รวม</code></pre>
+<p>บรรทัดสุดท้ายคือ<b>สมการเดียวกันเป๊ะ</b>กับการรัน C รวมที่มี E รวม · ดังนั้น <code>C⁽¹⁾+C⁽²⁾ = C_รวม</code> · จบ — superposition เป็นจริงเพราะ <b>ℒ เชิงเส้น</b> (ขั้น "ℒ(a)+ℒ(b)=ℒ(a+b)") · ถ้า ℒ ไม่เชิงเส้น ขั้นนี้พังทันที</p>
+<div class="why"><b>นี่คือเหตุผลที่ Module 2 ทุกบทย้ำ "เชิงเส้น":</b> ทุกการตัดสินใจ (semi-Lagrangian แทน CNN เรียน advection, g/D ทำนายจากอากาศไม่ใช่จาก C, hard constraint แทน soft) ล้วนเพื่อ<b>รักษาความเชิงเส้นใน C</b> · เพราะมันคือเงื่อนไขเดียวที่ทำให้บรรทัดพิสูจน์ข้างบนผ่าน → ทำให้ attribution เป็นจริง</div>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. แปลงเป็น "ติดป้ายควัน" (tagged tracer) <span class="pin">★★</span></h2>
+<p>superposition แปลว่าเราติดตามควันแต่ละแหล่งเป็น "ช่อง" แยกได้ พร้อมกันในการรันเดียว · เพิ่มมิติ <b>tracer</b> ให้ tensor (จาก 0.1):</p>
+<pre><code>C.shape = (<span class="nm">source</span>, <span class="nm">time</span>, <span class="nm">lat</span>, <span class="nm">lon</span>)
+<span class="cm">#          ↑ มิติแหล่ง: 0=พม่า, 1=ลาว, 2=ไทย, ...</span>
+
+E.shape = (<span class="nm">source</span>, <span class="nm">time</span>, <span class="nm">lat</span>, <span class="nm">lon</span>)
+<span class="cm"># E[0] = ไฟเฉพาะในพม่า, E[1] = ไฟเฉพาะลาว, ...</span></code></pre>
+<p>เดินสมการแกน "พร้อมกันทุก source" (operator เดียวกัน 𝒜, g, D ใช้กับทุก tracer เพราะอากาศชุดเดียวกัน):</p>
+<pre><code><span class="kw">for</span> t <span class="kw">in</span> rollout:
+    C = advect(C, wind)        <span class="cm"># 𝒜 ทำกับทุก source พร้อมกัน (broadcast)</span>
+    C = C + g * E[:, t]        <span class="cm"># แต่ละ source เติมไฟของตัวเอง</span>
+    C = C * (<span class="nm">1</span> - D)            <span class="cm"># loss เดียวกันทุก source</span>
+
+C_total = C.sum(<span class="nm">0</span>)            <span class="cm"># รวมทุก source = PM2.5 รวม (superposition)</span></code></pre>
+<div class="ex"><b>กุญแจที่สวยงาม:</b> เพราะ superposition <code>C.sum(0)</code> (รวมทุกแหล่ง) = PM2.5 ที่พยากรณ์รวม <b>เป๊ะ</b> · เราจึงเทรนโมเดลให้ <code>C.sum(0)</code> ตรงกับสถานีจริง แล้ว<b>ได้การแยกแหล่ง C[s] มาฟรี</b>โดยไม่ต้องมี label แยกแหล่ง! (ซึ่งเราไม่มีอยู่แล้ว — จาก 1.4)</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. ทำไมนี่ = attribution ฟรี (Contribution C2)</h2>
+<p>หลังรันเสร็จ เรามี C[s] = ควันจากแหล่ง s ที่ทุกจุด ทุกเวลา · ถามอะไรก็ตอบได้ทันที:</p>
+<pre><code><span class="cm"># ฝุ่นที่เชียงใหม่ตอนนี้ มาจากแต่ละแหล่งกี่ %</span>
+share = C[:, t, cm_lat, cm_lon] / C[:, t, cm_lat, cm_lon].sum()
+<span class="cm"># share = [0.45, 0.30, 0.20, 0.05]  -> พม่า45% ลาว30% ไทย20% อื่น5%</span></code></pre>
+<div class="why"><b>เทียบ ground truth (จาก 1.4/1.5):</b> เราเอา <code>share</code> นี้ไปเทียบกับ WRF-Chem tagged tracer (เชียงราย ~45% ข้ามแดน) · ถ้าใกล้ = พิสูจน์ว่า attribution ของเรา<b>ตรงฟิสิกส์มาตรฐานทอง ไม่ใช่เลขมั่ว</b> = contribution C2 มีของจริง · และเราทำได้ใน<b>วินาที</b> ขณะที่ WRF-Chem ใช้ชั่วโมง (จุดขายความเร็ว)</div>
+<div class="danger"><b>ทำไมงานอื่นทำไม่ได้:</b> โมเดล AI ทั่วไป (PM2.5-GNN, ConvLSTM) พยากรณ์ "ฝุ่นรวม" เป็นเลขก้อนเดียว — แยกแหล่งไม่ได้เพราะไม่เชิงเส้น/ไม่มีโครงสร้าง tracer · HazeNet แยกได้เพราะ superposition ที่ build จากความเชิงเส้น · <b>นี่คือสิ่งที่ทำให้งานเราเป็นงานใหม่ ไม่ใช่ "อีกโมเดลพยากรณ์ฝุ่น"</b></div>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. ทำไม = counterfactual ได้</h2>
+<p>Counterfactual = "ถ้า...จะเกิดอะไร" · superposition ทำให้ตอบได้ทันที<b>โดยไม่ต้องรันใหม่</b>:</p>
+<ul>
+<li><b>"ถ้าไม่มีไฟพม่าเลย ฝุ่นเชียงใหม่จะเป็นเท่าไร?"</b> → คำตอบ = <code>C_total − C[พม่า]</code> (ลบส่วนพม่าออก) · ตรง ๆ เพราะแต่ละแหล่งบวกกันเชิงเส้น</li>
+<li><b>"ถ้าลดไฟพม่าลง 50%?"</b> → <code>C_total − 0.5·C[พม่า]</code> · เพราะ <code>f(0.5·E) = 0.5·f(E)</code> (คุณสมบัติเชิงเส้นข้อ ②)</li>
+</ul>
+<div class="ex"><b>นี่ทรงพลังมาก:</b> WRF-Chem ตอบคำถามนี้ต้อง "รันใหม่ทั้งดุ้น" (อีกหลายชั่วโมง) · HazeNet ตอบด้วยการ<b>ลบ/คูณ tensor</b> ที่มีอยู่แล้ว = ทันที · และเพราะโมเดล differentiable (0.2) เรายังหา "ลดไฟตรงไหนช่วยเชียงใหม่ที่สุด" ด้วย gradient ได้ (= source inversion, adjoint ฟรี)</div>
+<div class="warn"><b>ความซื่อสัตย์ระดับ counterfactual:</b> การลบ tracer ใช้ได้กับ <b>primary smoke เชิงเส้น</b> · ถ้าไฟลดมากจนเคมีทุติยภูมิเปลี่ยน behavior แบบไม่เชิงเส้น การประมาณนี้จะคลาดเคลื่อน → เราจึง validate counterfactual กับ "natural experiment" (เช่นฝนดับไฟจริง, จาก 1.3) 2–3 เคส เพื่อยืนยันขอบเขตที่เชื่อถือได้</div>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. เส้นตายของ superposition — สิ่งที่ห้ามทำ</h2>
+<p>superposition เปราะบาง · <b>operation ไม่เชิงเส้นแม้แต่จุดเดียวในเส้นทาง C ทำลายมันทั้งหมด</b> · ตัวอย่างสิ่งที่ห้ามใส่ลงบน C โดยตรง:</p>
+<table>
+<tr><th>operation</th><th>เชิงเส้น?</th><th>ผลต่อ superposition</th></tr>
+<tr><td>𝒜·C, D⊙C, +E (สมการแกน)</td><td>✅</td><td>ปลอดภัย</td></tr>
+<tr><td>C² , √C , log C</td><td>❌</td><td>พัง</td></tr>
+<tr><td>ReLU/sigmoid <u>บน C</u></td><td>❌</td><td>พัง</td></tr>
+<tr><td>Diffusion downscaling บน C</td><td>❌</td><td>พัง (เหตุผลที่เราปฏิเสธ!)</td></tr>
+<tr><td>sigmoid/softplus <u>บน g,D</u> (สัมประสิทธิ์)</td><td>—</td><td>✅ ปลอดภัย (ไม่ใช่ฟังก์ชันของ C)</td></tr>
+</table>
+<div class="danger"><b>กฎทอง:</b> ฟังก์ชันไม่เชิงเส้น<b>ทำได้เฉพาะกับสัมประสิทธิ์ (g, D ที่มาจากอากาศ)</b> ห้ามทำกับตัว C เอง · นี่คือนิยามเป๊ะ ๆ ของ "<b>conditionally</b>-linear" (3.5): ไม่เชิงเส้นในอากาศได้เต็มที่ แต่<b>ต้องเชิงเส้นใน C</b> · จำกฎนี้ไว้ = จำหัวใจการออกแบบทั้งหมด</div>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. โค้ด tagged tracer (เต็มขึ้นนิด)</h2>
+<pre><code><span class="kw">def</span> <span class="fn">rollout_tagged</span>(C0, E, wind, met, static, steps):
+    <span class="st">"""C0,E shape = (S, lat, lon) ; S = จำนวนแหล่ง"""</span>
+    C = C0
+    history = []
+    <span class="kw">for</span> t <span class="kw">in</span> <span class="fn">range</span>(steps):
+        g = F.softplus(afno_emit(met[t], static))   <span class="cm"># สัมประสิทธิ์ (ไม่ขึ้นกับ C)</span>
+        D = torch.sigmoid(afno_loss(met[t], static))
+        <span class="cm"># --- ทุกบรรทัดเชิงเส้นใน C, broadcast ข้ามมิติ source ---</span>
+        C = advect(C, wind[t])         <span class="cm"># 𝒜 เดียวกันทุก source</span>
+        C = C + g * E[t]               <span class="cm"># แต่ละ source เติมไฟตัวเอง</span>
+        C = C * (<span class="nm">1</span> - D)
+        history.append(C)
+    C = torch.stack(history)           <span class="cm"># (steps, S, lat, lon)</span>
+    C_total = C.sum(<span class="nm">1</span>)               <span class="cm"># รวมแหล่ง = พยากรณ์รวม (เทรนกับสถานีจริง)</span>
+    <span class="kw">return</span> C_total, C                  <span class="cm"># รวม + แยกแหล่ง (ฟรี!)</span></code></pre>
+<div class="why"><b>เชื่อม 1.5 (ทำไมเร็วกว่า WRF-Chem):</b> มิติ source เป็นแค่ batch ของ tensor บน GPU → เพิ่มแหล่งจาก 4 เป็น 10 แทบไม่เพิ่มเวลา (ขนานกันหมด) · ใน WRF-Chem การเพิ่ม tracer = เพิ่มงานคำนวณเชิงตัวเลขทวีคูณ · นี่คือข้อได้เปรียบที่จับต้องได้จาก superposition + GPU</div>
+
+<!-- ============ 9 ============ -->
+<h2 id="p9">9. caveat — R_chem ทำลาย superposition (ซื่อสัตย์)</h2>
+<p>ย้ำจาก 1.2/2.4: พจน์เคมี <b>R<sub>chem</sub></b> (ฝุ่นทุติยภูมิ) <b>ไม่เชิงเส้น</b> — มันขึ้นกับการทำปฏิกิริยาระหว่างสารหลายตัว · ถ้าใส่ R_chem แบบเต็มลงบน C โดยตรง → superposition พัง → attribution ผิด</p>
+<p>ทางเลือกที่เราใช้ (ซื่อสัตย์และทำได้ใน 2 เดือน):</p>
+<ul>
+<li><b>โฟกัส primary smoke:</b> หมอกควันชีวมวลภาคเหนือส่วนใหญ่เป็น primary (PMF ~51% ชีวมวล, 1.4) → superposition ใช้ได้ดีกับส่วนหลัก</li>
+<li><b>secondary เป็นพจน์แยก:</b> ใส่เป็น residual/correction ที่ทำ "หลัง" การแยกแหล่ง หรือระบุเป็นข้อจำกัดในเปเปอร์ — ไม่ปนกับ tracer ที่ต้องเชิงเส้น</li>
+<li><b>เคลมตามจริง:</b> "attribution เป๊ะสำหรับ primary transport" ไม่ใช่ "PM2.5 ทุกโมเลกุล"</li>
+</ul>
+<div class="why"><b>นี่ทำให้งานแข็งแรงขึ้น ไม่ใช่อ่อนลง:</b> reviewer A* เคารพงานที่<b>รู้ว่าหลักการตัวเองใช้ได้ถึงไหน</b> · การบอกชัดว่า "superposition การันตี primary, secondary เป็น residual" ทำให้ contribution C2 น่าเชื่อถือกว่าการอ้างคลุมว่าแยกได้ทุกอย่าง</div>
+
+<!-- ============ cheat ============ -->
+<h2 id="cheat">10. Cheat sheet + แบบฝึกหัด</h2>
+<div class="card">
+<b>สรุปจำ:</b>
+<ul>
+<li><b>เชิงเส้น:</b> f(a+b)=f(a)+f(b) และ f(k·a)=k·f(a) → "แยกส่วนได้"</li>
+<li><b>Superposition:</b> ระบบเชิงเส้น → ผลรวม = Σ ผลของแต่ละสาเหตุ → <code>C = Σ C⁽ˢ⁾</code></li>
+<li><b>พิสูจน์:</b> ขึ้นกับขั้น ℒ(a)+ℒ(b)=ℒ(a+b) ซึ่งจริงเพราะ ℒ เชิงเส้น (ผลของ Module 2)</li>
+<li><b>tagged tracer:</b> เพิ่มมิติ source ใน tensor → รันทุกแหล่งพร้อมกัน → <code>C.sum(0)</code>=รวม</li>
+<li><b>★ attribution ฟรี:</b> เทรนให้ผลรวมตรงสถานีจริง → ได้ C[s] แยกแหล่งฟรี (ไม่ต้องมี label แยก)</li>
+<li><b>counterfactual:</b> "ไม่มีพม่า"=C_total−C[พม่า] · "ลด 50%"=C_total−0.5C[พม่า] · ทันที ไม่รันใหม่</li>
+<li><b>กฎทอง:</b> ฟังก์ชันไม่เชิงเส้นทำได้เฉพาะกับ <u>สัมประสิทธิ์ g,D</u> ห้ามทำกับ C = "conditionally-linear" (3.5)</li>
+<li><b>ทำไมปฏิเสธ diffusion downscaling:</b> มันไม่เชิงเส้นบน C → พัง superposition</li>
+<li><b>caveat:</b> R_chem (secondary) ไม่เชิงเส้น → โฟกัส primary, secondary เป็นพจน์แยก</li>
+</ul>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 1 — ทำไม superposition ทำให้เรา "แยกแหล่งได้โดยไม่ต้องมี label แยกแหล่ง" (ซึ่งเราไม่มี)?</p>
+<details><summary>เฉลย</summary>
+<p>เพราะ superposition การันตีว่า <code>C.sum(0)</code> (รวมทุก tracer) = PM2.5 รวมเป๊ะ · เราจึงเทรนแค่ให้<b>ผลรวม</b>ตรงกับ<b>สถานีจริง</b> (ซึ่งเรามี — Air4Thai) · เมื่อผลรวมถูก และโครงสร้าง tracer ถูกฟิสิกส์ (แต่ละ tracer เริ่มจากไฟของแหล่งตัวเอง + ขนส่งเชิงเส้น) → การแยก C[s] แต่ละแหล่ง<b>โผล่มาเองอย่างถูกต้อง</b> โดยไม่ต้องมี label ว่า "ฝุ่นก้อนนี้มาจากพม่า" (ซึ่งวัดตรงไม่ได้)</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 2 — เพื่อนอยากใส่ ReLU(C) เพื่อกันค่าติดลบ · ทำไมนี่อันตรายต่อ attribution และควรทำยังไงแทน?</p>
+<details><summary>เฉลย</summary>
+<p>ReLU เป็นฟังก์ชัน<b>ไม่เชิงเส้นบน C</b> → <code>ReLU(C⁽¹⁾+C⁽²⁾) ≠ ReLU(C⁽¹⁾)+ReLU(C⁽²⁾)</code> → ทำลาย superposition → แยกแหล่งผิด · แทนที่จะกันติดลบด้วย ReLU บน C เรา<b>ออกแบบให้ไม่มีทางติดลบตั้งแต่แรก</b> (2.4): 𝒜 น้ำหนัก≥0, g=softplus≥0, loss=C·(1−D) กับ D=sigmoid · บังคับฟิสิกส์ผ่าน<b>สัมประสิทธิ์</b> ไม่ใช่ผ่านฟังก์ชันบน C → ทั้งไม่ติดลบและคงเชิงเส้น</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 3 — อธิบายด้วย superposition ว่าทำไม "ถ้าลดไฟพม่า 50% ฝุ่นเชียงใหม่จะเป็นเท่าไร" ตอบได้ทันทีโดยไม่รันโมเดลใหม่</p>
+<details><summary>เฉลย</summary>
+<p>เพราะระบบเชิงเส้น คุณสมบัติ ② บอกว่า <code>f(0.5·E_พม่า) = 0.5·f(E_พม่า) = 0.5·C[พม่า]</code> · และ superposition บอกว่าฝุ่นรวม = ผลแต่ละแหล่งบวกกัน · ดังนั้นฝุ่นใหม่ = <code>C_total − C[พม่า] + 0.5·C[พม่า] = C_total − 0.5·C[พม่า]</code> · เราแค่<b>ลบครึ่งหนึ่งของ tracer พม่า</b>ที่คำนวณไว้แล้วออก = ดำเนินการ tensor ทันที ไม่ต้องรัน rollout ใหม่ (ต่างจาก WRF-Chem ที่ต้องรันใหม่ทั้งดุ้น)</p>
+</details>
+</div>
+
+<div class="lead big">
+<b>🎉 จบ 2.5 = จบหัวใจที่ 2/3 + จบ Module 2!</b> คุณเข้าใจกุญแจคณิตของทั้งโปรเจกต์แล้ว: เพราะ Module 2 ออกแบบให้สมการ<b>เชิงเส้นใน C</b> → <b>superposition</b> เป็นจริง → <code>C = Σ C⁽ˢ⁾</code> → ติดป้ายควัน (tagged tracer) → ได้ <b>attribution ฟรี (C2)</b> + <b>counterfactual ทันที</b> · และคุณรู้กฎทอง: ฟังก์ชันไม่เชิงเส้นทำได้เฉพาะกับสัมประสิทธิ์ ห้ามทำกับ C
+<br><br>
+<b>3 หัวใจ:</b> ✅ 1.2 (ADR) → ✅ 2.5 (Superposition) → ⏳ <b>3.5 (Conditionally-linear operator)</b> = หัวใจสุดท้าย ที่รวมทุกอย่างเป็นสถาปัตยกรรมนิวรอลจริง
+<br><br>
+<b>ขั้นต่อไป:</b> เข้า <b>Module 3 (สถาปัตยกรรมนิวรอล)</b> · เริ่มที่ <b>3.1</b> ตามลำดับ (พื้นฐาน neural operator/AFNO ก่อนถึงหัวใจ 3.5) — บอกเลขถัดไปได้เลยครับ
+</div>
+
+</div>
+</body>
+</html>

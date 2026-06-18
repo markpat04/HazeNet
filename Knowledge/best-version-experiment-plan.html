@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HazeNet — Best-Version Experiment Plan (เป้า SOTA ระดับโลก)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:30px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:26px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .green-box b{color:var(--green)}
+  .star{border-left:4px solid var(--purple);background:rgba(188,140,255,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .star b{color:var(--purple)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:13.5px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--purple);color:var(--purple);margin-left:6px}
+  .ws{border:1px solid var(--border);border-radius:11px;margin:16px 0;overflow:hidden;background:var(--panel)}
+  .ws-h{display:flex;align-items:center;gap:12px;padding:11px 18px;background:var(--panel2);border-bottom:1px solid var(--border)}
+  .ws-n{background:var(--purple);color:#1a0a2e;border-radius:9px;padding:3px 11px;font-weight:bold;font-size:14px;flex-shrink:0}
+  .ws-t{font-size:16.5px;font-weight:bold}
+  .ws-meta{margin-left:auto;font-size:12px;color:var(--muted)}
+  .ws-b{padding:8px 18px 15px}
+  .hyp{border-left:4px solid var(--cyan);background:rgba(86,212,221,.06);padding:7px 14px;border-radius:0 8px 8px 0;margin:8px 0;font-size:14.5px}
+  .hyp b{color:var(--cyan)}
+  .tag{font-size:11.5px;padding:1px 8px;border-radius:11px;border:1px solid var(--border);color:var(--muted);margin-left:4px}
+  .ref{font-size:13.5px;color:var(--muted)}
+  .ref b{color:var(--blue)}
+  .claim{background:linear-gradient(90deg,rgba(63,185,80,.12),transparent);border:1px solid var(--green);border-radius:10px;padding:10px 16px;margin:12px 0}
+  .claim b{color:var(--green)}
+  .badge{font-size:11px;padding:1px 8px;border-radius:11px;margin-right:5px}
+  .b-new{background:rgba(188,140,255,.15);border:1px solid var(--purple);color:var(--purple)}
+  .b-core{background:rgba(63,185,80,.13);border:1px solid var(--green);color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>HazeNet — Best-Version Experiment Plan <span class="pin">⭐ เป้า SOTA โลก</span></h1>
+<p class="tagline">ถ้าไม่มีข้อจำกัด compute เลย — เราจะออกแบบโปรแกรมวิจัยทั้งหมดอย่างไรให้เป็นเทคโนโลยีใหม่ของโลก น่าเชื่อถือ และตีพิมพ์ระดับโลกได้</p>
+<p class="sub">วางตำแหน่งเทียบ SOTA จริง (GraphCast · GenCast · NeuralGCM · Aurora) → ชี้ช่องว่าง → ออกแบบการพิสูจน์ที่หักล้างได้ พร้อม reference ล่าสุด</p>
+
+<div class="lead">
+<b>กรอบความคิด:</b> "SOTA ระดับโลก" ไม่ได้แปลว่า "RMSE ต่ำสุดในโลก" (เราสู้ foundation model ยักษ์อย่าง Aurora บน raw skill ยาก) · แต่แปลว่า <b class="k">"เปิดความสามารถใหม่ที่ของเดิมทำไม่ได้ พร้อมหลักฐานที่หักล้างได้และทำซ้ำได้"</b><br><br>
+จุดที่เราจะเป็นเจ้าของ: <b>โมเดลพยากรณ์ที่ "บอกได้ว่าควันมาจากไหน" โดยกำเนิด (attribution-native) + ย้อนหาแหล่งปล่อยได้ (inversion) + มีความไม่แน่นอนที่ปรับเทียบแล้ว</b> — รวม 3 อย่างนี้ในโมเดลเดียวที่ differentiable และ physics-structured ซึ่ง<b>ยังไม่มีใครทำครบ</b>
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#gap">1. ช่องว่างวิจัย + วิทยานิพนธ์ความใหม่</a><br>
+<a href="#tech">2. เทคโนโลยีใหม่ — Attribution-Native Operator</a><br>
+<a href="#ws">3. Workstreams การทดลอง (WS1–WS9)</a><br>
+<a href="#bench">4. ชุดข้อมูล benchmark (ผลงานในตัวมันเอง)</a><br>
+<a href="#base">5. Baselines ครบสเปกตรัม</a><br>
+<a href="#eval">6. โปรโตคอลการประเมิน (ความน่าเชื่อถือ)</a><br>
+<a href="#abl">7. Ablation + การวิเคราะห์</a><br>
+<a href="#claims">8. ข้ออ้าง SOTA ที่หักล้างได้</a><br>
+<a href="#refs">9. งานวิจัยล่าสุดที่อ้างอิง+ต่อยอด</a><br>
+<a href="#risk">10. ความเสี่ยง + ขีดจำกัดที่ซื่อสัตย์</a><br>
+<a href="#timeline">11. เฟสของโปรแกรมวิจัย</a><br>
+<a href="#venue">12. เส้นทางสู่ตีพิมพ์ระดับโลก</a><br>
+</div>
+
+<!-- 1 gap -->
+<h2 id="gap">1. ช่องว่างวิจัย + วิทยานิพนธ์ความใหม่</h2>
+<p>วางภูมิทัศน์ปัจจุบันก่อน เพื่อเห็นว่าเราเสียบช่องไหน:</p>
+<table>
+<tr><th>ตระกูล</th><th>ตัวอย่าง SOTA</th><th>เก่งอะไร</th><th>ทำ "attribution + inversion" ไม่ได้เพราะ</th></tr>
+<tr><td>ML weather</td><td>GraphCast, Pangu, FourCastNet, GenCast</td><td>พยากรณ์อากาศแม่นมาก/เร็วมาก</td><td>เป็น black box · ไม่ผูกกับแหล่งปล่อย</td></tr>
+<tr><td>Hybrid physics+ML</td><td>NeuralGCM</td><td>differentiable, อนุรักษ์ฟิสิกส์</td><td>เป็น GCM ทั่วไป ไม่ใช่ source-receptor</td></tr>
+<tr><td>Foundation atmos.</td><td>Aurora, ClimaX, Prithvi WxC</td><td>pretrain ใหญ่ → fine-tune ได้ (Aurora มีเวอร์ชัน air pollution)</td><td>ทำนายความเข้มข้น แต่ไม่แยก "ควันจากแหล่งใด"</td></tr>
+<tr><td>ML air quality</td><td>AirPhyNet, PM2.5-GNN</td><td>physics-informed / graph เฉพาะ AQ</td><td>ไม่ออกแบบให้ attribution เป็นผลพลอยได้ + ไม่ทำ inversion</td></tr>
+<tr><td>Chemical transport (เชิงฟิสิกส์)</td><td>CMAQ, WRF-Chem, GEOS-Chem + tagged-tracer/DDM/adjoint · FLEXPART</td><td><b>ทำ attribution + inversion ได้จริง</b></td><td>แพงมหาศาล + พึ่ง emission inventory ที่ไม่แน่นอน + ไม่ learn จากข้อมูล observation</td></tr>
+</table>
+
+<div class="star"><b>วิทยานิพนธ์ความใหม่ (3 เสา):</b>
+<ol>
+<li><b>Attribution-native:</b> ฝัง superposition/linearity-in-emissions (หัวใจ 2.5→3.5) ไว้ใน<b>สถาปัตยกรรม</b> → อ่านสัดส่วน "ควันจากแต่ละแหล่ง" ออกมาได้โดยตรงจาก forward model ไม่ใช่ XAI ติดทีหลัง</li>
+<li><b>Differentiable inversion:</b> เพราะทั้งโมเดล differentiable → แก้ปัญหาผกผัน (3.7) ประเมิน emission จาก observation ได้ (แทน 4D-Var/adjoint ของ CTM ที่แพง)</li>
+<li><b>Data-driven แทน inventory ที่แน่นอน:</b> เรียน source-receptor relationship จากข้อมูลจริง + ฟิสิกส์ ในภูมิภาคที่สถานี sparse (SEA transboundary) — โจทย์ที่ CTM ทำแพงและ ML ทั่วไปทำไม่ได้</li>
+</ol></div>
+
+<div class="claim"><b>Headline claim:</b> "HazeNet เป็นโมเดลแรกที่รวม <b>พยากรณ์ + source attribution + emission inversion</b> ของ transboundary haze ไว้ในนิวรัลออเปอเรเตอร์เดียวที่ differentiable + physics-structured + probabilistic — ให้ skill พยากรณ์เทียบเท่า SOTA AQ ขณะที่<b>เปิดความสามารถ attribution/inversion ที่โมเดล ML เดิมทำไม่ได้</b> และพิสูจน์ความถูกต้องของ attribution ด้วย controlled CTM digital-twin"</div>
+
+<!-- 2 tech -->
+<h2 id="tech">2. เทคโนโลยีใหม่ — Attribution-Native Differentiable Transport Operator</h2>
+<div class="center card">
+<svg viewBox="0 0 720 260" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI">
+  <text x="360" y="20" fill="#bc8cff" font-size="13" text-anchor="middle" font-weight="bold">โครงสร้างที่ทำให้ attribution เป็น "ผลพลอยได้โดยกำเนิด"</text>
+  <!-- sources -->
+  <g font-size="11" text-anchor="middle">
+   <rect x="20" y="55" width="120" height="32" rx="6" fill="rgba(255,155,84,.18)" stroke="#ff9b54"/><text x="80" y="75" fill="#fff">emission แหล่ง A (พม่า)</text>
+   <rect x="20" y="100" width="120" height="32" rx="6" fill="rgba(248,81,73,.18)" stroke="#f85149"/><text x="80" y="120" fill="#fff">emission แหล่ง B (ลาว)</text>
+   <rect x="20" y="145" width="120" height="32" rx="6" fill="rgba(86,212,221,.18)" stroke="#56d4dd"/><text x="80" y="165" fill="#fff">emission แหล่ง C (local)</text>
+  </g>
+  <!-- operator -->
+  <rect x="220" y="70" width="160" height="110" rx="10" fill="rgba(188,140,255,.13)" stroke="#bc8cff" stroke-width="2"/>
+  <text x="300" y="110" fill="#bc8cff" font-size="12.5" text-anchor="middle" font-weight="bold">Conditionally-Linear</text>
+  <text x="300" y="128" fill="#bc8cff" font-size="12.5" text-anchor="middle" font-weight="bold">Neural Operator</text>
+  <text x="300" y="150" fill="#9aa7b4" font-size="10" text-anchor="middle">เคอร์เนลขึ้นกับลม/PBL (met)</text>
+  <text x="300" y="164" fill="#9aa7b4" font-size="10" text-anchor="middle">แต่ "เชิงเส้นต่อ emission"</text>
+  <!-- arrows in -->
+  <g stroke="#666" stroke-width="1.4" fill="none" marker-end="url(#a)">
+   <path d="M140 71 L218 105"/><path d="M140 116 L218 122"/><path d="M140 161 L218 140"/></g>
+  <!-- met conditioning -->
+  <rect x="220" y="200" width="160" height="26" rx="6" fill="rgba(88,166,255,.13)" stroke="#58a6ff"/><text x="300" y="217" fill="#58a6ff" font-size="11" text-anchor="middle">met (u,v,PBL,precip) → คุมเคอร์เนล</text>
+  <path d="M300 200 L300 182" stroke="#58a6ff" stroke-width="1.4" fill="none" marker-end="url(#a)"/>
+  <!-- outputs -->
+  <g font-size="11" text-anchor="middle">
+   <rect x="470" y="50" width="160" height="30" rx="6" fill="rgba(255,155,84,.18)" stroke="#ff9b54"/><text x="550" y="69" fill="#fff">PM2.5 จาก A</text>
+   <rect x="470" y="88" width="160" height="30" rx="6" fill="rgba(248,81,73,.18)" stroke="#f85149"/><text x="550" y="107" fill="#fff">PM2.5 จาก B</text>
+   <rect x="470" y="126" width="160" height="30" rx="6" fill="rgba(86,212,221,.18)" stroke="#56d4dd"/><text x="550" y="145" fill="#fff">PM2.5 จาก C</text>
+   <rect x="470" y="172" width="160" height="34" rx="6" fill="rgba(63,185,80,.18)" stroke="#3fb950"/><text x="550" y="186" fill="#fff" font-weight="bold">Σ = PM2.5 รวม (พยากรณ์)</text><text x="550" y="200" fill="#9aa7b4" font-size="9">superposition (2.5)</text>
+  </g>
+  <g stroke="#666" stroke-width="1.4" fill="none" marker-end="url(#a)">
+   <path d="M380 105 L468 65"/><path d="M380 120 L468 103"/><path d="M380 135 L468 141"/><path d="M380 150 L468 185"/></g>
+  <defs><marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#888"/></marker></defs>
+  <text x="360" y="248" fill="#9aa7b4" font-size="10.5" text-anchor="middle">forward = พยากรณ์ · อ่านแต่ละสาขา = attribution · ย้อน gradient = inversion — ทั้งหมดจากโมเดลเดียว</text>
+</svg>
+</div>
+<p>กลไกหลัก: operator ที่ <b>เคอร์เนลการขนส่ง (transport kernel) เป็นฟังก์ชันของสภาพอากาศ</b> (ลม/PBL/ฝน) แต่ <b>เชิงเส้นเทียบกับ emission</b> · ผลคือ "การมีส่วนร่วมของแต่ละแหล่ง" บวกกันเป็นผลรวมพอดี (superposition) → 3 ความสามารถจากโมเดลเดียว:</p>
+<ul>
+<li><b>Forward</b> = พยากรณ์ PM2.5 รวม (เทียบ Aurora-Air/CAMS)</li>
+<li><b>อ่านแต่ละสาขา</b> = source attribution (เทียบ CTM tagged-tracer)</li>
+<li><b>ย้อน gradient ผ่านโมเดล</b> = emission inversion (เทียบ adjoint/4D-Var)</li>
+</ul>
+<div class="why"><b>ทำไมนี่ถึง "ใหม่":</b> รวมแนวคิด <b>Neural Operator</b> (FNO/DeepONet — เรียน operator ระหว่างฟังก์ชัน) + <b>differentiable physics</b> (NeuralGCM) + <b>source-receptor linearity</b> (จาก CTM tagged-tracer/Green's function) เข้าเป็นสถาปัตยกรรมเดียวที่ <b>attribution + inversion เป็น first-class citizen</b> ไม่ใช่ของแถม</div>
+
+<!-- 3 workstreams -->
+<h2 id="ws">3. Workstreams การทดลอง (WS1–WS9)</h2>
+
+<div class="ws"><div class="ws-h"><span class="ws-n">WS1</span><div class="ws-t">สร้าง SEA Haze Benchmark</div><div class="ws-meta">ผลงานในตัว · ดู §4</div></div>
+<div class="ws-b"><div class="hyp"><b>เป้า:</b> ชุดข้อมูล datacube มาตรฐานเปิด + split + metric + baseline สำเร็จรูป สำหรับ transboundary haze SEA — ให้คนอื่นแข่งบนสนามเดียวกัน</div>
+ทำ: รวม FIRMS/FINN + ERA5 + Himawari + TROPOMI + DEM + Air4Thai/OpenAQ → Zarr ARCO · นิยาม task: nowcast/forecast/attribution/inversion · ปล่อยบน HuggingFace/Zenodo (DOI)</div></div>
+
+<div class="ws"><div class="ws-h"><span class="ws-n">WS2</span><div class="ws-t">Core: Conditionally-Linear Neural Operator <span class="badge b-core">CORE</span></div><div class="ws-meta">3.5</div></div>
+<div class="ws-b"><div class="hyp"><b>H1:</b> โครงสร้าง conditionally-linear ให้ skill พยากรณ์ ≥ CNN/ConvLSTM และ ≈ foundation model ขณะที่ได้ attribution ฟรี</div>
+ทำ: ออกแบบ kernel ที่คุมด้วย met (spectral/graph/learned-Green's-function) · เทรน multi-step rollout (curriculum 3.4) · เทียบ FNO/U-Net/GNN backbone หลายแบบ · บังคับ mass-aware (2.4)</div></div>
+
+<div class="ws"><div class="ws-h"><span class="ws-n">WS3</span><div class="ws-t">Probabilistic / Generative Ensemble <span class="badge b-new">ใหม่</span></div><div class="ws-meta">3.9</div></div>
+<div class="ws-b"><div class="hyp"><b>H2:</b> diffusion/generative head ให้ ensemble ที่ปรับเทียบดีกว่า deterministic+dropout — สำคัญต่อการเตือนภัยสุขภาพ</div>
+ทำ: เพิ่มหัว diffusion (สไตล์ GenCast) หรือ latent-ensemble → วัด CRPS, spread-skill, rank histogram, reliability · เทียบ ensemble หลาย seed</div></div>
+
+<div class="ws"><div class="ws-h"><span class="ws-n">WS4</span><div class="ws-t">Source Attribution + การพิสูจน์ <span class="badge b-new">จุดขาย</span></div><div class="ws-meta">3.6</div></div>
+<div class="ws-b"><div class="hyp"><b>H3:</b> สัดส่วนแหล่งที่ HazeNet อ่านได้ ตรงกับ "ความจริง" ของ CTM tagged-tracer ในการทดลองคุมตัวแปร</div>
+ทำ: <b>CTM digital-twin</b> (รัน CMAQ/WRF-Chem สร้าง ground-truth attribution สังเคราะห์) → เทรน/เทส HazeNet ให้กู้สัดส่วนกลับ → วัด error · + เทียบ FLEXPART back-trajectory ในเคสจริง</div></div>
+
+<div class="ws"><div class="ws-h"><span class="ws-n">WS5</span><div class="ws-t">Differentiable Emission Inversion <span class="badge b-new">ใหม่</span></div><div class="ws-meta">3.7</div></div>
+<div class="ws-b"><div class="hyp"><b>H4:</b> ย้อน gradient ผ่าน operator ประเมิน emission ได้แม่นใกล้ adjoint/4D-Var ของ CTM แต่เร็วกว่าหลายเท่า</div>
+ทำ: ตั้งเป็น inverse problem + regularization (6.3) · เทสกู้ emission ที่ซ่อนไว้ใน twin · วัด vs FINN/inventory จริง + uncertainty ของ inversion</div></div>
+
+<div class="ws"><div class="ws-h"><span class="ws-n">WS6</span><div class="ws-t">Foundation Pretraining + Transfer</div><div class="ws-meta">data efficiency</div></div>
+<div class="ws-b"><div class="hyp"><b>H5:</b> pretrain บน reanalysis/CAMS ทั่วโลก แล้ว fine-tune SEA → ชนะ train-from-scratch โดยเฉพาะที่สถานี sparse</div>
+ทำ: pretrain แบบ ClimaX/Aurora → fine-tune · วัด data-efficiency curve (skill vs #stations/#years) · ทดสอบ zero/few-shot ในปีที่ไม่เคยเห็น</div></div>
+
+<div class="ws"><div class="ws-h"><span class="ws-n">WS7</span><div class="ws-t">Rigorous Evaluation <span class="badge b-core">CORE</span></div><div class="ws-meta">§5,§6</div></div>
+<div class="ws-b"><div class="hyp"><b>เป้า:</b> ทำให้ทุกข้ออ้างหักล้างได้ด้วยสถิติ</div>
+ทำ: baseline ครบ (§5) · spatiotemporal CV + leave-region-out (5.2) · block-bootstrap + multi-seed significance (5.6) · oracle/error decomposition (5.5)</div></div>
+
+<div class="ws"><div class="ws-h"><span class="ws-n">WS8</span><div class="ws-t">Causal Validation ของ attribution <span class="badge b-new">A*</span></div><div class="ws-meta">6.2</div></div>
+<div class="ws-b"><div class="hyp"><b>H6:</b> ความสัมพันธ์ที่เรียนได้เป็น "เชิงเหตุผล" — intervention "ดับไฟแหล่ง A" ลด PM2.5 ปลายทางตามที่โมเดลทำนาย</div>
+ทำ: do-operator/counterfactual ใน twin · ทดสอบ identifiability · เทียบ interventional ground-truth จาก CTM</div></div>
+
+<div class="ws"><div class="ws-h"><span class="ws-n">WS9</span><div class="ws-t">Operational Demo + Open Release</div><div class="ws-meta">impact</div></div>
+<div class="ws-b"><div class="hyp"><b>เป้า:</b> impact จริง + reproducibility ระดับโลก</div>
+ทำ: ปล่อย benchmark + weights + code (Apache/MIT) · เดโมเตือนภัย real-time + แผนที่กลุ่มควัน · model card + datasheet</div></div>
+
+<!-- 4 benchmark -->
+<h2 id="bench">4. ชุดข้อมูล benchmark (ผลงานในตัวมันเอง)</h2>
+<p>ในงานระดับโลก "ชุดข้อมูล + benchmark" เป็น contribution ที่ถูกอ้างอิงสูงมาก (เช่น WeatherBench สำหรับ ML weather) · เราสร้าง <b>"SEA-HazeBench"</b>:</p>
+<table>
+<tr><th>องค์ประกอบ</th><th>รายละเอียด</th></tr>
+<tr><td>โดเมน/ความละเอียด</td><td>SEA 5–25°N, 92–110°E · หลาย resolution (0.25°/0.1°/0.05°)</td></tr>
+<tr><td>ช่วงเวลา</td><td>หลายปี ครอบฤดูเผา (เช่น 2018–2025) แบ่ง train/val/test ตามเวลา</td></tr>
+<tr><td>ตัวแปร</td><td>FRP/emission, met (ERA5), AOD (Himawari/TROPOMI/MAIAC), DEM, landcover, PM2.5 ground</td></tr>
+<tr><td>Tasks มาตรฐาน</td><td>(1) forecast (2) attribution (3) inversion (4) probabilistic — แต่ละอันมี metric+baseline</td></tr>
+<tr><td>Ground-truth attribution</td><td>จาก CTM digital-twin (สังเคราะห์) — แก้ปัญหา "ไม่มีความจริงของแหล่ง"</td></tr>
+<tr><td>ปล่อย</td><td>Zarr/ARCO บน HuggingFace + DOI (Zenodo) + leaderboard</td></tr>
+</table>
+
+<!-- 5 baselines -->
+<h2 id="base">5. Baselines ครบสเปกตรัม (เทียบให้แฟร์และครบ)</h2>
+<table>
+<tr><th>ชั้น</th><th>baseline</th><th>พิสูจน์ว่าเรา…</th></tr>
+<tr><td>ไร้เดียงสา</td><td>persistence, climatology</td><td>เรียนรู้อะไรจริง (5.3)</td></tr>
+<tr><td>สถิติ/ตื้น</td><td>MLR, gradient boosting บน features</td><td>ต้องใช้ deep/spatial</td></tr>
+<tr><td>ML AQ เฉพาะทาง</td><td>ConvLSTM, PM2.5-GNN, <b>AirPhyNet</b></td><td>ดีกว่า AQ-ML เดิม (AirPhyNet = ใกล้สุด)</td></tr>
+<tr><td>ML weather→AQ</td><td>FNO/U-Net/GraphCast-style backbone (เทรนบนงานเรา)</td><td>โครงสร้าง physics ของเราเพิ่มค่า</td></tr>
+<tr><td>Foundation</td><td><b>Aurora (air pollution)</b> / CAMS ในภูมิภาค</td><td>skill เทียบเท่า SOTA ใหญ่</td></tr>
+<tr><td>ฟิสิกส์ (attribution/inversion)</td><td>CMAQ/WRF-Chem tagged-tracer/DDM/adjoint · FLEXPART</td><td>attribution/inversion ตรงกับฟิสิกส์ แต่เราเร็วกว่ามาก</td></tr>
+</table>
+<div class="warn"><b>กฎความแฟร์ (5.3):</b> baseline ทุกตัวต้องจูน/เทรนบนข้อมูล+งบเดียวกัน · อย่าสร้าง strawman · ถ้าแพ้ Aurora บน raw RMSE ให้รายงานตรง ๆ แล้วเน้นว่าเราเปิด attribution/inversion ที่มันทำไม่ได้</div>
+
+<!-- 6 eval -->
+<h2 id="eval">6. โปรโตคอลการประเมิน (หัวใจความน่าเชื่อถือ)</h2>
+<h3>6.1 Deterministic + Probabilistic</h3>
+<ul>
+<li>Deterministic: MAE/RMSE/Bias/ACC · event: POD/FAR/CSI · onset-lead time · skill-vs-leadtime (5.1)</li>
+<li>Probabilistic: <b>CRPS</b>, spread-skill ratio, rank histogram, reliability diagram, Brier/CRPSS เทียบ climatology (3.9)</li>
+</ul>
+<h3>6.2 การพิสูจน์ attribution — หัวใจที่ทำให้ "น่าเชื่อถือ"</h3>
+<div class="star"><b>ปัญหา:</b> โลกจริงไม่มี "ความจริงของแหล่ง" (ไม่มีใครรู้แน่ว่า PM2.5 ที่เชียงใหม่มาจากพม่ากี่ %)<br>
+<b>ทางออก — CTM Digital-Twin:</b> รัน CMAQ/WRF-Chem ที่ "รู้คำตอบ" (เพราะเราตั้ง tagged-tracer เอง) → ใช้เป็น ground truth สังเคราะห์ → วัดว่า HazeNet กู้สัดส่วนได้ตรงไหม · เสริมด้วย FLEXPART back-trajectory + เคสเหตุการณ์จริงที่มีหลักฐานทิศลม</div>
+<h3>6.3 Cross-validation + Significance + Decomposition</h3>
+<ul>
+<li>Spatiotemporal CV + embargo + forward-chaining · leave-stations-out · <b>leave-region-out</b> (ทดสอบ transboundary generalization) (5.2)</li>
+<li>Significance: block-bootstrap CI + paired test + multiple seeds (5.6)</li>
+<li>Oracle/error decomposition: แยก error จาก met-forecast vs โมเดล (5.5) · attribution error bound (6.1)</li>
+<li>Calibration ของ uncertainty + ของ inversion</li>
+</ul>
+
+<!-- 7 ablation -->
+<h2 id="abl">7. Ablation + การวิเคราะห์ (เข้าใจว่าทำไมมันเวิร์ก)</h2>
+<table>
+<tr><th>ตัดอะไร</th><th>ทดสอบสมมุติฐาน</th></tr>
+<tr><td>conditionally-linear → nonlinear ทั่วไป</td><td>โครงสร้างเชิงเส้นต่อ emission จำเป็นต่อ attribution (3.5)</td></tr>
+<tr><td>mass-aware constraint ออก</td><td>การอนุรักษ์มวลช่วย attribution ไม่รั่ว (2.4)</td></tr>
+<tr><td>physics conditioning (met-kernel) ออก</td><td>การคุมเคอร์เนลด้วยลมเพิ่ม skill</td></tr>
+<tr><td>diffusion head → deterministic</td><td>generative ensemble ดีกว่าในการปรับเทียบ (3.9)</td></tr>
+<tr><td>pretraining ออก</td><td>foundation transfer ช่วยตอน sparse (WS6)</td></tr>
+<tr><td>channels ทีละกลุ่ม (AOD/TROPOMI/DEM)</td><td>คุณค่าของแต่ละแหล่งข้อมูล</td></tr>
+</table>
+<p>+ การวิเคราะห์: ดู learned kernel ตรงกับฟิสิกส์ลมไหม · scaling laws (skill vs ข้อมูล/พารามิเตอร์) · failure cases</p>
+
+<!-- 8 claims -->
+<h2 id="claims">8. ข้ออ้าง SOTA ที่หักล้างได้ (เขียนเป็นข้อ ๆ)</h2>
+<div class="claim"><b>C1 (Forecast):</b> skill พยากรณ์ PM2.5 หลายวันของ HazeNet ≥ Aurora-Air/CAMS ในภูมิภาค SEA (วัดด้วย CRPSS/RMSE, significance ผ่าน)</div>
+<div class="claim"><b>C2 (Attribution):</b> attribution error เทียบ CTM digital-twin ต่ำกว่า baseline (XAI บน black-box, FLEXPART) อย่างมีนัยสำคัญ</div>
+<div class="claim"><b>C3 (Inversion):</b> emission inversion แม่นใกล้ adjoint/4D-Var ของ CTM แต่เร็วกว่า ≥10–100×</div>
+<div class="claim"><b>C4 (Causal):</b> intervention ใน twin ยืนยันว่า attribution เป็นเชิงเหตุผล ไม่ใช่แค่สหสัมพันธ์ (6.2)</div>
+<div class="claim"><b>C5 (Resource):</b> เร็ว/ถูกกว่า CTM หลายระดับ → ใช้เตือนภัย real-time ได้</div>
+<p class="sub">ทุกข้อต้องมี metric + baseline + การทดสอบนัยสำคัญ · ถ้าข้อไหนไม่ผ่าน ให้รายงานตรง ๆ (null result ก็มีคุณค่า 5.4)</p>
+
+<!-- 9 refs -->
+<h2 id="refs">9. งานวิจัยล่าสุดที่อ้างอิง + ต่อยอด</h2>
+<p class="sub">(ตรวจปี/เวอร์ชันล่าสุดอีกครั้งก่อนเขียนจริง — ด้านนี้ขยับเร็วมาก)</p>
+<h4>ML weather / forecasting</h4>
+<p class="ref"><b>GraphCast</b> (Lam et al., Science 2023) — GNN medium-range · <b>Pangu-Weather</b> (Bi et al., Nature 2023) — 3D transformer · <b>FourCastNet</b> (Pathak et al., 2022) — FNO · <b>GenCast</b> (Price et al., Nature 2024) — diffusion ensemble SOTA · <b>NeuralGCM</b> (Kochkov et al., Nature 2024) — hybrid differentiable</p>
+<h4>Foundation models บรรยากาศ</h4>
+<p class="ref"><b>Aurora</b> (Bodnar et al., 2024–25) — foundation รวมเวอร์ชัน air pollution · <b>ClimaX</b> (Nguyen et al., ICML 2023) · <b>Prithvi WxC</b> (NASA/IBM 2024)</p>
+<h4>Air quality / physics-informed</h4>
+<p class="ref"><b>AirPhyNet</b> (Hettige et al., ICLR 2024) — advection-diffusion PINN (ใกล้เราที่สุด) · <b>PM2.5-GNN</b> (Wang et al., 2020) · <b>PINN</b> (Raissi et al., 2019)</p>
+<h4>Neural operators / inverse / generative</h4>
+<p class="ref"><b>FNO</b> (Li et al., ICLR 2021) · <b>DeepONet</b> (Lu et al., 2021) · <b>Diffusion</b> (Ho et al. 2020; Karras et al. EDM 2022) · <b>4D-Var/adjoint</b> data assimilation (literature)</p>
+<h4>Chemical transport / attribution (ฟิสิกส์)</h4>
+<p class="ref"><b>CMAQ · WRF-Chem · GEOS-Chem</b> + tagged-tracer/DDM/adjoint · <b>FLEXPART</b> (Lagrangian dispersion) · <b>FINN/GFED</b> (fire emissions)</p>
+<h4>Benchmark</h4>
+<p class="ref"><b>WeatherBench / WeatherBench-2</b> (Rasp et al.) — แม่แบบของการทำ benchmark ที่ชุมชนใช้</p>
+
+<!-- 10 risk -->
+<h2 id="risk">10. ความเสี่ยง + ขีดจำกัดที่ซื่อสัตย์ (compute ทุบไม่ได้)</h2>
+<div class="danger"><b>ต้องเขียนตรง ๆ ในเปเปอร์:</b>
+<ul>
+<li><b>ไม่มี ground truth ของแหล่งในโลกจริง</b> → attribution validate ผ่าน CTM twin (ซึ่งเองก็มี error ของมัน) + เคสจริงเชิงคุณภาพ · เป็นเพดานเชิงโครงสร้าง ไม่ใช่เรื่อง compute</li>
+<li><b>CTM twin สืบทอด bias ของ CMAQ/WRF-Chem</b> → "ตรงกับ twin" ≠ "ตรงกับธรรมชาติ 100%"</li>
+<li><b>predictability limit</b> ของ haze มีเพดานทางทฤษฎี (chaos) — โมเดลเทพแค่ไหนก็พยากรณ์ไกลไม่จำกัดไม่ได้</li>
+<li><b>emission inventory ไม่แน่นอน</b> → inversion ดีได้เท่าสมมุติฐาน prior/regularization (6.3)</li>
+<li><b>identifiability ของ inversion</b> — หลาย emission อาจให้ observation เดียวกัน (ill-posed)</li>
+<li><b>การเปลี่ยน scope สู่เปเปอร์ = งานหลายเดือน–ปี</b> ไม่ใช่ 2 เดือน · ต้องวางเป็นโปรแกรมระยะยาว</li>
+</ul></div>
+<div class="green-box"><b>หลักความน่าเชื่อถือ:</b> งานระดับโลกที่ดีไม่ใช่งานที่อ้างเยอะสุด แต่คืองานที่ <b>ข้ออ้างทุกข้อหักล้างได้ + รู้ขอบเขตตัวเองชัด + ทำซ้ำได้</b> · ความซื่อสัตย์เรื่องขีดจำกัดคือสิ่งที่ reviewer ระดับ top venue ให้น้ำหนักสูง</div>
+
+<!-- 11 timeline -->
+<h2 id="timeline">11. เฟสของโปรแกรมวิจัย (ระยะยาว)</h2>
+<table>
+<tr><th>เฟส</th><th>โฟกัส</th><th>ผลลัพธ์</th></tr>
+<tr><td>0 · พื้นฐาน</td><td>walking skeleton + feasibility (แผนเดิม)</td><td>pipeline วิ่งได้</td></tr>
+<tr><td>1 · Benchmark</td><td>WS1 + WS7 (eval harness)</td><td>SEA-HazeBench v0 + baselines</td></tr>
+<tr><td>2 · Core model</td><td>WS2 + WS4 (attribution) + twin</td><td>พิสูจน์ C1+C2 → เปเปอร์แรก</td></tr>
+<tr><td>3 · ขยายความสามารถ</td><td>WS3 (prob) + WS5 (inversion) + WS6 (foundation)</td><td>C3+ uncertainty → เปเปอร์ที่สอง</td></tr>
+<tr><td>4 · ความลึก</td><td>WS8 (causal) + scaling + release</td><td>C4 + open benchmark/weights</td></tr>
+</table>
+<p class="sub">แต่ละเฟสตีพิมพ์ได้เป็นชิ้น ๆ — ไม่ต้องรอจบทั้งหมด · เฟส 2 เพียงอันเดียว (attribution-native + twin validation) ก็เป็นเปเปอร์ที่แข็งแล้ว</p>
+
+<!-- 12 venue -->
+<h2 id="venue">12. เส้นทางสู่ตีพิมพ์ระดับโลก</h2>
+<ul>
+<li><b>Venue:</b> NeurIPS/ICLR/ICML (+ workshop: Tackling Climate Change with ML) · Nature/Science family ถ้า impact สูง · npj Climate, GMD, AGU</li>
+<li><b>มุมขาย:</b> "attribution-native + differentiable inversion" + open benchmark = ความใหม่เชิงวิธี + ประโยชน์สังคม (สุขภาพ/นโยบาย transboundary)</li>
+<li><b>เช็กลิสต์ reviewer:</b> baseline แข็ง+แฟร์ · significance · ablation · reproducibility (code+data+weights) · limitations ซื่อสัตย์ · novelty ชัดเทียบ Aurora/AirPhyNet</li>
+<li><b>impact เพิ่ม:</b> ปล่อย benchmark ให้ชุมชนแข่ง → ถูกอ้างอิงต่อเนื่อง (เหมือน WeatherBench)</li>
+</ul>
+
+<hr>
+<p class="center muted">HazeNet Best-Version Plan · SOTA = "เปิดความสามารถใหม่ที่หักล้างได้+ทำซ้ำได้" ไม่ใช่ "RMSE ต่ำสุด" · attribution-native + differentiable inversion + open benchmark = ช่องที่เราเป็นเจ้าของ</p>
+
+</div>
+</body>
+</html>

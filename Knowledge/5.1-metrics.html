@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.1 — Metrics (RMSE/MAE/ACC · CSI/POD/FAR · onset-lead)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .green-box b{color:var(--green)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.4px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+  .pin.core{border-color:var(--cyan);background:rgba(86,212,221,.13)}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+  a.ext{color:var(--blue)}
+  .formula{background:#11161d;border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-family:'Cambria Math',serif;font-size:16px;text-align:center;margin:10px 0}
+  .ct{border-collapse:collapse;margin:10px auto}
+  .ct td{border:1px solid var(--border);padding:14px 18px;text-align:center;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>5.1 — Metrics: วัดความแม่นยังไงให้เชื่อถือได้ <span class="pin core">⭐ CORE</span></h1>
+<p class="tagline">RMSE/MAE/ACC (ค่าตรงไหม) · CSI/POD/FAR (จับวันวิกฤตได้ไหม) · onset-lead (เตือนล่วงหน้าได้กี่ชม.)</p>
+<p class="sub">เริ่มโมดูล 5 (การประเมิน/rigor) · โยง 1.1 (เกณฑ์ PM2.5) · 0.4 (test set) · 3.9 (CRPS สำหรับ probabilistic) · 5.2 (วิธีแบ่งกันรั่ว) · 5.3 (เทียบ baseline)</p>
+
+<div class="lead">
+<b>โจทย์:</b> เราจะเคลมว่า "HazeNet ดีกว่าวิธีเดิม" — แต่ <em>"ดี"</em> วัดด้วยตัวเลขอะไร? · เลือก metric ผิด = ซ่อนความล้มเหลวที่สำคัญที่สุดไว้ใต้พรม<br><br>
+<b>หัวใจของบทนี้ (จำให้ขึ้นใจ):</b> metric เฉลี่ย (RMSE/MAE) บอก "วันปกติแม่นแค่ไหน" แต่ <b class="k">สิ่งที่คนแคร์จริงคือ "วันที่ฝุ่นวิกฤต"</b> ซึ่งมีน้อยมาก → ค่าเฉลี่ยกลบมันมิด · เราจึงต้องมี metric 3 ตระกูล:<br>
+<span style="color:var(--blue)">① ค่าตรงไหม (regression)</span> · <span style="color:var(--orange)">② จับวันอันตรายได้ไหม (event)</span> · <span style="color:var(--green)">③ เตือนล่วงหน้าได้นานแค่ไหน (onset-lead)</span> ← จุดขายของเรา
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. ทำไม metric เดียวไม่พอ ★</a><br>
+<a href="#p2">2. ตระกูล ①: regression (MAE/RMSE/bias)</a><br>
+<a href="#p3">3. R² และ ACC (skill เชิงรูปแบบ)</a><br>
+<a href="#p4">4. ตระกูล ②: event/categorical ★</a><br>
+<a href="#p5">5. ตาราง contingency → POD/FAR/CSI</a><br>
+<a href="#p6">6. ตระกูล ③: onset-lead time ★</a><br>
+<a href="#p7">7. skill vs lead time (ยิ่งไกลยิ่งยาก)</a><br>
+<a href="#p8">8. Skill score: เทียบ baseline เสมอ</a><br>
+<a href="#p9">9. กับดักการวัด + ตะกร้า metric ของเรา</a><br>
+<a href="#cheat">10. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- 1 -->
+<h2 id="p1">1. ทำไม metric เดียวไม่พอ — "ค่าเฉลี่ยกลบหายนะ" <span class="pin core">⭐</span></h2>
+<p>ลองดูตัวอย่างที่อันตราย: โมเดล 2 ตัวมี RMSE เท่ากัน แต่คุณภาพต่างกันคนละโลก</p>
+<table>
+<tr><th>สถานการณ์</th><th>วันปกติ (PM2.5≈30)</th><th>วันวิกฤต (PM2.5จริง=180)</th><th>RMSE รวม</th><th>ใช้ได้จริง?</th></tr>
+<tr><td><b>โมเดล A</b></td><td>แม่นมาก</td><td>ทำนาย 60 (พลาดวันอันตราย!)</td><td>ต่ำ ✓</td><td><b style="color:var(--red)">อันตราย</b> — พลาดวันที่สำคัญสุด</td></tr>
+<tr><td><b>โมเดล B</b></td><td>แกว่งเล็กน้อย</td><td>ทำนาย 165 (จับได้!)</td><td>ใกล้เคียง A</td><td><b style="color:var(--green)">ดี</b> — จับวันวิกฤตได้</td></tr>
+</table>
+<div class="danger"><b>ประเด็น:</b> วันวิกฤตมีไม่กี่วันต่อปี → มันแทบไม่ขยับ RMSE รวม (ถูกค่าเฉลี่ยของวันปกติกลบ) · แต่มัน <b>คือวันที่โรงเรียนต้องสั่งหยุด คนต้องใส่หน้ากาก</b> · ถ้าวัดด้วย RMSE อย่างเดียว เราจะเลือกโมเดล A ที่อันตราย · <b>นี่คือเหตุผลที่ต้องมี event metric แยกต่างหาก</b></div>
+
+<!-- 2 -->
+<h2 id="p2">2. ตระกูล ① — Regression: ค่าตรงไหม</h2>
+<p>วัด "ตัวเลข PM2.5 ที่ทำนายห่างจากจริงแค่ไหน" · 3 ตัวพื้นฐาน (หน่วยเดียวกับ PM2.5 = μg/m³ ตีความง่าย):</p>
+
+<h4>MAE — ค่าผิดพลาดเฉลี่ย (เข้าใจง่ายสุด)</h4>
+<div class="formula">MAE = (1/N) Σ |ŷ − y|</div>
+<p>เฉลี่ยขนาดความผิดพลาด · "โดยเฉลี่ยพลาดไป ±X μg/m³" · <b>ทนต่อ outlier</b> (ไม่ลงโทษค่าพลาดใหญ่เป็นพิเศษ)</p>
+
+<h4>RMSE — รากของกำลังสองเฉลี่ย (ลงโทษพลาดใหญ่)</h4>
+<div class="formula">RMSE = √[ (1/N) Σ (ŷ − y)² ]</div>
+<p>ยกกำลังสองก่อน → <b>พลาดมาก ๆ ถูกลงโทษหนักกว่า</b> · เหมาะกับงานเราเพราะ "พลาดวันวิกฤต 100 หน่วย" ควรเจ็บกว่า "พลาดวันปกติ 10 หน่วย ×10 ครั้ง"</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 520 150" width="86%" xmlns="http://www.w3.org/2000/svg">
+  <text x="260" y="16" fill="#e6edf3" font-size="12" text-anchor="middle">RMSE ลงโทษ "พลาดใหญ่ครั้งเดียว" หนักกว่า MAE</text>
+  <text x="120" y="40" fill="#9aa7b4" font-size="11" text-anchor="middle">พลาด 10 ×5 ครั้ง</text>
+  <g fill="#58a6ff"><rect x="60" y="60" width="18" height="20"/><rect x="85" y="60" width="18" height="20"/><rect x="110" y="60" width="18" height="20"/><rect x="135" y="60" width="18" height="20"/><rect x="160" y="60" width="18" height="20"/></g>
+  <text x="120" y="100" fill="#58a6ff" font-size="11" text-anchor="middle">MAE=10 · RMSE=10</text>
+  <text x="390" y="40" fill="#9aa7b4" font-size="11" text-anchor="middle">พลาด 50 ×1 ครั้ง</text>
+  <rect x="370" y="60" width="40" height="20" fill="#f85149"/>
+  <text x="390" y="100" fill="#f85149" font-size="11" text-anchor="middle">MAE=10 · RMSE=22</text>
+  <text x="260" y="135" fill="#9aa7b4" font-size="10.5" text-anchor="middle">MAE เท่ากัน แต่ RMSE จับ "พลาดใหญ่" ได้ → ใช้คู่กันเห็นภาพครบ</text>
+</svg>
+</div>
+
+<h4>Bias — เอนเอียงเชิงระบบ</h4>
+<div class="formula">Bias = (1/N) Σ (ŷ − y)</div>
+<p>ไม่ใส่ค่าสัมบูรณ์ → บอกว่าโมเดล <b>ทำนายสูงไปหรือต่ำไปเป็นระบบ</b> · bias เป็นบวก = ทำนายเกินจริงตลอด · สำคัญเพราะถ้า "ต่ำไปตลอด" จะอันตราย (ประเมินอันตรายต่ำเกิน)</p>
+<div class="why"><b>ใช้ 3 ตัวคู่กัน:</b> MAE (ภาพรวมเข้าใจง่าย) + RMSE (จับพลาดใหญ่) + Bias (เอนเอียงทิศไหน) · รายงานทั้งสามเสมอ — ตัวเดียวเล่าเรื่องไม่ครบ</div>
+
+<!-- 3 -->
+<h2 id="p3">3. R² และ ACC — วัด "ทักษะเชิงรูปแบบ"</h2>
+<p><b>R² (สัมประสิทธิ์การตัดสินใจ):</b> โมเดลอธิบายความแปรปรวนของข้อมูลได้กี่ % · R²=1 สมบูรณ์แบบ, R²=0 = เท่ากับเดาค่าเฉลี่ย · (FastCTM รายงาน PM2.5 R²≈0.80 — จำจากไฟล์วิเคราะห์ได้ไหม)</p>
+<p><b>ACC (Anomaly Correlation Coefficient):</b> มาตรฐานวงการพยากรณ์อากาศ · วัด correlation ของ <b>"ส่วนต่างจากค่าปกติ (anomaly)"</b> ไม่ใช่ค่าดิบ:</p>
+<div class="formula">ACC = corr( ŷ − climatology , y − climatology )</div>
+<div class="ex"><b>ทำไม ACC ดีกว่า correlation ดิบ:</b> ถ้าวัด correlation ของค่าดิบ โมเดลจะได้คะแนนสูงฟรี ๆ แค่เพราะ "ทายตามฤดูกาล" (หน้าแล้งฝุ่นเยอะ หน้าฝนฝุ่นน้อย — ใครก็รู้) · ACC หักส่วนที่เป็น climatology ออกก่อน → วัดเฉพาะ <b>"ทักษะที่เกินกว่าการรู้ฤดูกาล"</b> ซึ่งคือสิ่งที่โมเดลต้องพิสูจน์จริง ๆ</div>
+
+<!-- 4 -->
+<h2 id="p4">4. ตระกูล ② — Event/Categorical: จับวันวิกฤตได้ไหม <span class="pin core">⭐</span></h2>
+<p>เปลี่ยนจาก "ค่าตรงไหม" เป็น "เตือนถูกไหม" · ตั้ง <b>เกณฑ์</b> ก่อน (เช่น PM2.5 &gt; 75 μg/m³ = อันตราย — ค่าจริงให้อิงมาตรฐาน คพ./WHO) แล้วแปลงทั้งทำนายและจริงเป็น "เกิน/ไม่เกิน" → ได้ 4 กรณี:</p>
+<div class="center">
+<table class="ct">
+<tr><td style="background:var(--panel2)"></td><td style="background:var(--panel2)"><b>จริง: เกินเกณฑ์</b></td><td style="background:var(--panel2)"><b>จริง: ไม่เกิน</b></td></tr>
+<tr><td style="background:var(--panel2)"><b>ทำนาย: เกิน</b></td><td style="background:rgba(63,185,80,.25);color:var(--green)"><b>Hit</b><br>เตือนถูก ✓</td><td style="background:rgba(227,179,65,.2);color:var(--amber)"><b>False Alarm</b><br>เตือนเก้อ</td></tr>
+<tr><td style="background:var(--panel2)"><b>ทำนาย: ไม่เกิน</b></td><td style="background:rgba(248,81,73,.25);color:var(--red)"><b>Miss</b><br>พลาดวันอันตราย ✗✗</td><td style="background:rgba(155,167,180,.15);color:var(--muted)"><b>Correct Neg</b><br>ปกติก็บอกปกติ</td></tr>
+</table>
+</div>
+<div class="danger"><b>ไม่ใช่ทุก error เท่ากัน:</b> <b style="color:var(--red)">Miss</b> (ฝุ่นมาแต่ไม่เตือน) อันตรายกว่า <b style="color:var(--amber)">False Alarm</b> (เตือนแต่ไม่มา) มาก · การแยก 4 กรณีทำให้เรา "เห็นชนิดของความผิดพลาด" ไม่ใช่แค่จำนวนรวม — และเลือกโมเดลที่ Miss น้อยได้</div>
+
+<!-- 5 -->
+<h2 id="p5">5. POD / FAR / CSI — สรุปตาราง contingency เป็นตัวเลข</h2>
+<table>
+<tr><th>Metric</th><th>สูตร</th><th>ตอบคำถาม</th><th>ดี=</th></tr>
+<tr><td><b style="color:var(--green)">POD</b> (Probability of Detection / hit rate)</td><td>Hits / (Hits + Misses)</td><td>"วันอันตรายจริง เราจับได้กี่ %"</td><td>สูง (→1)</td></tr>
+<tr><td><b style="color:var(--amber)">FAR</b> (False Alarm Ratio)</td><td>FA / (Hits + FA)</td><td>"ที่เราเตือน ผิดกี่ %"</td><td>ต่ำ (→0)</td></tr>
+<tr><td><b style="color:var(--cyan)">CSI</b> (Critical Success Index / Threat Score)</td><td>Hits / (Hits + Misses + FA)</td><td>"ภาพรวมการจับ event (ไม่นับ correct neg)"</td><td>สูง (→1)</td></tr>
+</table>
+<div class="why"><b>ทำไม CSI เหมาะกับเหตุการณ์หายาก:</b> วันวิกฤตมีน้อย → "correct negative" (ปกติก็บอกปกติ) มีเยอะมหาศาล · ถ้าใช้ accuracy ธรรมดา โมเดลที่ "บอกปกติตลอด" จะได้คะแนน 95%+ ทั้งที่ไร้ประโยชน์ · <b>CSI ตัด correct negative ทิ้ง</b> → วัดเฉพาะความสามารถจับ event จริง · นี่คือ metric หลักสำหรับ "การเตือนภัย"</div>
+<div class="warn"><b>POD กับ FAR ต้องดูคู่กัน:</b> ทำให้ POD=1 ง่ายมาก — แค่ "เตือนทุกวัน" · แต่ FAR จะพุ่ง (เตือนเก้อตลอด คนเลิกเชื่อ) · เกณฑ์ที่ดีคือ <b>POD สูง + FAR ต่ำ พร้อมกัน</b> = CSI สูง · การเลือก threshold คือการ trade ระหว่างสองตัวนี้</div>
+
+<!-- 6 -->
+<h2 id="p6">6. ตระกูล ③ — Onset-Lead Time: จุดขายของ HazeNet <span class="pin core">⭐</span></h2>
+<p>นี่คือ metric ที่ทำให้งานเรา "มีค่าเชิงปฏิบัติ" จริง · ไม่ใช่แค่ "ทายวันนี้ถูกไหม" แต่ <b>"เตือนการมาถึงของ episode ฝุ่นได้ล่วงหน้ากี่ชั่วโมง"</b></p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 160" width="92%" xmlns="http://www.w3.org/2000/svg">
+  <text x="280" y="16" fill="#e6edf3" font-size="12" text-anchor="middle">lead time = ทำนายข้ามเกณฑ์ ก่อน เกิดจริงกี่ชั่วโมง</text>
+  <line x1="40" y1="110" x2="540" y2="110" stroke="#9aa7b4"/><text x="540" y="128" fill="#9aa7b4" font-size="10" text-anchor="end">เวลา →</text>
+  <line x1="40" y1="40" x2="40" y2="110" stroke="#30363d" stroke-dasharray="3 3"/>
+  <text x="120" y="35" fill="#f85149" font-size="10.5">เกณฑ์อันตราย 75</text><line x1="40" y1="62" x2="540" y2="62" stroke="#f85149" stroke-dasharray="5 4" opacity="0.6"/>
+  <!-- actual curve -->
+  <path d="M40,100 Q200,98 320,62 T520,46" fill="none" stroke="#3fb950" stroke-width="2.5"/>
+  <text x="470" y="40" fill="#3fb950" font-size="11">จริง</text>
+  <circle cx="360" cy="62" r="4" fill="#3fb950"/><text x="360" y="80" fill="#3fb950" font-size="9.5" text-anchor="middle">ข้ามจริง</text>
+  <!-- predicted curve earlier -->
+  <path d="M40,102 Q180,96 250,62 T520,52" fill="none" stroke="#58a6ff" stroke-width="2.5" stroke-dasharray="6 4"/>
+  <text x="470" y="66" fill="#58a6ff" font-size="11">ทำนาย</text>
+  <circle cx="270" cy="62" r="4" fill="#58a6ff"/><text x="250" y="80" fill="#58a6ff" font-size="9.5" text-anchor="middle">ทำนายข้าม</text>
+  <!-- lead arrow -->
+  <line x1="270" y1="130" x2="360" y2="130" stroke="#e3b341" stroke-width="2"/>
+  <text x="315" y="148" fill="#e3b341" font-size="11" text-anchor="middle">lead time (เช่น 18 ชม.)</text>
+</svg>
+</div>
+<p><b>วิธีวัด:</b> หา "เวลาที่ค่าจริงข้ามเกณฑ์ครั้งแรกของ episode" และ "เวลาที่โมเดลทำนายว่าจะข้าม" → ผลต่าง = lead time · รายงานเป็น <b>lead time เฉลี่ยของ episode ที่จับได้</b> (เช่น "เตือนล่วงหน้าเฉลี่ย 18 ชม.")</p>
+<div class="green-box"><b>ทำไมนี่คือจุดขาย:</b> RMSE ต่ำไม่ได้แปลว่ามีประโยชน์ — แต่ "เตือนล่วงหน้า 1 วันได้แม่น" แปลว่า <b>โรงเรียนวางแผนหยุดได้ คนเตรียมหน้ากากทัน เกษตรกรเลื่อนเผาได้</b> · onset-lead เปลี่ยนงานจาก "exercise วิชาการ" เป็น "เครื่องมือเตือนภัยจริง" · ต้องรายงานคู่กับ "จับ episode ได้กี่ % (POD)" เสมอ — เตือนเร็วแต่พลาดครึ่งหนึ่งก็ไม่ดี</div>
+
+<!-- 7 -->
+<h2 id="p7">7. Skill vs Lead Time — ยิ่งทำนายไกล ยิ่งยาก</h2>
+<p>ความแม่นไม่ใช่ตัวเลขเดียว — มัน<b>ลดลงตามระยะพยากรณ์</b> · ต้องรายงาน metric เป็น "เส้นโค้งตามชั่วโมงข้างหน้า" ไม่ใช่เลขเดียว:</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 480 180" width="80%" xmlns="http://www.w3.org/2000/svg">
+  <line x1="50" y1="150" x2="450" y2="150" stroke="#30363d"/><line x1="50" y1="20" x2="50" y2="150" stroke="#30363d"/>
+  <text x="250" y="173" fill="#9aa7b4" font-size="11" text-anchor="middle">ระยะพยากรณ์ (ชั่วโมงข้างหน้า) →</text>
+  <text x="22" y="85" fill="#9aa7b4" font-size="11" text-anchor="middle" transform="rotate(-90 22 85)">ทักษะ (เช่น CSI)</text>
+  <path d="M50,40 Q180,55 300,95 T450,140" fill="none" stroke="#56d4dd" stroke-width="2.5"/>
+  <text x="120" y="48" fill="#56d4dd" font-size="11">HazeNet</text>
+  <path d="M50,70 Q180,100 300,128 T450,148" fill="none" stroke="#9aa7b4" stroke-width="2" stroke-dasharray="5 4"/>
+  <text x="120" y="118" fill="#9aa7b4" font-size="11">persistence</text>
+  <text x="250" y="14" fill="#e6edf3" font-size="11" text-anchor="middle">ระยะที่เส้นเราอยู่เหนือ baseline = "ช่วงที่โมเดลมีประโยชน์จริง"</text>
+</svg>
+</div>
+<div class="why"><b>สิ่งที่ต้องเคลม:</b> ไม่ใช่ "เราแม่น" แต่คือ "<b>เราแม่นกว่า baseline จนถึง t+H ชั่วโมง</b>" · จุดที่เส้นเราตัดกับ baseline = ขีดจำกัดความมีประโยชน์ · นี่คือตัวเลขที่ตอบกรรมการได้ว่า "ใช้พยากรณ์ได้ถึงกี่ชั่วโมง"</div>
+
+<!-- 8 -->
+<h2 id="p8">8. Skill Score — ตัวเลขดิบไม่มีความหมายถ้าไม่เทียบ baseline</h2>
+<p>"RMSE = 15 μg/m³" ดีหรือแย่? <b>ตอบไม่ได้ถ้าไม่มีตัวเทียบ</b> · ต้องเทียบกับ baseline ง่าย ๆ แล้วรายงานเป็น "ดีขึ้นกี่ %":</p>
+<div class="formula">Skill Score = 1 − (error<sub>โมเดล</sub> / error<sub>baseline</sub>)</div>
+<ul>
+<li><b>Persistence</b> ("พรุ่งนี้เหมือนวันนี้") — baseline ที่แกร่งน่ากลัวสำหรับระยะสั้น</li>
+<li><b>Climatology</b> ("ใช้ค่าเฉลี่ยตามฤดูกาล") — baseline สำหรับระยะยาว</li>
+</ul>
+<div class="danger"><b>กับดักที่กรรมการจับได้ทันที:</b> เคลม "R²=0.8 เจ๋ง!" แต่ถ้า <b>persistence ได้ R²=0.82</b> แปลว่าโมเดลเรา <b>แย่กว่าการทายว่า "เหมือนเมื่อวาน"</b> · ตัวเลขดิบสวยไม่พอ — ต้องชนะ baseline · (รายละเอียด baseline ทั้งหมดอยู่ใน 5.3) · <b>เลือก baseline ให้ honest อย่าเลือกตัวอ่อน ๆ มาชนะ</b></div>
+
+<!-- 9 -->
+<h2 id="p9">9. กับดักการวัด + ตะกร้า metric ของ HazeNet</h2>
+<h4>กับดักที่ต้องเลี่ยง</h4>
+<ul>
+<li><b>คิด metric บนจุดที่ target หาย:</b> PM2.5 มีเฉพาะสถานี + บางชั่วโมงขาด → คิดเฉพาะจุดที่มีค่าจริง (masked, จาก 4.4)</li>
+<li><b>เฉลี่ยข้ามสถานีมั่ว ๆ:</b> สถานีกระจุกในเมือง → เฉลี่ยตรง ๆ จะเอนเข้าเมือง · พิจารณาเฉลี่ยถ่วงพื้นที่/รายงานรายสถานี</li>
+<li><b>double penalty (สำหรับภาพ):</b> ถ้าทำนายกลุ่มฝุ่น "ถูกแต่เลื่อนไป 1 ช่อง" จะโดนลงโทษ 2 เด้ง (ทั้งที่ทำนาย + ที่ควรมี) · บรรเทาด้วย neighborhood/CRPS (โยง 3.9)</li>
+<li><b>class imbalance:</b> วันวิกฤตน้อย → อย่าใช้ accuracy ดิบ ใช้ CSI</li>
+</ul>
+<h4>ตะกร้า metric ที่ HazeNet จะรายงาน (ครบ 3 ตระกูล)</h4>
+<table>
+<tr><th>ตระกูล</th><th>metric</th><th>ตอบอะไรกรรมการ</th></tr>
+<tr><td>① regression</td><td>MAE, RMSE, Bias, R², ACC</td><td>ค่าทำนายแม่นและไม่เอนเอียง</td></tr>
+<tr><td>② event</td><td>POD, FAR, CSI (ที่เกณฑ์อันตราย)</td><td>จับวันวิกฤตได้ เตือนไม่เก้อ</td></tr>
+<tr><td>③ timing</td><td>onset-lead time (+ skill-vs-leadtime)</td><td>เตือนล่วงหน้าได้นานแค่ไหน (จุดขาย)</td></tr>
+<tr><td>เทียบ</td><td>skill score เทียบ persistence/climatology</td><td>ดีกว่าของง่ายจริง (5.3)</td></tr>
+<tr><td>uncertainty</td><td>CRPS (จาก 3.9)</td><td>ความไม่แน่นอน calibrated</td></tr>
+</table>
+<div class="green-box"><b>สรุปจุดยืน:</b> "แม่น (regression) + จับวันอันตรายได้ (event) + เตือนล่วงหน้าได้ (onset-lead) + ชนะ baseline (skill score) + บอกความมั่นใจได้ (CRPS)" — 5 ด้านนี้คือคำตอบครบชุดเวลากรรมการถามว่า "ดีจริงไหม พิสูจน์มา"</div>
+
+<!-- cheat -->
+<h2 id="cheat">10. Cheat sheet + แบบฝึกหัด</h2>
+<div class="card">
+<h4>Cheat sheet</h4>
+<ul>
+<li><b>MAE</b> เฉลี่ย|พลาด| · <b>RMSE</b> ลงโทษพลาดใหญ่ · <b>Bias</b> เอนสูง/ต่ำ — รายงานทั้งสาม</li>
+<li><b>ACC</b> = skill ที่เกินกว่ารู้ฤดูกาล (หัก climatology)</li>
+<li><b>POD</b> จับได้กี่% · <b>FAR</b> เตือนเก้อกี่% · <b>CSI</b> ภาพรวม event (ตัด correct neg) — ดูคู่กัน</li>
+<li><b>onset-lead</b> = เตือนล่วงหน้ากี่ ชม. — จุดขาย · คู่กับ POD</li>
+<li><b>skill score</b> = ต้องชนะ persistence/climatology ถึงจะมีความหมาย</li>
+<li>วัดเฉพาะจุด target จริง (masked) · ระวัง double penalty/imbalance</li>
+</ul>
+</div>
+<div class="chk">
+<p class="q">❓ แบบฝึกหัด</p>
+<ol>
+<li>โมเดล 2 ตัว RMSE เท่ากัน จะแยกว่าตัวไหนดีกว่าสำหรับ "เตือนภัย" ด้วย metric ไหน?</li>
+<li>ทำไม accuracy ดิบใช้ไม่ได้กับ "วันวิกฤต" และต้องใช้ CSI แทน?</li>
+<li>POD=1.0 อย่างเดียวพิสูจน์ว่าโมเดลดีไหม? เพราะอะไร?</li>
+<li>ACC ต่างจาก correlation ของค่าดิบยังไง ทำไมถึงยุติธรรมกว่า?</li>
+<li>เคลม "R²=0.80" พอไหมที่จะบอกว่าโมเดลเก่ง? ต้องเทียบกับอะไร?</li>
+</ol>
+<details><summary>เฉลย</summary>
+<ol>
+<li>event metric (CSI/POD ที่เกณฑ์อันตราย) + onset-lead — RMSE กลบความต่างที่วันวิกฤต</li>
+<li>วันวิกฤตหายาก → correct negative ท่วม → "บอกปกติตลอด" ได้ accuracy สูงปลอม · CSI ตัด correct neg ทิ้ง</li>
+<li>ไม่ — แค่ "เตือนทุกวัน" ก็ได้ POD=1 แต่ FAR พุ่ง · ต้องดู POD+FAR (หรือ CSI) คู่กัน</li>
+<li>ACC หัก climatology ออกก่อน → ไม่ให้คะแนนฟรีจากการทายตามฤดูกาล วัดเฉพาะทักษะที่เกินกว่านั้น</li>
+<li>ไม่พอ — ต้องเทียบ persistence/climatology · ถ้า persistence ได้ 0.82 แปลว่าเราแย่กว่าทายว่า "เหมือนเมื่อวาน" (skill score ติดลบ)</li>
+</ol>
+</details>
+</div>
+<div class="chk">
+<p class="q">✅ เช็กลิสต์ก่อนไป 5.2</p>
+<ul>
+<li>☐ คำนวณ MAE/RMSE/Bias/R²/ACC บน test ได้ (masked)</li>
+<li>☐ สร้างตาราง contingency + POD/FAR/CSI ที่เกณฑ์อันตราย</li>
+<li>☐ วัด onset-lead time ของ episode + เส้น skill-vs-leadtime</li>
+<li>☐ รายงานทุก metric เป็น skill score เทียบ persistence</li>
+<li>☐ เข้าใจกับดัก double penalty / imbalance / target ที่หาย</li>
+</ul>
+</div>
+
+<hr>
+<p class="center muted">5.1 — Metrics · โมดูล 5 (การประเมิน/rigor) · ต่อไป: <b style="color:var(--cyan)">5.2 Cross-validation</b> — แบ่งข้อมูลประเมินกันรั่ว (temporal + spatial blocking + leave-stations-out) เพื่อให้ตัวเลขใน 5.1 เชื่อถือได้จริง</p>
+
+</div>
+</body>
+</html>

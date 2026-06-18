@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FastCTM — วิเคราะห์เชิงลึก (พิมพ์เขียวของ HazeNet)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:24px;margin:50px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19.5px;margin:30px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .hz{border:1px solid var(--green);background:rgba(63,185,80,.06);border-radius:10px;padding:14px 20px;margin:16px 0}
+  .hz .h{color:var(--green);font-weight:bold;font-size:15.5px;margin-bottom:4px}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.4px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{line-height:1.95}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--green);color:var(--green);margin-left:6px}
+  svg{max-width:100%;height:auto;display:block;margin:8px auto}
+  .legend{font-size:13px;color:var(--muted);text-align:center;margin-top:4px}
+
+  /* equation box */
+  .eq{background:#11161d;border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin:16px 0;text-align:center;font-size:19px;font-family:"Cambria Math","Times New Roman",serif;overflow-x:auto;white-space:nowrap}
+  .eq .small{font-size:14px;color:var(--muted)}
+  .tEm{color:var(--green);font-weight:bold} .tTr{color:var(--blue);font-weight:bold}
+  .tDi{color:var(--cyan);font-weight:bold} .tCh{color:var(--pink);font-weight:bold}
+  .tDe{color:var(--amber);font-weight:bold}
+
+  /* module pipeline */
+  .pipe{display:flex;flex-wrap:wrap;gap:6px;align-items:stretch;margin:16px 0}
+  .pchip{flex:1;min-width:120px;border-radius:9px;padding:9px 8px;text-align:center;font-size:12.6px;border:1px solid var(--border);background:var(--panel)}
+  .pchip .t{font-weight:bold;font-size:13.5px;display:block;margin-bottom:2px}
+  .pplus{display:flex;align-items:center;font-size:20px;color:var(--muted)}
+  .b-em{border-color:var(--green)} .b-em .t{color:var(--green)}
+  .b-tr{border-color:var(--blue)} .b-tr .t{color:var(--blue)}
+  .b-di{border-color:var(--cyan)} .b-di .t{color:var(--cyan)}
+  .b-ch{border-color:var(--pink)} .b-ch .t{color:var(--pink)}
+  .b-de{border-color:var(--amber)} .b-de .t{color:var(--amber)}
+
+  /* module detail card */
+  .mod{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:4px 20px 16px;margin:20px 0;border-top:4px solid var(--blue)}
+  .mod.m1{border-top-color:var(--green)} .mod.m2{border-top-color:var(--blue)} .mod.m3{border-top-color:var(--cyan)}
+  .mod.m4{border-top-color:var(--pink)} .mod.m5{border-top-color:var(--amber)}
+  .mod-head{display:flex;align-items:center;gap:12px;margin:14px 0 6px}
+  .mod-num{color:#0d1117;border-radius:9px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:17px;flex-shrink:0}
+  .m1 .mod-num{background:var(--green)} .m2 .mod-num{background:var(--blue)} .m3 .mod-num{background:var(--cyan)}
+  .m4 .mod-num{background:var(--pink)} .m5 .mod-num{background:var(--amber)}
+  .mod-name{font-size:18px;font-weight:bold}
+  .tag{font-size:11.5px;padding:1px 8px;border-radius:10px;border:1px solid var(--border);color:var(--muted);background:var(--panel2);margin-left:4px}
+  .io{font-size:13.3px;margin:8px 0}
+  .io b{color:var(--cyan)}
+
+  /* results bars */
+  .bar-row{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:13.5px}
+  .bar-name{width:130px;flex-shrink:0;color:var(--muted)}
+  .bar-track{flex:1;background:var(--panel2);border-radius:5px;height:20px;position:relative;overflow:hidden}
+  .bar-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,#3fb95088,#3fb950)}
+  .bar-val{width:46px;text-align:right;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>🔬 FastCTM — วิเคราะห์เชิงลึก <span class="pin">พิมพ์เขียวของ HazeNet</span></h1>
+<p class="tagline">Principle-Informed Neural Network สำหรับ Air Quality — อ่าน เข้าใจ และดึงบทเรียนมาใช้กับงานเราทุกบรรทัด</p>
+<p class="sub">ต้นฉบับ: Lyu, Huang, Wang, Wang, Hu — "FastCTM (v1.0)" · Geoscientific Model Development (GMD) 2025, vol.18, 6295 · <a href="https://gmd.copernicus.org/articles/18/6295/2025/">open access</a></p>
+
+<div class="lead">
+<b>ทำไมต้องอ่านงานนี้ให้ขาด:</b> ในงานวิจัยทั้งโลกตอนนี้ FastCTM คือตัวที่ "หน้าตา" เหมือน HazeNet มากที่สุด (~70%).
+มันพิสูจน์แล้วว่าแนวคิดหลักของเรา — <b>"เอา NN มาแทนแบบจำลองเคมีบรรยากาศ โดยฝังฟิสิกส์ไว้ในโครงสร้าง ไม่ใช่ black-box"</b> — <em>ทำได้จริงและแม่นพอใช้</em>.
+อ่านจบบทนี้คุณจะเข้าใจ: (1) ฟิสิกส์/คณิตศาสตร์เบื้องหลังทุกชิ้น (2) ทำไมเขาออกแบบแบบนั้น (3) <b>เราลอกอะไรได้ เติมอะไร และต้องระวัง/ทำต่างตรงไหน</b> — ส่วนสุดท้ายคือหัวใจ
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#s1">1. ภาพใหญ่ — FastCTM แก้ปัญหาอะไร</a><br>
+<a href="#s2">2. ทฤษฎีรากฐาน: สมการ governing ของบรรยากาศ</a><br>
+<a href="#s3">3. ทฤษฎี Operator Splitting (ทำไมแยกได้)</a><br>
+<a href="#s4">4. สถาปัตยกรรม 5 โมดูล (ละเอียดทีละตัว)</a><br>
+<a href="#s5">5. ทฤษฎี UNet++ (NN ที่ใช้ทำนาย field)</a><br>
+<a href="#s6">6. การเดินเวลาแบบ recursive + การทดลองเด็ด</a><br>
+<a href="#s7">7. ข้อมูล + วิธีเทรน</a><br>
+<a href="#s8">8. ผลลัพธ์ + การตีความ (interpretability)</a><br>
+<a href="#s9">9. ข้อจำกัด (ซื่อสัตย์)</a><br>
+<a href="#s10">10. ⭐ FastCTM ↔ HazeNet — เทียบทุกจุด</a><br>
+<a href="#s11">11. สรุป + เช็กลิสต์นำไปใช้</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="s1">1. ภาพใหญ่ — FastCTM เกิดมาแก้ปัญหาอะไร</h2>
+
+<h3>1.1 ปัญหา: แบบจำลองเคมีดั้งเดิม (CMAQ) แม่นแต่ "ช้าโหด"</h3>
+<p><b>CMAQ</b> (Community Multiscale Air Quality) คือแบบจำลองคุณภาพอากาศมาตรฐานที่นักวิทยาศาสตร์ใช้กันทั่วโลก — มันแก้สมการฟิสิกส์-เคมีของบรรยากาศด้วยวิธีเชิงตัวเลข (numerical methods) ทีละจุดบนกริด. ปัญหาคือ:</p>
+<ul>
+<li>ต้องใช้ <b>ซูเปอร์คอมพิวเตอร์ (HPC)</b> — แพง เข้าถึงยาก</li>
+<li>รัน 1 รอบใช้เวลา <b>หลายชั่วโมง</b> — ทำ "ลองหลายสถานการณ์" (what-if) แทบไม่ไหว</li>
+<li>ทำ <b>source inversion / sensitivity</b> ยิ่งยากมหาศาล (ต้องเขียน adjoint code แยก ใช้เวลาพัฒนาเป็นปี ๆ)</li>
+</ul>
+
+<h3>1.2 ทางออกเดิม ๆ และจุดอ่อนของมัน</h3>
+<table>
+<tr><th>แนวทาง</th><th>ดี</th><th>เสีย</th></tr>
+<tr><td><b>CMAQ (ฟิสิกส์ล้วน)</b></td><td>แม่น, อธิบายได้, เคารพฟิสิกส์</td><td>ช้า, แพง, what-if ยาก</td></tr>
+<tr><td><b>NN แบบ black-box</b><br>(seq2seq / CNN ตรง ๆ)</td><td>เร็วมาก</td><td>❌ ตีความไม่ได้ ("ฝุ่นขึ้นเพราะอะไร?" ตอบไม่ได้)<br>❌ หา error ไม่เจอว่ามาจากกระบวนการไหน<br>❌ rollout ยาว ๆ มักไม่เสถียร</td></tr>
+</table>
+
+<h3>1.3 ไอเดียของ FastCTM: "Principle-Informed"</h3>
+<p>FastCTM อยู่ตรงกลาง — <b>เร็วแบบ NN แต่มีฟิสิกส์แบบ CMAQ</b>. วิธีคือ <b>ไม่ปล่อยให้ NN เดามั่ว</b> แต่ <b>"ออกแบบโครงสร้าง NN ให้เดินตามสมการฟิสิกส์-เคมีจริง"</b>. แทนที่จะมี NN ก้อนเดียวที่ทำทุกอย่างปนกัน เขาแยกเป็น <b>5 โมดูล ตาม 5 กระบวนการฟิสิกส์</b>:</p>
+
+<div class="pipe">
+  <div class="pchip b-em"><span class="t">① Emission</span>ปล่อยฝุ่นใหม่</div>
+  <div class="pplus">+</div>
+  <div class="pchip b-tr"><span class="t">② Transport</span>ลมพัดพา</div>
+  <div class="pplus">+</div>
+  <div class="pchip b-di"><span class="t">③ Diffusion</span>กระจายตัว</div>
+  <div class="pplus">+</div>
+  <div class="pchip b-ch"><span class="t">④ Chemistry</span>ปฏิกิริยาเคมี</div>
+  <div class="pplus">+</div>
+  <div class="pchip b-de"><span class="t">⑤ Deposition</span>ตกสู่พื้น</div>
+</div>
+
+<div class="why"><b>ทำไมการ "แยกโมดูล" ถึงทรงพลัง:</b> เพราะแต่ละโมดูลมีหน้าที่ฟิสิกส์ชัดเจน → (1) <b>ตีความได้</b> เช่น "วันนี้ฝุ่นขึ้นเพราะ transport เป็นหลัก" (2) <b>หา error ได้</b> ว่าโมดูลไหนเพี้ยน (3) <b>ใส่ความรู้ฟิสิกส์ลงไปได้</b> เช่น บังคับอนุรักษ์มวลในโมดูล transport. นี่คือความหมายของ "principle-informed".</div>
+
+<!-- ============ 2 ============ -->
+<h2 id="s2">2. ทฤษฎีรากฐาน — สมการ Governing ของบรรยากาศ</h2>
+<p>ทุกอย่างใน FastCTM (และ HazeNet) เริ่มจากสมการเดียวนี้ — <b>"สมการการพา-การแพร่-ปฏิกิริยา" (Advection–Diffusion–Reaction equation)</b>. มันบอกว่า "ความเข้มข้นฝุ่นในกล่องอากาศหนึ่ง เปลี่ยนไปตามเวลาอย่างไร":</p>
+
+<div class="eq">
+∂C<sub>i</sub>/∂t = <span class="tTr">−∇·uC<sub>i</sub></span> <span class="tDi">+ ∇K∇C<sub>i</sub></span> <span class="tCh">+ R<sub>i</sub></span> <span class="tEm">+ E<sub>i</sub></span> <span class="tDe">+ D<sub>i</sub></span>
+</div>
+
+<p><b>แปลเป็นภาษาคน:</b> "อัตราการเปลี่ยนแปลงความเข้มข้นฝุ่น (∂C/∂t) = ผลรวมของ 5 กระบวนการ". มาดูทีละเทอม (สีตรงกับ 5 โมดูล):</p>
+
+<table>
+<tr><th>เทอม</th><th>ชื่อ</th><th>ความหมายแบบเห็นภาพ</th></tr>
+<tr><td><span class="tEm">E<sub>i</sub></span></td><td>Emission (ปล่อย)</td><td>แหล่งเติมฝุ่น<b>ใหม่</b>เข้ามา — ไฟไหม้ป่า, ไอเสียรถ, โรงงาน. "ก๊อกน้ำเปิด"</td></tr>
+<tr><td><span class="tTr">−∇·uC<sub>i</sub></span></td><td>Advection / Transport (พา)</td><td><b>ลม</b> (u) หอบฝุ่นจากที่หนึ่งไปอีกที่ — เหมือนใบไม้ลอยตามกระแสน้ำ. นี่คือหัวใจ "หมอกควันข้ามแดน"</td></tr>
+<tr><td><span class="tDi">∇K∇C<sub>i</sub></span></td><td>Diffusion (แพร่)</td><td>ความปั่นป่วนของอากาศ (turbulence) ทำให้ฝุ่น<b>กระจาย</b>จากที่เข้มไปที่จาง — เหมือนหยดสีในน้ำค่อย ๆ จางออก. K = ค่าความแรงการแพร่</td></tr>
+<tr><td><span class="tCh">R<sub>i</sub></span></td><td>Reaction (ปฏิกิริยา)</td><td>ฝุ่น<b>เกิดใหม่หรือสลาย</b>จากปฏิกิริยาเคมี — เช่น SO₂ + ความชื้น → ซัลเฟต (ฝุ่นทุติยภูมิ)</td></tr>
+<tr><td><span class="tDe">D<sub>i</sub></span></td><td>Deposition (ตกสะสม)</td><td>ฝุ่น<b>ออกจากอากาศ</b> — ตกพื้น, ติดใบไม้, ฝนชะลงมา. "ก๊อกน้ำระบายออก"</td></tr>
+</table>
+
+<p>สัญลักษณ์: C<sub>i</sub> = ความเข้มข้นสาร i, u = ความเร็วลม, K = eddy diffusivity (ค่าการแพร่จากความปั่นป่วน), ∇ = ตัวดำเนินการเชิงพื้นที่ (gradient/divergence).</p>
+
+<div class="hz"><div class="h">🎯 เชื่อมกับ HazeNet</div>
+สมการนี้คือ "รัฐธรรมนูญ" ของทั้ง FastCTM และ HazeNet. สิ่งที่เราเรียนในบท 2.x (superposition) และ 3.5 (conditionally-linear operator) คือการวิเคราะห์<b>คุณสมบัติทางคณิตศาสตร์</b>ของสมการนี้. จุดสำคัญที่ต้องจำ: <b>4 ใน 5 เทอมเป็น "เชิงเส้นใน C"</b> (E ไม่ขึ้นกับ C เลย; transport, diffusion, deposition แปรผันตรงกับ C) — มีแค่ <span class="tCh">เทอมเคมี R</span> เท่านั้นที่อาจ<b>ไม่เชิงเส้น</b>. จำประโยคนี้ไว้ เดี๋ยวมันจะกลับมาสำคัญมากตอนทำ tagged-tracer (ดู §10).
+</div>
+
+<!-- ============ 3 ============ -->
+<h2 id="s3">3. ทฤษฎี Operator Splitting — ทำไม "แยกแล้วบวกกัน" ถึงทำได้</h2>
+
+<p>คำถามที่ควรสงสัย: "ในเมื่อ 5 กระบวนการเกิด<b>พร้อมกัน</b>ในธรรมชาติ ทำไมถึงแยกคำนวณทีละอันแล้วเอามาบวกกันได้?" คำตอบคือเทคนิคคลาสสิกชื่อ <b>Operator Splitting</b> (CMAQ เองก็ใช้วิธีนี้ FastCTM แค่เดินตาม):</p>
+
+<div class="card">
+<b>หลักการ:</b> ถ้าช่วงเวลา Δt <b>สั้นพอ</b> เราประมาณได้ว่า "ทำกระบวนการทีละอันต่อกัน" ≈ "ทำพร้อมกัน". เหมือนทำกับข้าว:
+<br>→ ในความจริงทุกอย่างเกิดในกระทะพร้อมกัน แต่ถ้าเราหั่น→ผัด→ปรุง ทีละสเต็ปเร็ว ๆ ผลลัพธ์แทบเหมือนกัน.
+<br><br>ทางคณิตศาสตร์: แทนที่จะแก้สมการรวมทีเดียว เราอัปเดตทีละเทอม:
+<pre><code>C → (+ Emission) → (+ Transport) → (+ Diffusion) → (+ Chemistry) → (+ Deposition) → C ใหม่</code></pre>
+ในโค้ด FastCTM ทำง่ายกว่านั้นอีก คือคำนวณ "การเปลี่ยนแปลง (ΔC)" ของแต่ละกระบวนการแล้วบวกรวม:
+<div class="eq" style="font-size:17px">ΔC = <span class="tEm">E</span> + <span class="tTr">Transport</span> + <span class="tDi">Diffusion</span> + <span class="tCh">Chemistry</span> + <span class="tDe">Deposition</span> &nbsp;,&nbsp; C(t+1) = C(t) + ΔC</div>
+</div>
+
+<div class="why"><b>เหตุผลที่ "ต้อง" แยก ไม่ใช่แค่ "ทำได้":</b>
+<ul>
+<li><b>ใส่ฟิสิกส์เฉพาะทางได้</b> — โมดูล transport ใช้สูตร upwind ที่อนุรักษ์มวล; โมดูลเคมีใช้สูตร kinetics. ถ้าเป็น NN ก้อนเดียวทำไม่ได้</li>
+<li><b>ตีความได้</b> — รู้ว่า ΔC แต่ละก้อนมาจากกระบวนการไหน → process analysis</li>
+<li><b>ดีบักได้</b> — โมดูลไหนเพี้ยนก็แก้เฉพาะตัว</li>
+</ul></div>
+
+<div class="hz"><div class="h">🎯 เชื่อมกับ HazeNet</div>
+Operator splitting คือ "เหตุผลเชิงทฤษฎี" ที่ทำให้ HazeNet ออกแบบเป็นโมดูลได้ <b>และ</b> เป็นเหตุผลที่ <b>superposition (บท 2.5)</b> ทำงาน: เพราะแต่ละ operator เชิงเส้น (ยกเว้นเคมี) การแยก tracer แล้วรันผ่านโมดูลเดียวกันแล้วบวกกลับ จึงได้ผลเท่าเดิม. FastCTM ยืนยันว่าโครงนี้ "ใช้ได้จริงใน NN" ไม่ใช่แค่ทฤษฎี. <span class="muted">(หมายเหตุซื่อสัตย์: เปเปอร์ไม่ได้เอ่ยคำว่า "operator splitting" ตรง ๆ แต่โครงสร้างเขาคือสิ่งนี้เป๊ะ)</span>
+</div>
+
+<!-- ============ 4 ============ -->
+<h2 id="s4">4. สถาปัตยกรรม 5 โมดูล — ลงลึกทีละตัว</h2>
+<p>ตอนนี้เจาะแต่ละโมดูล: <b>ฟิสิกส์ → สูตรคณิต → NN ที่ใช้ → input/output → ทำไมออกแบบงี้</b>. สังเกตว่าบางโมดูล<b>ไม่มี NN เลย</b> (ใช้สูตรฟิสิกส์ตรง ๆ) — นั่นคือความฉลาดของ principle-informed: ใช้ NN เฉพาะส่วนที่ "ไม่รู้สูตรแน่ชัด" เท่านั้น.</p>
+
+<svg viewBox="0 0 920 150" role="img" aria-label="ภาพรวม 5 โมดูล NN กับไม่ NN">
+  <defs><marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#56d4dd"/></marker></defs>
+  <rect x="10" y="45" width="150" height="60" rx="9" fill="#161b22" stroke="#3fb950"/>
+  <text x="85" y="70" text-anchor="middle" fill="#3fb950" font-size="14" font-weight="bold">① Emission</text>
+  <text x="85" y="90" text-anchor="middle" fill="#9aa7b4" font-size="11">สูตรล้วน (ไม่มี NN)</text>
+
+  <rect x="185" y="45" width="150" height="60" rx="9" fill="#161b22" stroke="#58a6ff"/>
+  <text x="260" y="70" text-anchor="middle" fill="#58a6ff" font-size="14" font-weight="bold">② Transport</text>
+  <text x="260" y="90" text-anchor="middle" fill="#9aa7b4" font-size="11">upwind kernel (ไม่มี NN)</text>
+
+  <rect x="360" y="45" width="150" height="60" rx="9" fill="#161b22" stroke="#56d4dd"/>
+  <text x="435" y="70" text-anchor="middle" fill="#56d4dd" font-size="14" font-weight="bold">③ Diffusion</text>
+  <text x="435" y="90" text-anchor="middle" fill="#e3b341" font-size="11">UNet++ → K</text>
+
+  <rect x="535" y="45" width="150" height="60" rx="9" fill="#161b22" stroke="#f778ba"/>
+  <text x="610" y="70" text-anchor="middle" fill="#f778ba" font-size="14" font-weight="bold">④ Chemistry</text>
+  <text x="610" y="90" text-anchor="middle" fill="#e3b341" font-size="11">UNet++ → k  +  conv</text>
+
+  <rect x="710" y="45" width="150" height="60" rx="9" fill="#161b22" stroke="#e3b341"/>
+  <text x="785" y="70" text-anchor="middle" fill="#e3b341" font-size="14" font-weight="bold">⑤ Deposition</text>
+  <text x="785" y="90" text-anchor="middle" fill="#e3b341" font-size="11">UNet++ → d</text>
+
+  <text x="460" y="20" text-anchor="middle" fill="#e6edf3" font-size="13">🟡 = มี NN เรียนรู้ &nbsp;&nbsp; ⚪ = สูตรฟิสิกส์ตายตัว</text>
+  <text x="460" y="135" text-anchor="middle" fill="#9aa7b4" font-size="12">ทั้ง 5 ให้ ΔC แล้วบวกรวมเป็น C(t+1)</text>
+</svg>
+
+<!-- MODULE 1 -->
+<div class="mod m1">
+  <div class="mod-head"><div class="mod-num">1</div><div><span class="mod-name">Emission — การปล่อยฝุ่นใหม่</span> <span class="tag">สูตรล้วน · ไม่มี NN</span></div></div>
+  <p><b>ฟิสิกส์:</b> สมมติว่าฝุ่นที่ปล่อยออกมา <b>คลุกเคล้าทันทีทั่วชั้น PBL</b> (Planetary Boundary Layer = ชั้นอากาศติดพื้นที่อากาศปั่นป่วนผสมกันดี). ความเข้มข้นที่เพิ่ม = มวลที่ปล่อย ÷ ปริมาตรกล่องอากาศ.</p>
+  <div class="eq" style="font-size:17px"><span class="tEm">E</span> = 1000 × PE / (PBLH × dx × dy)</div>
+  <div class="io"><b>Input:</b> PE = อัตราการปล่อย (g/s), PBLH = ความสูงชั้น PBL, dx·dy = ขนาดเซลล์ (12×12 กม.) &nbsp;|&nbsp; <b>Output:</b> ΔC เพิ่ม (µg/m³)</div>
+  <p><b>ทำไมไม่ใช้ NN?</b> เพราะสูตรนี้คือฟิสิกส์ตรงไปตรงมา (มวล÷ปริมาตร) — รู้แน่ชัดอยู่แล้ว ไม่ต้องให้ NN เดา. <b>ใช้ NN เปลืองเปล่า ๆ และเสี่ยงผิด</b>.</p>
+  <p><b>ทฤษฎี PBL:</b> ตอนกลางวันแดดร้อน อากาศลอยตัว → PBL สูง (1-2 กม.) → ฝุ่นเจือจางในปริมาตรใหญ่. ตอนกลางคืน PBL ต่ำ (ไม่กี่ร้อยเมตร) → ฝุ่นอัดในปริมาตรเล็ก → เข้มข้นพุ่ง. นี่คือเหตุผลที่ฝุ่นมัก<b>หนักตอนเช้ามืด</b>.</p>
+  <div class="hz"><div class="h">🎯 ใช้กับเรา</div>HazeNet ทำเหมือนกันได้เลย — โมดูล emission ของเราคือ "ฉีด" emission จากไฟ (FINNv2.5/FIRMS) เข้าระบบด้วยสูตร PBL นี้. <b>และตรงนี้แหละที่เราจะ "ติดป้าย tracer"</b> — ฝุ่นจากเมียนมา vs จากไทย แยกกันตั้งแต่จุดปล่อย (บท 3.6).</div>
+</div>
+
+<!-- MODULE 2 -->
+<div class="mod m2">
+  <div class="mod-head"><div class="mod-num">2</div><div><span class="mod-name">Transport / Advection — ลมพัดพา</span> <span class="tag">upwind CNN · ไม่มีพารามิเตอร์เรียนรู้</span></div></div>
+  <p><b>ฟิสิกส์:</b> ลมหอบฝุ่นไปตามทิศ. เขียนเป็น divergence ของ (ลม × ความเข้มข้น) แยกเป็นแกน x, y:</p>
+  <div class="eq" style="font-size:17px"><span class="tTr">∇·uC</span> = ∂(CU)/∂x + ∂(CV)/∂y</div>
+  <p><b>คณิต — วิธี Finite Difference + Upwind Scheme:</b> คอมพิวเตอร์คำนวณอนุพันธ์ (∂/∂x) ไม่ได้ตรง ๆ ต้องประมาณด้วย "ผลต่างของเซลล์ข้างเคียง" (finite difference). แต่มีกลเม็ด — ต้องเลือกข้างให้ถูก เรียก <b>upwind scheme</b>: "เอาค่าจากเซลล์<b>ต้นลม</b> (ที่ลมพัดมา)".</p>
+
+  <svg viewBox="0 0 640 200" role="img" aria-label="upwind scheme grid">
+    <text x="320" y="22" text-anchor="middle" fill="#e6edf3" font-size="14" font-weight="bold">ถ้าลมพัดไปทางขวา (U &gt; 0) → ฝุ่นในเซลล์ i มาจากเซลล์ "ซ้าย" (i−1)</text>
+    <!-- cells -->
+    <rect x="120" y="70" width="110" height="70" rx="6" fill="#1c2330" stroke="#58a6ff"/>
+    <rect x="240" y="70" width="110" height="70" rx="6" fill="#11201a" stroke="#3fb950" stroke-width="2.5"/>
+    <rect x="360" y="70" width="110" height="70" rx="6" fill="#1c2330" stroke="#30363d"/>
+    <text x="175" y="100" text-anchor="middle" fill="#58a6ff" font-size="15" font-weight="bold">C[i−1]</text>
+    <text x="175" y="122" text-anchor="middle" fill="#9aa7b4" font-size="11">ต้นลม (upwind)</text>
+    <text x="295" y="100" text-anchor="middle" fill="#3fb950" font-size="15" font-weight="bold">C[i]</text>
+    <text x="295" y="122" text-anchor="middle" fill="#9aa7b4" font-size="11">เซลล์ที่สนใจ</text>
+    <text x="415" y="100" text-anchor="middle" fill="#9aa7b4" font-size="15" font-weight="bold">C[i+1]</text>
+    <text x="415" y="122" text-anchor="middle" fill="#9aa7b4" font-size="11">ปลายลม</text>
+    <!-- wind arrow -->
+    <line x1="90" y1="55" x2="500" y2="55" stroke="#e3b341" stroke-width="3" marker-end="url(#ar)"/>
+    <text x="520" y="59" fill="#e3b341" font-size="13">ทิศลม</text>
+    <text x="320" y="175" text-anchor="middle" fill="#e6edf3" font-size="13.5">kernel: W<tspan font-size="10" dy="3">x</tspan><tspan dy="-3"> = [0, −1, +1]  (หยิบค่าจากด้านต้นลมมาคำนวณการไหลเข้า-ออก)</tspan></text>
+  </svg>
+
+  <div class="io"><b>Input:</b> C, ลม U (ตะวันออก-ตก) และ V (เหนือ-ใต้) ที่ 10 ม. &nbsp;|&nbsp; <b>Output:</b> ΔC จากการพัดพา</div>
+  <p><b>ทำไม upwind?</b> ถ้าใช้ผลต่างแบบสมมาตร (central difference) การจำลองจะ "สั่น" และระเบิด (numerical instability). upwind เสถียรกว่าและ <b>อนุรักษ์มวล</b> — ฝุ่นที่ออกจากเซลล์หนึ่งต้องไปโผล่เซลล์ข้าง ๆ พอดี ไม่หายไปเฉย ๆ.</p>
+  <div class="warn"><b>จุดสำคัญมาก (เปเปอร์พูดเอง):</b> "โมดูล transport <b>อนุรักษ์มวลในตัวเอง</b> แต่ <b>FastCTM ทั้งระบบไม่ได้อนุรักษ์มวล</b>". จำประโยคนี้ไว้ให้ดี — มันคือจุดที่ HazeNet ต้อง<b>ทำให้ดีกว่า</b> (ดู §10).</div>
+  <div class="hz"><div class="h">🎯 ใช้กับเรา</div><b>ลอกได้เลย 100%.</b> upwind kernel เป็น convolution ที่ "ฟิกซ์ค่าไว้" (ไม่มีพารามิเตอร์ให้เรียน) → เบา, เสถียร, อนุรักษ์มวล, และ <b>หาอนุพันธ์ได้ (differentiable)</b> → backprop ผ่านได้ → ใช้ทำ source inversion (3.7) ได้. นี่คือหัวใจ "หมอกควันข้ามแดน" ของเรา: ลมจากเมียนมาพัดฝุ่นเข้าไทย = เทอมนี้ทำงาน.</div>
+</div>
+
+<!-- MODULE 3 -->
+<div class="mod m3">
+  <div class="mod-head"><div class="mod-num">3</div><div><span class="mod-name">Turbulent Diffusion — การกระจายจากความปั่นป่วน</span> <span class="tag">UNet++ ทำนาย K + FD kernel</span></div></div>
+  <p><b>ฟิสิกส์:</b> นอกจากลมพัดเป็นทิศ อากาศยัง "ปั่นป่วน" (turbulent) ทำให้ฝุ่นกระจายจากที่เข้มไปจาง. ความแรงการกระจายวัดด้วย <b>eddy diffusivity K</b>.</p>
+  <div class="eq" style="font-size:17px"><span class="tDi">∇K∇C</span> = ∂/∂x(K ∂C/∂x) + ∂/∂y(K ∂C/∂y)</div>
+  <p><b>ทฤษฎี K-theory:</b> ฝุ่นไหลจากที่เข้มข้นสูง→ต่ำ (เหมือนความร้อนไหลจากร้อน→เย็น) ด้วยอัตราที่แปรผันกับ K. ปัญหาคือ <b>K ไม่มีสูตรตายตัว</b> — มันขึ้นกับสภาพอากาศ (ยิ่งแดดร้อน/ลมแรง ยิ่งปั่นป่วน K สูง). <b>นี่แหละที่ต้องใช้ NN!</b></p>
+  <div class="eq" style="font-size:16px">K = <span style="color:var(--amber)">Encoder<sub>K</sub></span>(T, RH, PRS, PBLH) &nbsp;&nbsp;<span class="small">← UNet++ เรียนรู้ K จากอากาศ</span></div>
+  <div class="io"><b>Input ให้ UNet++:</b> อุณหภูมิ T, ความชื้น RH, ความดัน PRS, ความสูง PBL &nbsp;|&nbsp; <b>Output:</b> field ของ K → เอาไปเข้า FD kernel เดิม (Wx, Wy) ได้ ΔC</div>
+  <p><b>ออกแบบฉลาดตรงไหน:</b> เขา<b>ไม่</b>ให้ NN เดา ΔC ตรง ๆ. แต่ให้ NN เดาแค่ <b>K (ค่าฟิสิกส์ที่ไม่รู้)</b> แล้วเอา K ไปเข้า<b>สูตรฟิสิกส์ที่รู้แน่</b> (finite difference). → ฟิสิกส์คุมโครง, NN เติมเฉพาะช่องว่าง. นี่คือหัวใจ principle-informed อีกครั้ง.</p>
+  <div class="hz"><div class="h">🎯 ใช้กับเรา</div>รูปแบบ "<b>NN เดาสัมประสิทธิ์ฟิสิกส์ → เสียบเข้าสูตร</b>" คือเทมเพลตที่ HazeNet ใช้ซ้ำได้ทุกที่. และเพราะ K มาจาก met เท่านั้น (ไม่ขึ้นกับ tracer ตัวไหน) → diffusion เป็น "conditionally-linear" (บท 3.5) → <b>ปลอดภัยสำหรับ tagged-tracer</b>: ทุก tracer ใช้ K ตัวเดียวกัน แยกแล้วบวกกลับได้.</div>
+</div>
+
+<!-- MODULE 4 -->
+<div class="mod m4">
+  <div class="mod-head"><div class="mod-num">4</div><div><span class="mod-name">Chemistry — ปฏิกิริยาเคมี</span> <span class="tag">UNet++ ทำนาย k + 1×1 conv</span></div></div>
+  <p><b>ฟิสิกส์:</b> สารเกิด/สลายจากปฏิกิริยา. ใช้รูปแบบ kinetics ของ Atkinson: <b>อัตรา = ค่าคงที่ปฏิกิริยา × ฟังก์ชันของความเข้มข้นสารตั้งต้น</b>.</p>
+  <div class="eq" style="font-size:17px"><span class="tCh">R<sub>i</sub></span> = k<sub>i</sub> × f(C<sub>j</sub>)</div>
+  <p><b>ทฤษฎี Arrhenius / Atkinson kinetics:</b> ค่าคงที่ k <b>ขึ้นกับอุณหภูมิ</b> (ยิ่งร้อนปฏิกิริยายิ่งเร็ว — กฎ Arrhenius). ส่วน f(C<sub>j</sub>) คือ "ยิ่งสารตั้งต้นเยอะ ปฏิกิริยายิ่งเร็ว" (อาจไม่เชิงเส้น เช่นปฏิกิริยาอันดับสอง ∝ C²).</p>
+  <p>FastCTM แยกเป็น 2 ส่วน:</p>
+  <ul>
+  <li><b>k = Encoder<sub>k</sub>(T, RH, PRS, WS, RN, CFRAC)</b> — UNet++ เรียน "ค่าคงที่ปฏิกิริยา" จากสภาพอากาศ (อุณหภูมิ, ความชื้น, เมฆ, ฝน)</li>
+  <li><b>f(C<sub>j</sub>)</b> — เครือข่าย conv 1×1 เล็ก ๆ เรียน "ความเข้มข้นมีผลแบบไหน" (จับความไม่เชิงเส้น)</li>
+  </ul>
+  <div class="danger"><b>⚠️ จุดวิกฤตสำหรับเรา:</b> เทอมเคมีคือ <b>เทอมเดียวที่อาจไม่เชิงเส้นใน C</b> (เพราะ f(C) อาจเป็น C² หรือสารหลายตัวคูณกัน). 4 โมดูลอื่นเชิงเส้นหมด แต่ตัวนี้ไม่. <b>นี่คือจุดที่ superposition / tagged-tracer (3.6) จะเริ่มมี error</b> — ฝุ่นทุติยภูมิ (ซัลเฟต, ไนเตรต, SOA) ที่เกิดจากเคมี แยกแหล่งได้ไม่เป๊ะ 100%.</div>
+  <div class="hz"><div class="h">🎯 ใช้กับเรา</div>โครงสร้าง <b>R = k(met) × f(C)</b> ตรงกับ "conditionally-linear operator" (บท 3.5) เป๊ะ: ถ้ามองว่า k คือ "เงื่อนไข" (condition) ที่มาจาก met และ f เชิงเส้น → ทั้งโอเปอเรเตอร์เป็น conditionally-linear. ถ้า f ไม่เชิงเส้น → ตรงนี้คือ caveat ที่เราต้องเขียนใน limitation ของ HazeNet อย่างซื่อสัตย์ (ตรงกับที่เขียนไว้แล้วในบท 3.6).</div>
+</div>
+
+<!-- MODULE 5 -->
+<div class="mod m5">
+  <div class="mod-head"><div class="mod-num">5</div><div><span class="mod-name">Deposition — การตกสะสม</span> <span class="tag">UNet++ ทำนาย d</span></div></div>
+  <p><b>ฟิสิกส์:</b> ฝุ่นออกจากอากาศ 2 ทาง — <b>แห้ง (dry)</b>: ตกพื้น/ติดใบไม้, และ <b>เปียก (wet)</b>: ฝนชะลงมา. โมเดลเป็นเชิงเส้น "ยิ่งฝุ่นเยอะ ยิ่งตกเยอะ":</p>
+  <div class="eq" style="font-size:17px"><span class="tDe">D<sub>i</sub></span> = d<sub>i</sub> × C<sub>i</sub> &nbsp;&nbsp;,&nbsp;&nbsp; d = Encoder<sub>d</sub>(WS, RH, RN, HGT, LULC)</div>
+  <div class="io"><b>Input ให้ UNet++:</b> ความเร็วลม WS, ความชื้น RH, ฝน RN, ความสูงภูมิประเทศ HGT, การใช้ที่ดิน LULC (เมือง/ป่า) &nbsp;|&nbsp; <b>Output:</b> ค่า d (deposition velocity) → ΔC ลดลง</div>
+  <p><b>ทฤษฎี deposition velocity:</b> ค่า d ขึ้นกับ (1) อากาศ — ลมแรงพัดฝุ่นชนผิวบ่อย d สูง, ฝนตก d พุ่ง; (2) พื้นผิว — <b>ป่าไม้เป็น "ตัวดูดฝุ่น" ชั้นดี</b> (ใบไม้พื้นผิวเยอะ) ส่วนเมือง/น้ำ d ต่ำ. นี่คือเหตุผลที่ต้องใส่ LULC.</p>
+  <div class="hz"><div class="h">🎯 ใช้กับเรา</div>D = d×C เป็น<b>เชิงเส้นใน C</b> → ปลอดภัยกับ tagged-tracer. และการใส่ <b>ภูมิประเทศ (DEM/HGT) + การใช้ที่ดิน</b> เป็น input ตรงกับเหตุผลที่งานเรา "ต้องใช้ GeoAI จริง" — ภูมิประเทศภาคเหนือ (แอ่งเชียงใหม่) มีผลต่อทั้งการสะสมและการขังของฝุ่น.</div>
+</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="s5">5. ทฤษฎี UNet++ — โครงข่ายที่ใช้ทำนาย "field"</h2>
+<p>สังเกตว่า 3 โมดูล (diffusion, chemistry, deposition) ใช้ <b>UNet++</b> เหมือนกันหมด เพื่อทำนายค่าฟิสิกส์ (K, k, d) <b>ทั้งแผนที่</b>จากสภาพอากาศ. UNet++ คืออะไร ทำไมเหมาะ?</p>
+
+<svg viewBox="0 0 760 250" role="img" aria-label="UNet++ architecture">
+  <text x="380" y="20" text-anchor="middle" fill="#e6edf3" font-size="14" font-weight="bold">UNet++ : ย่อภาพดูบริบทกว้าง → ขยายกลับเป็นแผนที่ละเอียด</text>
+  <!-- encoder boxes (down) -->
+  <rect x="40"  y="60" width="70" height="120" rx="5" fill="#1c2330" stroke="#56d4dd"/>
+  <rect x="130" y="80" width="60" height="80"  rx="5" fill="#1c2330" stroke="#56d4dd"/>
+  <rect x="210" y="100" width="50" height="40" rx="5" fill="#1c2330" stroke="#56d4dd"/>
+  <!-- bottleneck -->
+  <rect x="285" y="108" width="40" height="24" rx="5" fill="#11201a" stroke="#3fb950"/>
+  <!-- decoder boxes (up) -->
+  <rect x="350" y="100" width="50" height="40" rx="5" fill="#1c2330" stroke="#bc8cff"/>
+  <rect x="420" y="80" width="60" height="80" rx="5" fill="#1c2330" stroke="#bc8cff"/>
+  <rect x="500" y="60" width="70" height="120" rx="5" fill="#1c2330" stroke="#bc8cff"/>
+  <!-- output -->
+  <rect x="610" y="70" width="110" height="100" rx="6" fill="#161b22" stroke="#e3b341"/>
+  <text x="665" y="115" text-anchor="middle" fill="#e3b341" font-size="13" font-weight="bold">K / k / d</text>
+  <text x="665" y="133" text-anchor="middle" fill="#9aa7b4" font-size="10">(field เต็มแผนที่)</text>
+  <!-- skip connections -->
+  <path d="M75,60 Q290,30 535,60" stroke="#3fb950" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+  <path d="M160,80 Q300,55 450,80" stroke="#3fb950" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+  <!-- labels -->
+  <text x="150" y="205" text-anchor="middle" fill="#56d4dd" font-size="12">Encoder (ย่อ/ดูบริบท)</text>
+  <text x="305" y="205" text-anchor="middle" fill="#3fb950" font-size="12">bottleneck</text>
+  <text x="460" y="205" text-anchor="middle" fill="#bc8cff" font-size="12">Decoder (ขยาย/ลงรายละเอียด)</text>
+  <text x="305" y="228" text-anchor="middle" fill="#3fb950" font-size="11">เส้นประเขียว = skip connection (ส่งรายละเอียดข้ามมา)</text>
+  <text x="40" y="50" fill="#9aa7b4" font-size="11">Input: T, RH, ลม, ฝน...</text>
+</svg>
+
+<p><b>หลักการ UNet:</b> มี 2 ครึ่ง — <b>Encoder</b> ย่อภาพลงเรื่อย ๆ (เห็น "บริบทกว้าง" เช่นระบบความกดอากาศ) แล้ว <b>Decoder</b> ขยายกลับเป็นแผนที่ความละเอียดเดิม. <b>Skip connection</b> = สายส่งตรงจาก encoder ไป decoder ชั้นเดียวกัน เพื่อไม่ให้รายละเอียดเล็ก ๆ หาย.</p>
+<p><b>UNet++ ต่างจาก UNet:</b> เพิ่ม skip connection แบบ "ซ้อนหนาแน่น" (nested/dense) ระหว่างชั้น → เชื่อม feature หลายสเกลได้ดีขึ้น → ทำนาย field ที่เนียนและแม่นขึ้น. (FastCTM ใช้ 5 ชั้น: 16, 32, 64, 128, 256 filters)</p>
+<div class="why"><b>ทำไม UNet++ เหมาะกับงานนี้:</b> การทำนาย K/k/d คือการแปลง "แผนที่อากาศ → แผนที่สัมประสิทธิ์ฟิสิกส์" (image-to-image). UNet เกิดมาเพื่องานนี้พอดี — มันเห็นทั้งบริบทกว้าง (ระบบอากาศ) และรายละเอียดเฉพาะจุด (ภูเขา/เมือง) พร้อมกัน.</div>
+<div class="hz"><div class="h">🎯 ใช้กับเรา</div>HazeNet ใช้ UNet/UNet++ เป็น "encoder" ทำนายสัมประสิทธิ์ฟิสิกส์ได้เลย — เป็นสถาปัตยกรรมเบา เทรนได้ในงบ A100 จำกัด. หรือถ้าจะประหยัดกว่านั้น อาจ fine-tune encoder จาก foundation model (Prithvi/Aurora) ตามที่คุยใน related-work.</div>
+
+<!-- ============ 6 ============ -->
+<h2 id="s6">6. การเดินเวลาแบบ Recursive + การทดลองที่เฉียบที่สุดในเปเปอร์</h2>
+
+<h3>6.1 Recursive time-stepping</h3>
+<p>FastCTM เดินทีละ 1 ชั่วโมง (ภายในซอยเป็น timestep ย่อย 60 วินาที เพื่อความเสถียร). แต่ละชั่วโมง: รัน 5 โมดูล → ได้ ΔC → บวกเข้า C → <b>เอา output เป็น input ของชั่วโมงถัดไป</b> วนไปจนครบ 24 ชม.</p>
+
+<svg viewBox="0 0 720 200" role="img" aria-label="recursive loop">
+  <defs><marker id="ar2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#56d4dd"/></marker></defs>
+  <rect x="40" y="70" width="120" height="55" rx="8" fill="#161b22" stroke="#58a6ff"/>
+  <text x="100" y="95" text-anchor="middle" fill="#58a6ff" font-size="14" font-weight="bold">C(t)</text>
+  <text x="100" y="113" text-anchor="middle" fill="#9aa7b4" font-size="11">ฝุ่นชั่วโมงนี้</text>
+
+  <rect x="220" y="62" width="200" height="72" rx="8" fill="#11201a" stroke="#3fb950"/>
+  <text x="320" y="88" text-anchor="middle" fill="#3fb950" font-size="13" font-weight="bold">5 โมดูลฟิสิกส์</text>
+  <text x="320" y="108" text-anchor="middle" fill="#9aa7b4" font-size="11">E+Transport+Diff+Chem+Dep</text>
+  <text x="320" y="124" text-anchor="middle" fill="#9aa7b4" font-size="11">+ met(t)</text>
+
+  <rect x="480" y="70" width="120" height="55" rx="8" fill="#161b22" stroke="#58a6ff"/>
+  <text x="540" y="95" text-anchor="middle" fill="#58a6ff" font-size="14" font-weight="bold">C(t+1)</text>
+  <text x="540" y="113" text-anchor="middle" fill="#9aa7b4" font-size="11">= C(t)+ΔC</text>
+
+  <line x1="160" y1="97" x2="218" y2="97" stroke="#56d4dd" stroke-width="2" marker-end="url(#ar2)"/>
+  <line x1="420" y1="97" x2="478" y2="97" stroke="#56d4dd" stroke-width="2" marker-end="url(#ar2)"/>
+  <!-- loop back -->
+  <path d="M540,125 Q540,175 320,175 Q100,175 100,127" stroke="#e3b341" stroke-width="2" fill="none" stroke-dasharray="5 4" marker-end="url(#ar2)"/>
+  <text x="320" y="193" text-anchor="middle" fill="#e3b341" font-size="12">วนซ้ำ: output กลายเป็น input ชั่วโมงถัดไป (recursive rollout)</text>
+</svg>
+
+<h3>6.2 🏆 การทดลอง "Zero-Input" — พิสูจน์ว่ามันเรียน "ฟิสิกส์" จริง ไม่ใช่ "จำสถิติ"</h3>
+<div class="card">
+<p>นี่คือการทดลองที่ฉลาดที่สุดในเปเปอร์ และเป็นบทเรียนล้ำค่าสำหรับเรา:</p>
+<p><b>เขาทำอะไร:</b> ลองป้อน <b>"ค่าฝุ่นเริ่มต้น = 0"</b> (โกหกโมเดลว่าตอนเริ่มอากาศสะอาดหมด) แล้วดูว่าพยากรณ์ออกมาเป็นยังไง.</p>
+<p><b>ผล:</b> พอเวลาผ่านไปหลายชั่วโมง พยากรณ์จากการเริ่มที่ 0 <b>เกือบเหมือนกันเป๊ะ</b>กับการเริ่มด้วยค่าจริง!</p>
+<p><b>แปลว่าอะไร:</b> โมเดล<b>ไม่ได้</b>แค่ "จำว่าเมื่อวานเท่าไหร่พรุ่งนี้ก็ประมาณนั้น" (spatiotemporal autocorrelation — ทางลัดที่โมเดล AI ชอบโกง). แต่มัน<b>สร้างฝุ่นขึ้นมาใหม่จาก emission + ฟิสิกส์จริง</b> จนลู่เข้าค่าที่ถูกต้องได้เอง → พิสูจน์ว่ามันเรียน "กลไก" ไม่ใช่ "ความจำ".</p>
+</div>
+<div class="hz"><div class="h">🎯 ใช้กับเรา — สำคัญมาก</div>
+<b>HazeNet ต้องทำการทดลองนี้เป๊ะ ๆ.</b> เหตุผล: งานเราจะอ้างว่า "ทำ source attribution/inversion ได้" — ซึ่งจะเชื่อถือได้<b>ก็ต่อเมื่อ</b>โมเดลตอบสนองต่อ emission จริง ไม่ใช่จำสถิติ. การทดสอบ zero-input คือ "หลักฐานชิ้นเอก" ที่กรรมการจะเชื่อว่าโมเดลเราเข้าใจฟิสิกส์ของแหล่งกำเนิดจริง. <b>ใส่ไว้ใน validation plan ของเราเลย.</b>
+</div>
+
+<!-- ============ 7 ============ -->
+<h2 id="s7">7. ข้อมูล + วิธีเทรน</h2>
+<table>
+<tr><th>หัวข้อ</th><th>รายละเอียด FastCTM</th><th>บทเรียนสำหรับเรา</th></tr>
+<tr><td>ข้อมูลครู (label)</td><td>ผลรัน WRF-CMAQ ปี 2018–2022 (จีน, 12 กม., กริด 372×426)</td><td>เราใช้ WRF-Chem/CMAQ SEA เป็นครู หรือใช้ reanalysis (CAMS)</td></tr>
+<tr><td>ขนาดชุดข้อมูล</td><td>1826 วัน × 120 ชม. × กริด × 19 ตัวแปร (9 met + 10 มลพิษ)</td><td>กำหนด tensor datacube ของเราแบบนี้ (Module 4)</td></tr>
+<tr><td><b>การสุ่ม patch</b></td><td>สุ่มตัด 150×150 (1800×1800 กม.) มาเทรนแต่ละก้าว</td><td><b>เทคนิคสำคัญ</b> — บังคับให้เรียนฟิสิกส์ ไม่ใช่จำภูมิศาสตร์ที่ใดที่หนึ่ง</td></tr>
+<tr><td>Loss</td><td>L2 (regularized MSE)</td><td>เริ่มจาก MSE; เราเพิ่ม pinball loss สำหรับ uncertainty (3.9)</td></tr>
+<tr><td>Optimizer</td><td>Adam, lr=0.001, batch=1</td><td>มาตรฐาน ใช้ได้เลย</td></tr>
+<tr><td>Compute</td><td>NVIDIA A40, ~10 ชม./10,000 iter, รวม 300,000 iter (≈ 300 ชม.!)</td><td>⚠️ <b>เกินงบเรา (~15 A100-hr).</b> ต้องลดสเกล/โดเมน/iter หรือ fine-tune</td></tr>
+</table>
+
+<div class="why"><b>เจาะลึก "การสุ่ม patch" — ทำไมถึงเป็นกุญแจ:</b> ถ้าเทรนด้วยแผนที่จีนทั้งผืนเดิม ๆ ทุกครั้ง โมเดลจะ "จำ" ว่า "ปักกิ่งฝุ่นเยอะ" โดยไม่เข้าใจว่าทำไม. แต่ถ้าสุ่มตัดชิ้นส่วนต่าง ๆ มาเรื่อย ๆ โมเดล<b>เห็นสถานการณ์ฟิสิกส์หลากหลาย</b> (ลมทิศต่าง ๆ, ภูมิประเทศต่าง ๆ) → ถูกบังคับให้เรียน "กฎ" ที่ใช้ได้ทุกที่ ไม่ใช่ "ตำแหน่ง". เชื่อมโยงกับการทดลอง zero-input โดยตรง.</div>
+
+<div class="warn"><b>เรื่องงบ compute (ซื่อสัตย์):</b> FastCTM ใช้ ~300 ชม. GPU เทรน. งบเรา ~15 A100-hr. ทางรอด: (1) โดเมนเล็กลงมาก (แค่ภาคเหนือ+เพื่อนบ้าน ไม่ใช่ทั้งจีน), (2) ลดจำนวนสาร/ตัวแปร, (3) fine-tune จาก pretrained encoder, (4) ลด iteration + ใช้ mixed precision (Module 4.5). ต้องวางแผนงบให้ดีตั้งแต่ต้น.</div>
+
+<!-- ============ 8 ============ -->
+<h2 id="s8">8. ผลลัพธ์ + การตีความ</h2>
+<h3>8.1 ความแม่น (เทียบกับ CMAQ ที่เป็นครู)</h3>
+<p>R² (ยิ่งใกล้ 1 ยิ่งดี) ของแต่ละมลพิษ — FastCTM เลียนแบบ CMAQ ได้แค่ไหน:</p>
+
+<div style="margin:14px 0">
+  <div class="bar-row"><span class="bar-name">CO</span><span class="bar-track"><span class="bar-fill" style="width:90%"></span></span><span class="bar-val">0.90</span></div>
+  <div class="bar-row"><span class="bar-name">NO₂</span><span class="bar-track"><span class="bar-fill" style="width:83%"></span></span><span class="bar-val">0.83</span></div>
+  <div class="bar-row"><span class="bar-name">PM10</span><span class="bar-track"><span class="bar-fill" style="width:81%"></span></span><span class="bar-val">0.81</span></div>
+  <div class="bar-row"><span class="bar-name">SO₂</span><span class="bar-track"><span class="bar-fill" style="width:80%"></span></span><span class="bar-val">0.80</span></div>
+  <div class="bar-row"><span class="bar-name" style="color:var(--green);font-weight:bold">PM2.5</span><span class="bar-track"><span class="bar-fill" style="width:80%"></span></span><span class="bar-val">0.80</span></div>
+  <div class="bar-row"><span class="bar-name">O₃</span><span class="bar-track"><span class="bar-fill" style="width:70%"></span></span><span class="bar-val">0.70</span></div>
+</div>
+<p class="muted">RMSE: PM2.5 = 9.1, PM10 = 11.9, SO₂ = 4.4, NO₂ = 4.0, CO = 48.9, O₃ = 10.9 µg/m³</p>
+
+<h4>องค์ประกอบย่อยของ PM2.5 (ตรงนี้บอกอะไรเยอะ)</h4>
+<div style="margin:14px 0">
+  <div class="bar-row"><span class="bar-name">Organic matter</span><span class="bar-track"><span class="bar-fill" style="width:83%"></span></span><span class="bar-val">0.83</span></div>
+  <div class="bar-row"><span class="bar-name">ซัลเฟต SO₄²⁻</span><span class="bar-track"><span class="bar-fill" style="width:72%"></span></span><span class="bar-val">0.72</span></div>
+  <div class="bar-row"><span class="bar-name">อนินทรีย์อื่น</span><span class="bar-track"><span class="bar-fill" style="width:68%"></span></span><span class="bar-val">0.68</span></div>
+  <div class="bar-row"><span class="bar-name">ไนเตรต NO₃⁻</span><span class="bar-track"><span class="bar-fill" style="width:60%"></span></span><span class="bar-val">0.60</span></div>
+  <div class="bar-row"><span class="bar-name" style="color:var(--red)">แอมโมเนียม NH₄⁺</span><span class="bar-track"><span class="bar-fill" style="width:30%;background:linear-gradient(90deg,#f8514988,#f85149)"></span></span><span class="bar-val">0.30</span></div>
+</div>
+<div class="why"><b>อ่านผลให้เป็น:</b> สารที่เป็น <b>ปฐมภูมิ</b> (ปล่อยตรง ๆ เช่น CO, OM) ทำนายแม่น (R²สูง) เพราะเป็นเทอม emission/transport เชิงเส้น. แต่สารที่เป็น <b>ทุติยภูมิจากเคมี</b> (NH₄⁺ R²=0.30!) แม่นน้อย เพราะมาจากเทอมเคมีที่ไม่เชิงเส้น+ซับซ้อน. <b>นี่ยืนยันคำเตือนใน §4 โมดูล 4 เป๊ะ</b> — เคมีคือจุดอ่อน.</div>
+
+<h3>8.2 Interpretability — "บอกได้ว่าฝุ่นขึ้นเพราะอะไร" (ใกล้เคียง attribution!)</h3>
+<p>เพราะแยกโมดูล FastCTM ทำ <b>process analysis</b> ได้: ในเหตุการณ์ฝุ่นเดือนมกราคม 2023 มันบอกได้ว่า "<b>transport คือตัวขับหลัก</b> ที่ทำให้ PM2.5 พุ่ง ส่วน deposition เป็นตัวลดรอง" — ซึ่งตรงกับผล process analysis ของ CMAQ จริง.</p>
+<p>และทำ <b>emission sensitivity</b> ได้: ลองเพิ่ม NOₓ/SO₂ เป็น 2 เท่า → ดู PM2.5 เพิ่มที่ไหนบ้าง (สอดคล้อง CMAQ ที่ R≈0.9).</p>
+<div class="hz"><div class="h">🎯 ใช้กับเรา — นี่คือ "ตัวอ่อน" ของจุดขายเรา</div>
+สังเกตให้ดี: "process analysis" (แยกว่ากระบวนการไหนทำฝุ่นขึ้น) กับ "emission sensitivity" (เพิ่ม emission แล้วดูผล) <b>คือเวอร์ชันตั้งต้นของ attribution + inversion ที่เราจะทำ!</b> FastCTM แตะไว้แค่ผิว ๆ (แยกตาม "กระบวนการ"). <b>HazeNet ไปไกลกว่า</b>: เราแยกตาม "<b>แหล่งกำเนิดเชิงพื้นที่</b>" (เมียนมา vs ลาว vs ไทย) ด้วย tagged-tracer (3.6) และ<b>กลับทิศ</b>หา emission ด้วย autodiff (3.7). → ช่องว่างตรงนี้คือที่ยืนของเรา.</div>
+
+<!-- ============ 9 ============ -->
+<h2 id="s9">9. ข้อจำกัดของ FastCTM (ที่เราต้องเรียนรู้)</h2>
+<table>
+<tr><th>ข้อจำกัด</th><th>รายละเอียด</th><th>ผลต่อ HazeNet</th></tr>
+<tr><td>เป็น <b>2 มิติ</b></td><td>ไม่มีแกนสูง (vertical) — ใช้ PBLH แทน. ตอนกลางวันที่อากาศผสมแนวดิ่งแรง แม่นลดลง</td><td>ไฟป่าพ่นควันขึ้นสูง (injection height) — เราอาจต้องคิดแนวดิ่งบ้าง</td></tr>
+<tr><td>เคมีอย่างง่าย</td><td>NH₄⁺ R²=0.30 เพราะกลไกเคมีถูกย่อ</td><td>ฝุ่นทุติยภูมิ/SOA จะเป็นจุดอ่อนเราเช่นกัน — เขียน caveat ให้ชัด</td></tr>
+<tr><td><b>ไม่อนุรักษ์มวลทั้งระบบ</b></td><td>มีแค่โมดูล transport ที่อนุรักษ์มวล โมดูลอื่น (โดยเฉพาะที่มี NN) ไม่การันตี</td><td>🔴 <b>วิกฤตสำหรับเรา</b> — ดูกล่องด้านล่าง</td></tr>
+<tr><td><b>ตอบสนอง emission ใหม่ได้ไม่ดี</b></td><td>เทรนบน emission คงที่ (ไม่แปรปีต่อปี) → พอเจอ scenario emission แปลก ๆ จะเพี้ยน</td><td>🔴 <b>วิกฤตที่สุดสำหรับเรา</b> — ดูกล่องด้านล่าง</td></tr>
+</table>
+
+<div class="danger">
+<b>🔴 บทเรียนวิกฤต #1 — เรื่องอนุรักษ์มวล:</b> FastCTM ยอมให้ระบบ "ไม่อนุรักษ์มวลเป๊ะ" ได้ เพราะเป้าเขาคือแค่ "พยากรณ์ให้แม่น". <b>แต่ HazeNet ทำแบบนั้นไม่ได้!</b> เพราะ tagged-tracer attribution (3.6) ต้องการให้ "ผลรวมของทุก tracer = ความเข้มข้นรวม" เป๊ะ ๆ ไม่งั้น "% การมีส่วนร่วม" จะไม่รวมเป็น 100%. → <b>เราต้องเข้มกว่า FastCTM</b>: ใช้เทคนิค hard-constraint/projection (งาน Tier 2 #5 ใน related-work) บังคับอนุรักษ์มวลในทุกโมดูล.
+</div>
+
+<div class="danger">
+<b>🔴 บทเรียนวิกฤต #2 — เรื่องตอบสนอง emission (สำคัญสุด):</b> จุดอ่อนที่ใหญ่ที่สุดของ FastCTM คือ "ตอบสนองต่อการเปลี่ยน emission ได้ไม่ดี เพราะเทรนบน emission คงที่". <b>แต่ความสามารถนี้คือ "หัวใจ" ของ source inversion ที่ HazeNet ต้องทำ!</b> (เรากลับทิศหา emission จากค่าที่วัด — ต้องอาศัยว่าโมเดลเข้าใจ "emission เปลี่ยน → ฝุ่นเปลี่ยนยังไง" อย่างถูกต้อง).
+<br><br><b>→ สิ่งที่เราต้องทำต่างจาก FastCTM:</b> ตั้งใจ<b>เทรนด้วย emission ที่หลากหลาย/ถูกรบกวน (perturbed emissions)</b> โดยเฉพาะ เพื่อให้โมเดลเรียน "ความไว (sensitivity) ต่อแหล่ง" อย่างแม่นยำ. นี่คือ insight ที่มีค่าที่สุดจากการอ่านเปเปอร์นี้ — <b>จุดอ่อนของเขา = ความสามารถที่เราขาดไม่ได้.</b>
+</div>
+
+<!-- ============ 10 ============ -->
+<h2 id="s10">10. ⭐ FastCTM ↔ HazeNet — เทียบทุกจุด</h2>
+<p>ส่วนนี้คือหัวใจของบท — สรุปว่า <b>เราลอกอะไร เติมอะไร และทำต่างตรงไหน</b>:</p>
+
+<h3>10.1 สิ่งที่เรา "ลอกได้เลย" (พิสูจน์แล้วว่าเวิร์ก)</h3>
+<table>
+<tr><th>หยิบมาใช้</th><th>เหตุผล</th></tr>
+<tr><td>โครง 5 โมดูลตามสมการ governing</td><td>principle-informed → ตีความได้ + ใส่ฟิสิกส์ได้</td></tr>
+<tr><td>upwind kernel แบบฟิกซ์สำหรับ transport</td><td>เบา, เสถียร, อนุรักษ์มวล, differentiable</td></tr>
+<tr><td>UNet++ เดาสัมประสิทธิ์ฟิสิกส์ (K, k, d)</td><td>NN เติมเฉพาะส่วนที่ไม่รู้สูตร</td></tr>
+<tr><td>recursive hourly C(t+1)=C(t)+ΔC</td><td>โครง rollout ที่เรียบและ backprop ได้</td></tr>
+<tr><td>random patch sampling</td><td>บังคับเรียนฟิสิกส์ ไม่จำภูมิศาสตร์</td></tr>
+<tr><td><b>การทดสอบ zero-input</b></td><td>หลักฐานว่าโมเดลเข้าใจฟิสิกส์จริง (จำเป็นต่อความน่าเชื่อถือ attribution)</td></tr>
+</table>
+
+<h3>10.2 สิ่งที่เรา "เติม" (จุดขาย — FastCTM ไม่มี)</h3>
+<div class="green-box">
+<ul>
+<li><b>🏷️ Tagged-tracer attribution (3.6):</b> แยก C เป็น C⁽ˢ⁾ ตามแหล่ง (เมียนมา/ลาว/ไทย/...) รันผ่าน 5 โมดูลเดียวกัน → บอก "% ฝุ่นมาจากไหน". FastCTM แยกได้แค่ตาม "กระบวนการ" เราแยกตาม "แหล่งเชิงพื้นที่".</li>
+<li><b>🔄 Source inversion ผ่าน autodiff (3.7):</b> เพราะทุกโมดูล differentiable → <code>.backward()</code> ให้ ∂loss/∂Q → กลับทิศหา emission จากค่าที่วัดได้. FastCTM ทำ sensitivity แบบหยาบ ๆ เท่านั้น.</li>
+<li><b>🎲 Calibrated uncertainty (3.9):</b> quantile regression + CRPS → ทำนายพร้อมช่วงความเชื่อมั่น. FastCTM ให้ค่าเดียว.</li>
+<li><b>🌏 โฟกัสหมอกควันข้ามแดน SEA:</b> โดเมน + ข้อมูลเปิด (FINN/Himawari/Air4Thai) + งบเล็ก. FastCTM ทำจีน.</li>
+</ul>
+</div>
+
+<h3>10.3 สิ่งที่เรา "ต้องทำให้ดีกว่า" (จากจุดอ่อนเขา)</h3>
+<table>
+<tr><th>จุดอ่อน FastCTM</th><th>HazeNet ต้องทำ</th></tr>
+<tr><td>ไม่อนุรักษ์มวลทั้งระบบ</td><td>บังคับ hard-constraint/projection ทุกโมดูล (ไม่งั้น attribution ไม่รวม 100%)</td></tr>
+<tr><td>ตอบสนอง emission ใหม่ไม่ดี</td><td>เทรนด้วย <b>perturbed emissions</b> โดยตั้งใจ (เพื่อให้ inversion แม่น)</td></tr>
+<tr><td>เคมีอ่อน (NH₄⁺)</td><td>ยอมรับเป็น caveat; โฟกัสฝุ่นปฐมภูมิจากการเผาก่อน</td></tr>
+<tr><td>2D</td><td>พิจารณา injection height ของควันไฟ ถ้าจำเป็น</td></tr>
+</table>
+
+<h3>10.4 ภาพสรุปความสัมพันธ์</h3>
+<svg viewBox="0 0 760 220" role="img" aria-label="FastCTM to HazeNet">
+  <rect x="30" y="50" width="200" height="130" rx="10" fill="#161b22" stroke="#58a6ff"/>
+  <text x="130" y="75" text-anchor="middle" fill="#58a6ff" font-size="15" font-weight="bold">FastCTM</text>
+  <text x="130" y="100" text-anchor="middle" fill="#9aa7b4" font-size="11.5">5 โมดูลฟิสิกส์</text>
+  <text x="130" y="120" text-anchor="middle" fill="#9aa7b4" font-size="11.5">upwind + UNet++</text>
+  <text x="130" y="140" text-anchor="middle" fill="#9aa7b4" font-size="11.5">recursive hourly</text>
+  <text x="130" y="160" text-anchor="middle" fill="#9aa7b4" font-size="11.5">process analysis</text>
+
+  <text x="380" y="95" text-anchor="middle" fill="#3fb950" font-size="30">+</text>
+  <text x="380" y="130" text-anchor="middle" fill="#3fb950" font-size="11">เติม + เข้มขึ้น</text>
+
+  <rect x="430" y="30" width="300" height="170" rx="10" fill="#11201a" stroke="#3fb950" stroke-width="2"/>
+  <text x="580" y="55" text-anchor="middle" fill="#3fb950" font-size="16" font-weight="bold">HazeNet (เรา)</text>
+  <text x="580" y="80" text-anchor="middle" fill="#e6edf3" font-size="11.5">ทุกอย่างของ FastCTM</text>
+  <text x="580" y="100" text-anchor="middle" fill="#e3b341" font-size="11.5">+ 🏷️ tagged-tracer attribution</text>
+  <text x="580" y="119" text-anchor="middle" fill="#e3b341" font-size="11.5">+ 🔄 source inversion (autodiff)</text>
+  <text x="580" y="138" text-anchor="middle" fill="#e3b341" font-size="11.5">+ 🎲 calibrated uncertainty</text>
+  <text x="580" y="157" text-anchor="middle" fill="#e3b341" font-size="11.5">+ 🌏 SEA + อนุรักษ์มวลเข้ม</text>
+  <text x="580" y="180" text-anchor="middle" fill="#9aa7b4" font-size="10.5">+ เทรนด้วย perturbed emissions</text>
+
+  <line x1="232" y1="115" x2="425" y2="115" stroke="#3fb950" stroke-width="2" stroke-dasharray="5 4"/>
+</svg>
+
+<!-- ============ 11 ============ -->
+<h2 id="s11">11. สรุป + เช็กลิสต์นำไปใช้</h2>
+<div class="lead">
+<b>FastCTM ในหนึ่งประโยค:</b> "NN ที่แยกเป็น 5 โมดูลตามสมการ advection-diffusion-reaction โดยใช้สูตรฟิสิกส์ฟิกซ์ (emission, transport) ผสม UNet++ ที่เดาสัมประสิทธิ์ที่ไม่รู้ (K, k, d) แล้วเดินเวลาแบบ recursive — เร็วแบบ AI แต่ตีความได้แบบ CTM."
+</div>
+
+<h4>✅ เช็กลิสต์ที่ดึงมาจากเปเปอร์นี้ไปใส่ HazeNet:</h4>
+<ul>
+<li>☐ ออกแบบ core เป็น 5 โมดูลตามสมการ governing (ลอกโครง)</li>
+<li>☐ ใช้ upwind kernel ฟิกซ์สำหรับ transport (อนุรักษ์มวล + differentiable)</li>
+<li>☐ ใช้ UNet++/encoder เดา K, k, d จาก met</li>
+<li>☐ <b>บังคับอนุรักษ์มวลทุกโมดูล</b> (เข้มกว่า FastCTM — เพื่อ attribution)</li>
+<li>☐ <b>เทรนด้วย perturbed emissions</b> (เพื่อ source inversion — แก้จุดอ่อนเขา)</li>
+<li>☐ ทำการทดสอบ zero-input เป็นหลักฐานว่าเรียนฟิสิกส์จริง</li>
+<li>☐ ใช้ random patch sampling</li>
+<li>☐ เพิ่มชั้น tagged-tracer + autodiff inversion + quantile/CRPS (จุดขายเรา)</li>
+<li>☐ วางงบ compute ให้พอดี ~15 A100-hr (โดเมนเล็ก/fine-tune/mixed precision)</li>
+</ul>
+
+<div class="hz"><div class="h">🎯 ประโยคพูดกับกรรมการ</div>
+"HazeNet ต่อยอดสถาปัตยกรรม principle-informed ที่ FastCTM (GMD 2025) พิสูจน์แล้วว่าใช้ได้ — แต่เราเติม 3 ความสามารถที่เขาไม่มี: <b>source attribution เชิงพื้นที่ด้วย tagged-tracer, source inversion ด้วย differentiable programming, และ uncertainty ที่ calibrate ได้</b> — พร้อมแก้จุดอ่อน 2 ข้อของเขา (อนุรักษ์มวล + การตอบสนอง emission) ซึ่งจำเป็นต่อความถูกต้องของ attribution โดยเฉพาะกับปัญหาหมอกควันข้ามแดนอาเซียน"
+</div>
+
+<hr>
+<p class="muted center">วิเคราะห์จากต้นฉบับ: Lyu et al., GMD 2025, vol.18, 6295 · <a href="https://gmd.copernicus.org/articles/18/6295/2025/">gmd.copernicus.org/articles/18/6295/2025</a><br>
+สมการและตัวเลขทั้งหมดอ้างอิงจากเปเปอร์ · การเชื่อมโยงกับ HazeNet เป็นการวิเคราะห์เพื่อการเรียนรู้<br>
+อ่านต่อ: related-work-sota-research.html (ภาพรวมงานอื่น) · 3.6 tagged-tracer · 3.7 differentiable inversion</p>
+
+</div>
+</body>
+</html>

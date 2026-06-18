@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HazeNet — ภาพรวมทั้งโปรเจกต์ ตั้งแต่ต้นจนจบ</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.7;font-size:16px;}
+  .wrap{max-width:1140px;margin:0 auto;padding:30px 20px 90px}
+  h1{font-size:32px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:17px;margin:0 0 6px}
+  h2{font-size:24px;margin:52px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:18px;margin:0 0 4px}
+  p{margin:9px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:16px 20px;border-radius:8px;margin:20px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  a{color:var(--blue)}
+  code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:13.5px}
+  .center{text-align:center}
+  .muted{color:var(--muted)}
+  b.k{color:var(--green)}
+  /* stage card */
+  .stage{display:grid;grid-template-columns:64px 1fr;gap:0;margin:18px 0;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--panel)}
+  .stage .idx{background:var(--panel2);display:flex;align-items:flex-start;justify-content:center;padding-top:18px;font-size:26px;font-weight:bold;color:var(--cyan);border-right:1px solid var(--border)}
+  .stage .body{padding:14px 20px}
+  .stage h3{color:var(--text)}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:10px}
+  @media(max-width:820px){.row3{grid-template-columns:1fr}}
+  .box{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;font-size:13.5px}
+  .box .h{font-size:12px;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px;font-weight:bold}
+  .box.do .h{color:var(--green)} .box.ref .h{color:var(--amber)} .box.sota .h{color:var(--purple)}
+  .box ul{margin:4px 0;padding-left:18px}.box li{margin:2px 0}
+  .pill{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:20px;margin:2px 3px 2px 0;border:1px solid var(--border);color:var(--muted)}
+  .check{color:var(--green);font-weight:bold}.cross{color:var(--red);font-weight:bold}.tri{color:var(--amber)}
+  .flow text{font-family:"Segoe UI",Tahoma,sans-serif}
+  .legend span{display:inline-block;margin-right:16px;font-size:13px}
+  .dot{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:middle}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px}
+  .toc a{color:var(--blue);text-decoration:none;margin-right:14px;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>HazeNet — ภาพรวมทั้งโปรเจกต์</h1>
+<p class="tagline">ตั้งแต่ต้นจนจบ มีกี่ส่วน · แต่ละส่วนเอาข้อมูล/งานวิจัยมาจากไหน · SOTA ยังไงเทียบของเดิม</p>
+<p class="sub">อ่านไฟล์นี้ไฟล์เดียวเห็นทั้งโปรเจกต์ · ลิงก์งานวิจัยตัวเต็มอยู่ใน <a href="related-work-sota.html">related-work-sota.html</a> · แผนกลยุทธ์อยู่ใน <a href="hazenet-focused-plan.html">hazenet-focused-plan.html</a></p>
+
+<div class="toc">
+<b>ทางลัด:</b>
+<a href="#map">แผนที่ทั้งระบบ</a>
+<a href="#data">ข้อมูลมาจากไหน</a>
+<a href="#stages">8 ส่วน ละเอียด</a>
+<a href="#sota">ตาราง SOTA รวม</a>
+<a href="#ref">งานวิจัยอ้างอิง</a>
+</div>
+
+<div class="lead">
+<b>สรุป 1 ย่อหน้า:</b> HazeNet รับข้อมูล open-source (ไฟจาก FIRMS, ควันจากดาวเทียม Himawari, ลมจาก ERA5, ฝุ่นจากสถานี Air4Thai) มารวมเป็น <b>datacube</b> → ป้อนเข้า <b>โมเดล neural ที่เคารพฟิสิกส์การพัดพา</b> (ส่วนพัดพาเป็นฟิสิกส์ + ส่วนที่เหลือเรียนรู้) → ออกมา 3 อย่างพร้อมกัน: <b class="k">① พยากรณ์ฝุ่น</b> 24–48 ชม. · <b class="k">② ระบุแหล่งที่มา</b> (เมียนมา/ลาว/อำเภอไหนกี่%) · <b class="k">③ ตอบ what-if</b> ("ดับไฟตรงนี้ลดกี่%") — ทั้งหมดในการรันเดียว แล้วพิสูจน์ความถูกต้องด้วยการเทียบ WRF-Chem + PMF จริง
+</div>
+
+<!-- ============ MAP ============ -->
+<h2 id="map">🗺️ แผนที่ทั้งระบบ (เห็นทั้งหมดในภาพเดียว)</h2>
+<div class="center" style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px">
+<svg class="flow" viewBox="0 0 1080 720" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#58a6ff"/></marker>
+    <marker id="arg" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker>
+  </defs>
+
+  <!-- ROW: data sources -->
+  <text x="540" y="22" fill="#3fb950" font-size="14" font-weight="bold" text-anchor="middle">① ข้อมูลดิบ (open-source)</text>
+  <g font-size="11.5">
+    <rect x="20"  y="34" width="150" height="48" rx="7" fill="#1c2330" stroke="#f778ba"/><text x="95"  y="54" fill="#f778ba" text-anchor="middle" font-weight="bold">FIRMS</text><text x="95"  y="71" fill="#9aa7b4" text-anchor="middle">จุดไฟ / FRP</text>
+    <rect x="184" y="34" width="150" height="48" rx="7" fill="#1c2330" stroke="#f778ba"/><text x="259" y="54" fill="#f778ba" text-anchor="middle" font-weight="bold">Himawari AOD</text><text x="259" y="71" fill="#9aa7b4" text-anchor="middle">ควันที่สังเกตได้</text>
+    <rect x="348" y="34" width="150" height="48" rx="7" fill="#1c2330" stroke="#f778ba"/><text x="423" y="54" fill="#f778ba" text-anchor="middle" font-weight="bold">ERA5</text><text x="423" y="71" fill="#9aa7b4" text-anchor="middle">ลม / อุตุนิยม</text>
+    <rect x="512" y="34" width="150" height="48" rx="7" fill="#1c2330" stroke="#f778ba"/><text x="587" y="54" fill="#f778ba" text-anchor="middle" font-weight="bold">Air4Thai/OpenAQ</text><text x="587" y="71" fill="#9aa7b4" text-anchor="middle">PM2.5 (label)</text>
+    <rect x="676" y="34" width="150" height="48" rx="7" fill="#1c2330" stroke="#f778ba"/><text x="751" y="54" fill="#f778ba" text-anchor="middle" font-weight="bold">DEM/WorldCover</text><text x="751" y="71" fill="#9aa7b4" text-anchor="middle">ภูมิประเทศ (static)</text>
+  </g>
+
+  <!-- datacube -->
+  <rect x="240" y="108" width="600" height="40" rx="8" fill="#1c2330" stroke="#56d4dd" stroke-width="2"/>
+  <text x="540" y="133" fill="#56d4dd" font-size="13.5" font-weight="bold" text-anchor="middle">② DATACUBE (Zarr) — กริด 0.1° · รายชั่วโมง · 2016–2025 · ไฟติดป้ายแหล่ง E⁽ˢ⁾</text>
+  <line x1="540" y1="84" x2="540" y2="106" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#arg)"/>
+
+  <!-- model box -->
+  <rect x="120" y="190" width="840" height="220" rx="12" fill="#0f141b" stroke="#3fb950" stroke-width="2"/>
+  <text x="540" y="214" fill="#3fb950" font-size="14" font-weight="bold" text-anchor="middle">③ โมเดล HazeNet — เคลื่อนฝุ่นทีละชั่วโมง (รักษาฟิสิกส์)</text>
+
+  <rect x="150" y="232" width="240" height="74" rx="9" fill="#161b22" stroke="#58a6ff"/>
+  <text x="270" y="256" fill="#58a6ff" font-size="12.5" font-weight="bold" text-anchor="middle">𝒜 · พัดพาตามลม</text>
+  <text x="270" y="275" fill="#e6edf3" font-size="11.5" text-anchor="middle">semi-Lagrangian (ฟิสิกส์)</text>
+  <text x="270" y="292" fill="#9aa7b4" font-size="11" text-anchor="middle">monotone → ควันไม่ติดลบ</text>
+
+  <rect x="420" y="232" width="240" height="74" rx="9" fill="#161b22" stroke="#bc8cff"/>
+  <text x="540" y="256" fill="#bc8cff" font-size="12.5" font-weight="bold" text-anchor="middle">ℱθ · เรียนรู้สัมประสิทธิ์</text>
+  <text x="540" y="275" fill="#e6edf3" font-size="11.5" text-anchor="middle">AFNO ทำนาย gθ, Dθ, K</text>
+  <text x="540" y="292" fill="#9aa7b4" font-size="11" text-anchor="middle">เชิงเส้นใน C (กุญแจ)</text>
+
+  <rect x="690" y="232" width="240" height="74" rx="9" fill="#161b22" stroke="#56d4dd"/>
+  <text x="810" y="256" fill="#56d4dd" font-size="12.5" font-weight="bold" text-anchor="middle">Σ tracer · superposition</text>
+  <text x="810" y="275" fill="#e6edf3" font-size="11.5" text-anchor="middle">C = Σ C⁽ˢ⁾ เป๊ะ</text>
+  <text x="810" y="292" fill="#9aa7b4" font-size="11" text-anchor="middle">→ attribution ฟรี</text>
+
+  <line x1="390" y1="269" x2="418" y2="269" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="660" y1="269" x2="688" y2="269" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+
+  <!-- rollout loop -->
+  <rect x="330" y="332" width="420" height="56" rx="9" fill="#161b22" stroke="#e3b341" stroke-dasharray="5 4"/>
+  <text x="540" y="356" fill="#e3b341" font-size="12.5" font-weight="bold" text-anchor="middle">↻ Autoregressive rollout: t → t+1 → … → t+48</text>
+  <text x="540" y="374" fill="#9aa7b4" font-size="11" text-anchor="middle">(uncertainty ด้วย input-perturbation ensemble / quantile head — ไม่ใช่ diffusion)</text>
+  <line x1="540" y1="148" x2="540" y2="188" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#arg)"/>
+
+  <!-- outputs -->
+  <text x="540" y="450" fill="#3fb950" font-size="14" font-weight="bold" text-anchor="middle">④ ผลลัพธ์ 3 อย่าง (รันเดียว)</text>
+  <rect x="70"  y="466" width="290" height="70" rx="10" fill="#1c2330" stroke="#3fb950"/>
+  <text x="215" y="492" fill="#3fb950" font-size="13" font-weight="bold" text-anchor="middle">① พยากรณ์</text>
+  <text x="215" y="512" fill="#9aa7b4" font-size="11.5" text-anchor="middle">แผนที่ฝุ่น 24–48 ชม. ~10 กม.</text>
+  <rect x="395" y="466" width="290" height="70" rx="10" fill="#1c2330" stroke="#56d4dd"/>
+  <text x="540" y="492" fill="#56d4dd" font-size="13" font-weight="bold" text-anchor="middle">② ระบุแหล่ง</text>
+  <text x="540" y="512" fill="#9aa7b4" font-size="11.5" text-anchor="middle">เมียนมา X% / ลาว Y% / อำเภอ Z%</text>
+  <rect x="720" y="466" width="290" height="70" rx="10" fill="#1c2330" stroke="#e3b341"/>
+  <text x="865" y="492" fill="#e3b341" font-size="13" font-weight="bold" text-anchor="middle">③ what-if (ฟรี)</text>
+  <text x="865" y="512" fill="#9aa7b4" font-size="11.5" text-anchor="middle">"ดับไฟ s" = ลบ C⁽ˢ⁾ → ลดกี่%</text>
+  <line x1="270" y1="410" x2="215" y2="464" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="540" y1="410" x2="540" y2="464" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="810" y1="410" x2="865" y2="464" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+
+  <!-- validation -->
+  <text x="540" y="576" fill="#3fb950" font-size="14" font-weight="bold" text-anchor="middle">⑤ พิสูจน์ความถูกต้อง (dual-validation)</text>
+  <rect x="120" y="592" width="200" height="60" rx="9" fill="#161b22" stroke="#30363d"/><text x="220" y="616" fill="#e6edf3" font-size="12" text-anchor="middle" font-weight="bold">V1 Skill</text><text x="220" y="634" fill="#9aa7b4" font-size="10.5" text-anchor="middle">vs PCD/GNN/AirPhyNet</text>
+  <rect x="334" y="592" width="200" height="60" rx="9" fill="#161b22" stroke="#30363d"/><text x="434" y="616" fill="#e6edf3" font-size="12" text-anchor="middle" font-weight="bold">V2 Mass budget</text><text x="434" y="634" fill="#9aa7b4" font-size="10.5" text-anchor="middle">residual &lt; 2%</text>
+  <rect x="548" y="592" width="200" height="60" rx="9" fill="#161b22" stroke="#56d4dd"/><text x="648" y="616" fill="#56d4dd" font-size="12" text-anchor="middle" font-weight="bold">V3 Attribution</text><text x="648" y="634" fill="#9aa7b4" font-size="10.5" text-anchor="middle">vs WRF-Chem + PMF</text>
+  <rect x="762" y="592" width="200" height="60" rx="9" fill="#161b22" stroke="#e3b341"/><text x="862" y="616" fill="#e3b341" font-size="12" text-anchor="middle" font-weight="bold">V4 Counterfactual</text><text x="862" y="634" fill="#9aa7b4" font-size="10.5" text-anchor="middle">vs WRF-Chem source-off</text>
+
+  <text x="540" y="690" fill="#9aa7b4" font-size="11.5" text-anchor="middle">❄️ พักไว้ (roadmap): GeoLLM · Digital Twin product/3D · Burn-Window Optimizer · Health layer · AlphaEarth</text>
+</svg>
+<div class="legend center" style="margin-top:8px">
+<span><span class="dot" style="background:#f778ba"></span>ข้อมูลดิบ</span>
+<span><span class="dot" style="background:#56d4dd"></span>datacube</span>
+<span><span class="dot" style="background:#3fb950"></span>โมเดล/ผลลัพธ์</span>
+<span><span class="dot" style="background:#e3b341"></span>ฟรีจากเชิงเส้น</span>
+</div>
+</div>
+
+<!-- ============ DATA ============ -->
+<h2 id="data">📦 ข้อมูลแต่ละส่วนมาจากไหน (provenance)</h2>
+<table>
+<tr><th>ข้อมูล</th><th>แหล่ง (open)</th><th>ความถี่/ความละเอียด</th><th>ใช้เป็นอะไรในโมเดล</th></tr>
+<tr><td>จุดความร้อน / ความแรงไฟ (FRP)</td><td><b>NASA FIRMS</b> (VIIRS 375m, MODIS)</td><td>รายวัน/ผ่านดาวเทียม</td><td>อินพุตการปล่อย E⁽ˢ⁾ (ติดป้ายแหล่งกำเนิด)</td></tr>
+<tr><td>ความหนาแสงละอองลอย (AOD)</td><td><b>JAXA Himawari P-Tree</b></td><td>รายชั่วโมง · ~5 กม.</td><td>สังเกตควันจริง (ช่วยปรับ/ตรวจสอบ)</td></tr>
+<tr><td>ลม/อุณหภูมิ/ความชื้น/ชั้นผสม (PBL)</td><td><b>ERA5</b> (Copernicus CDS)</td><td>รายชั่วโมง · 0.25°</td><td>สนามลม u (พัดพา) + Met → สัมประสิทธิ์</td></tr>
+<tr><td>PM2.5 ภาคพื้น</td><td><b>Air4Thai (PCD)</b> / <b>OpenAQ</b></td><td>รายชั่วโมง · จุดสถานี</td><td>label สำหรับ train + ground-truth ประเมิน</td></tr>
+<tr><td>ภูมิประเทศ / สิ่งปกคลุมดิน</td><td><b>Copernicus DEM</b> / <b>ESA WorldCover</b></td><td>คงที่ · 10–30 ม.</td><td>Static (หุบเขากักควัน, ชนิดเชื้อเพลิง)</td></tr>
+<tr><td>(ทางเลือก) embeddings ภูมิทัศน์</td><td><b>AlphaEarth</b> (Google, GEE)</td><td>รายปี · 10 ม.</td><td>พักไว้ — ใช้ทำนายไฟอนาคต (stretch)</td></tr>
+</table>
+
+<!-- ============ STAGES ============ -->
+<h2 id="stages">🔧 8 ส่วน อธิบายละเอียด (ทำอะไร · อ้างอิงจากไหน · SOTA ยังไง)</h2>
+
+<div class="stage"><div class="idx">0</div><div class="body">
+<h3>Datacube — รวมข้อมูลเป็นก้อนเดียวพร้อมใช้</h3>
+<div class="row3">
+<div class="box do"><div class="h">ทำอะไร</div>ดึงข้อมูล 5–6 แหล่ง มา regrid ให้อยู่กริดเดียว (0.1°) เวลาเดียว เก็บเป็น Zarr (อ่านเร็ว, ขนานได้) + แยกไฟติดป้ายแหล่ง E⁽เมียนมา⁾, E⁽ลาว⁾, E⁽ไทย-อำเภอ i⁾</div>
+<div class="box ref"><div class="h">อ้างอิง</div>แนวคิด analysis-ready cloud cube: <b>WeatherBench2</b>, pipeline ข้อมูลของ <b>Aurora/ARCO-ERA5</b> · FIRMS, P-Tree เป็นมาตรฐานวงการ</div>
+<div class="box sota"><div class="h">SOTA ยังไง</div>งานมลพิษไทยเดิมมักใช้ตารางรายสถานี/CSV — เราทำเป็น spatiotemporal datacube แบบเดียวกับ foundation model สมัยใหม่ → ขยาย/ทำซ้ำได้</div>
+</div></div></div>
+
+<div class="stage"><div class="idx">1</div><div class="body">
+<h3>Emission tagging — แปลงไฟเป็น "การปล่อยที่ติดป้ายแหล่ง"</h3>
+<div class="row3">
+<div class="box do"><div class="h">ทำอะไร</div>แปลง FRP จาก FIRMS → อัตราการปล่อยควัน แล้ว<u>แยกเป็นช่องตามแหล่งกำเนิด</u> (ประเทศ/อำเภอ) เพื่อให้ติดตามแยกได้ภายหลัง</div>
+<div class="box ref"><div class="h">อ้างอิง</div>ความสัมพันธ์ FRP→ปริมาณปล่อย: <b>FINN / FINNv2.5</b> (Wiedinmyer et al.) · แนวคิด tagged-tracer จาก <b>GEOS-Chem / WRF-Chem</b></div>
+<div class="box sota"><div class="h">SOTA ยังไง</div>WRF-Chem ทำ tagged-tracer ได้แต่ในแบบจำลองฟิสิกส์ที่ช้า — เราย้ายแนวคิดนี้เข้าโมเดล neural ที่ <b>differentiable</b> (เรียนรู้/ไหลย้อนได้)</div>
+</div></div></div>
+
+<div class="stage"><div class="idx">2</div><div class="body">
+<h3>𝒜 · Physics advection — พัดพาควันตามลม (ฟิสิกส์แท้)</h3>
+<div class="row3">
+<div class="box do"><div class="h">ทำอะไร</div>เลื่อนสนามควันตามลม ERA5 ด้วยวิธี <b>semi-Lagrangian</b> (ลากย้อนรอยอนุภาค) แบบ monotone → รับประกันควันไม่ติดลบ/ไม่ overshoot</div>
+<div class="box ref"><div class="h">อ้างอิง</div>semi-Lagrangian ใน NWP: <b>Staniforth &amp; Côté 1991</b> · การฝังฟิสิกส์ในโมเดล ML: สาย <b>physics-informed / CorrDiff</b></div>
+<div class="box sota"><div class="h">SOTA ยังไง</div>AI มลพิษส่วนใหญ่ (PM2.5-GNN, AirFormer) ให้เน็ต<u>เดา</u>การเคลื่อนที่เอง — เราใส่การพัดพาเป็น <b>hard constraint</b> → generalize ไป pattern ไฟใหม่ได้ดีกว่า + ประหยัดข้อมูล</div>
+</div></div></div>
+
+<div class="stage"><div class="idx">3</div><div class="body">
+<h3>ℱθ · Conditionally-linear operator — ส่วนเรียนรู้ (หัวใจความใหม่)</h3>
+<div class="row3">
+<div class="box do"><div class="h">ทำอะไร</div>ให้ <b>AFNO</b> (โครงเดียวกับ FourCastNet ทำงานในโดเมนความถี่) ทำนาย<u>สัมประสิทธิ์</u> gθ (ปล่อย), Dθ (สูญเสีย), K (กระจาย) จาก Met/Static — แต่การกระทำต่อ C เป็น<b>เชิงเส้น</b></div>
+<div class="box ref"><div class="h">อ้างอิง</div><b>FourCastNet</b> (Pathak 2022) + <b>AFNO</b> (Guibas 2021) · physics-guided pollution: <b>AirPhyNet</b> (ICLR 2024, Neural ODE advection-diffusion), <b>PM2.5-GNN</b> (SIGSPATIAL 2020)</div>
+<div class="box sota"><div class="h">SOTA ยังไง</div><b class="k">ของใหม่:</b> AirPhyNet มี physics แต่ไม่มี attribution; AFNO เป็น nonlinear ทั้งตัว — เรารวมเป็น "<b>conditionally-linear</b>" ที่ได้ทั้งพลังเรียนรู้ + เชิงเส้นใน C (เพื่อ attribution exact)</div>
+</div></div></div>
+
+<div class="stage"><div class="idx">4</div><div class="body">
+<h3>Rollout — พยากรณ์ต่อเนื่องถึง t+48</h3>
+<div class="row3">
+<div class="box do"><div class="h">ทำอะไร</div>ป้อนผลลัพธ์กลับเข้าโมเดลทีละชั่วโมง (autoregressive) จนถึง 24–48 ชม. · เทรนแบบ multi-step เพื่อกัน error สะสม</div>
+<div class="box ref"><div class="h">อ้างอิง</div>curriculum/rollout training: <b>GraphCast</b> (Science 2023), <b>FourCastNet</b> · เทียบ horizon ตรงกับ pain การเตือนภัย</div>
+<div class="box sota"><div class="h">SOTA ยังไง</div>ใช้กลยุทธ์ rollout แบบโมเดลพยากรณ์อากาศชั้นนำ แต่ปรับมากับมลพิษ + คงคุณสมบัติเชิงเส้นตลอด rollout</div>
+</div></div></div>
+
+<div class="stage"><div class="idx">5</div><div class="body">
+<h3>Smoke Fingerprint · Attribution — ระบุแหล่ง (ฟรีจากเชิงเส้น)</h3>
+<div class="row3">
+<div class="box do"><div class="h">ทำอะไร</div>เพราะ C = Σ C⁽ˢ⁾ ติดตามแต่ละ tracer แยกกัน → รู้ทันทีว่าฝุ่นที่เชียงใหม่ ณ ชม.ใด มาจากเมียนมา/ลาว/อำเภอไหนกี่% โดยไม่ต้องรันเพิ่ม</div>
+<div class="box ref"><div class="h">อ้างอิง</div>แนวคิด source apportionment: <b>HYSPLIT</b> (NOAA back-trajectory), receptor model <b>PMF</b> · tagged-tracer จาก CTM</div>
+<div class="box sota"><div class="h">SOTA ยังไง</div><b class="k">ของใหม่:</b> HYSPLIT/PMF ทำ<u>หลังเหตุการณ์ + ทีละจุด/ช้า</u> — เราทำ <b>inline + exact + ทุก pixel ทุก ชม.</b> ในโมเดลพยากรณ์ตัวเดียว ยังไม่มี AI มลพิษตัวไหนทำ</div>
+</div></div></div>
+
+<div class="stage"><div class="idx">6</div><div class="body">
+<h3>What-if · Counterfactual — "ดับไฟตรงนี้ลดกี่%" (ฟรี)</h3>
+<div class="row3">
+<div class="box do"><div class="h">ทำอะไร</div>เพราะเชิงเส้น "ดับไฟแหล่ง s" = ลบ C⁽ˢ⁾ ออก → ได้ฝุ่นเมืองที่ลดลงทันทีในวินาที · ทำหลายสถานการณ์เพื่อหาว่าจัดการตรงไหนคุ้มสุด</div>
+<div class="box ref"><div class="h">อ้างอิง</div>เทียบมาตรฐาน source-off ของ <b>WRF-Chem</b> (Case1−Case2) · validate: เชียงราย 45% TB ฯลฯ</div>
+<div class="box sota"><div class="h">SOTA ยังไง</div><b class="k">ของใหม่:</b> WRF-Chem ทำ source-off ได้แต่ 1 สถานการณ์ใช้คลัสเตอร์รันเป็นวัน — เราทำ <b>interactive ระดับวินาที</b> = สิ่งที่ "มีอยู่ไม่ได้" ถ้าไม่มี emulator เร็ว</div>
+</div></div></div>
+
+<div class="stage"><div class="idx">7</div><div class="body">
+<h3>Validation — พิสูจน์ทุกข้อด้วยข้อมูลจริง</h3>
+<div class="row3">
+<div class="box do"><div class="h">ทำอะไร</div>V1 skill (CSI/POD/FAR, onset-lead) · V2 งบมวลปิด &lt;2% · V3 สัดส่วนแหล่งตรง WRF-Chem+PMF · V4 counterfactual ตรง source-off · ablation</div>
+<div class="box ref"><div class="h">อ้างอิง</div>metric/CV: <b>WeatherBench2</b> · ground-truth ไทย: <b>WRF-Chem Toxics 2024</b>, <b>PMF Chiang Mai AtmEn 2024</b>, <b>WRF-CMAQ ISAM 2026</b></div>
+<div class="box sota"><div class="h">SOTA ยังไง</div><b class="k">ของใหม่:</b> ส่วนใหญ่ validate แค่ skill — เราทำ <b>dual-validation</b> (ฟิสิกส์ WRF-Chem + receptor PMF อิสระ) ยืนยัน attribution คนละแกน หาได้ยากในงาน AI มลพิษ</div>
+</div></div></div>
+
+<!-- ============ SOTA TABLE ============ -->
+<h2 id="sota">🏆 ตาราง SOTA รวม — เราอยู่ตรงไหนเทียบทั้งวงการ</h2>
+<table>
+<tr><th>ความสามารถ</th><th>WRF-Chem<br><span class="muted">(ฟิสิกส์)</span></th><th>PM2.5-GNN /<br>AirFormer</th><th>AirPhyNet</th><th>FourCastNet /<br>Aurora</th><th>StormCast /<br>GenCast</th><th class="check">HazeNet (เรา)</th></tr>
+<tr><td>เร็วระดับวินาที</td><td class="cross">✗</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="tri">△ ช้า (diffusion)</td><td class="check">✓</td></tr>
+<tr><td>ฝัง physics constraint</td><td class="check">✓✓</td><td class="cross">✗</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓ พิสูจน์ได้</td></tr>
+<tr><td>Source attribution เชิงแหล่ง</td><td class="tri">△ ช้า</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓ exact, inline</td></tr>
+<tr><td>Counterfactual interactive</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓ (ฟรี)</td></tr>
+<tr><td>Uncertainty / ensemble</td><td class="tri">△</td><td class="cross">✗</td><td class="cross">✗</td><td class="tri">△</td><td class="check">✓✓</td><td class="check">✓ (เบา ไม่ใช้ diffusion)</td></tr>
+<tr><td>Dual-validation (ฟิสิกส์+receptor)</td><td>—</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td></tr>
+<tr><td>เจาะควันข้ามแดนไทย</td><td class="tri">△</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td></tr>
+</table>
+<div class="lead">
+<b>อ่านตารางนี้ยังไง:</b> ไม่มีคอลัมน์ไหน (นอกจากเรา) ที่ติ๊กถูกพร้อมกันใน <b>attribution + counterfactual + physics + เร็ว</b> — แต่ละค่ายเก่งคนละด้าน <b>HazeNet คือตัวเดียวที่รวมจุดแข็งของทุกค่ายเข้าด้วยกันสำหรับปัญหาควันไทย</b> นั่นคือความ "ใหม่" และ "โดดเด่น" ที่ defend ได้
+</div>
+
+<!-- ============ REFERENCES ============ -->
+<h2 id="ref">📚 งานวิจัยอ้างอิง (ตามส่วน)</h2>
+<p class="sub">ลิงก์ตัวเต็มที่ verify แล้วทั้งหมดอยู่ใน <a href="related-work-sota.html">related-work-sota.html</a> · ด้านล่างคือที่เกี่ยวข้องตรงกับแต่ละส่วน</p>
+<table>
+<tr><th>ส่วนที่ใช้</th><th>งานวิจัย</th><th>ที่มา / ลิงก์</th></tr>
+<tr><td>แกน operator (ส่วน 3)</td><td>FourCastNet (AFNO weather)</td><td>Pathak et al. 2022 — <a href="https://arxiv.org/abs/2202.11214">arXiv:2202.11214</a></td></tr>
+<tr><td>แกน operator</td><td>Adaptive Fourier Neural Operator</td><td>Guibas et al. 2021 — <a href="https://arxiv.org/abs/2111.13587">arXiv:2111.13587</a></td></tr>
+<tr><td>physics pollution (ส่วน 3)</td><td>AirPhyNet (Neural ODE advection-diffusion)</td><td>ICLR 2024 — <a href="https://arxiv.org/abs/2402.03784">arXiv:2402.03784</a></td></tr>
+<tr><td>baseline (ส่วน 3,7)</td><td>PM2.5-GNN</td><td>SIGSPATIAL 2020 — <a href="related-work-sota.html">ดูลิงก์</a></td></tr>
+<tr><td>rollout (ส่วน 4)</td><td>GraphCast</td><td>Science 2023 — <a href="https://arxiv.org/abs/2212.12794">arXiv:2212.12794</a></td></tr>
+<tr><td>foundation air-quality (ส่วน 3)</td><td>Aurora (CAMS air-quality fine-tune)</td><td>Nature 2025 — <a href="https://arxiv.org/abs/2405.13063">arXiv:2405.13063</a></td></tr>
+<tr><td>ทำไมไม่ทำ diffusion</td><td>StormCast / CorrDiff / GenCast</td><td>NVIDIA/DeepMind — <a href="related-work-sota.html">ดูลิงก์</a></td></tr>
+<tr><td>emission (ส่วน 1)</td><td>FINN / FINNv2.5 fire emissions</td><td>Wiedinmyer et al. — <a href="related-work-sota.html">ดูลิงก์</a></td></tr>
+<tr><td>attribution (ส่วน 5)</td><td>HYSPLIT back-trajectory</td><td>NOAA ARL — <a href="https://www.ready.noaa.gov/HYSPLIT.php">ready.noaa.gov</a></td></tr>
+<tr><td>metrics (ส่วน 7)</td><td>WeatherBench2</td><td>Rasp et al. — <a href="https://arxiv.org/abs/2308.15560">arXiv:2308.15560</a></td></tr>
+<tr><td><b>validate ไทย (ส่วน 6,7)</b></td><td>WRF-Chem transboundary N.Thailand</td><td>Toxics 2024 — <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11280843/">PMC11280843</a></td></tr>
+<tr><td><b>validate ไทย (ส่วน 7)</b></td><td>PMF source apportionment Chiang Mai</td><td>Atmos. Env. 2024 — <a href="https://www.sciencedirect.com/science/article/abs/pii/S1352231024001924">S1352231024001924</a></td></tr>
+<tr><td><b>validate ไทย (ส่วน 7)</b></td><td>WRF-CMAQ + ISAM brute force Thailand</td><td>2026 — <a href="https://www.sciencedirect.com/science/article/pii/S2666765726000207">S2666765726000207</a></td></tr>
+<tr><td>health (พักไว้)</td><td>Source attribution + health burden Thailand</td><td><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12444943/">PMC12444943</a></td></tr>
+</table>
+
+<p class="center muted" style="margin-top:40px">HazeNet · ภาพรวมทั้งโปรเจกต์ ต้นจนจบ · ไฟล์คู่กับ <a href="hazenet-focused-plan.html">hazenet-focused-plan.html</a></p>
+
+</div>
+</body>
+</html>

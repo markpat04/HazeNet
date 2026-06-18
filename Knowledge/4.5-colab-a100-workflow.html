@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.5 — Colab / A100 Workflow (Memory · Mixed Precision)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .green-box b{color:var(--green)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.4px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--green);color:var(--green);margin-left:6px}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+  a.ext{color:var(--blue)}
+  .bar{display:flex;height:34px;border-radius:7px;overflow:hidden;border:1px solid var(--border);margin:6px 0;font-size:11.5px}
+  .bar div{display:flex;align-items:center;justify-content:center;color:#06210f;font-weight:bold}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>4.5 — Colab / A100 Workflow <span class="pin">🟢 ง่าย แต่สำคัญต่อการอยู่รอด</span></h1>
+<p class="tagline">เทรนบน GPU จำกัด ~15 A100-ชม. โดยไม่ OOM และไม่ผลาญงบทิ้ง</p>
+<p class="sub">ปิดโมดูล 4 · โยง 4.4 (DataLoader/Zarr) · 0.2 (PyTorch/autograd) · 0.3 (optimization) · 3.4 (rollout) · adjoint/NeuralGCM (gradient checkpointing, ความต่างเรื่องงบกับ Google)</p>
+
+<div class="lead">
+<b>ความจริงของโปรเจกต์เรา:</b> เรามี A100 บน Colab Pro แค่ <b>~15 ชั่วโมงที่ใช้ได้จริง</b> · NeuralGCM ใช้ TPU ทั้งฟาร์มของ Google — เราทำแบบนั้นไม่ได้ · ดังนั้น "ทักษะการประหยัด" คือสิ่งที่ทำให้โปรเจกต์ <b>เสร็จหรือไม่เสร็จ</b><br><br>
+บทนี้สอน 2 เรื่องที่เป็นเส้นตาย: <b style="color:var(--cyan)">① ไม่ให้ VRAM ล้น (OOM)</b> ด้วย mixed precision + gradient checkpointing + accumulation · <b style="color:var(--amber)">② ไม่ผลาญ A100-ชม.ทิ้ง</b> ด้วยวิธีพัฒนา/checkpoint/วางแผนงบ<br><br>
+<b>คาถาประจำบท:</b> "เดบั๊กบนของถูก เทรนจริงบนของแพง · เซฟ checkpoint เสมอ · นับชั่วโมงก่อนกดรัน"
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. งบ A100 — คณิตศาสตร์ที่ต้องทำก่อน ★</a><br>
+<a href="#p2">2. VRAM เต็มด้วยอะไร (กายวิภาค)</a><br>
+<a href="#p3">3. Mixed Precision (AMP) ★</a><br>
+<a href="#p4">4. Gradient Checkpointing ★</a><br>
+<a href="#p5">5. Gradient Accumulation</a><br>
+<a href="#p6">6. ลดงานลงตรง ๆ (batch/tile/res)</a><br>
+<a href="#p7">7. เอาตัวรอดบน Colab (checkpoint/Drive)</a><br>
+<a href="#p8">8. DataLoader ไม่ให้ GPU หิว</a><br>
+<a href="#p9">9. แผนใช้งบ 15 ชม. (ทำจริง) ★</a><br>
+<a href="#cheat">10. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- 1 -->
+<h2 id="p1">1. งบ A100 — ทำเลขก่อนกดรัน <span class="pin">★</span></h2>
+<p>ก่อนเทรนจริงต้องประเมิน "รันนี้กินกี่ชั่วโมง" ให้เป็น ไม่งั้นจะรู้ตัวอีกทีตอนงบหมดกลางคัน · สูตรคร่าว ๆ:</p>
+<div class="card center" style="font-family:'Cambria Math',serif;font-size:16px">
+เวลา ≈ (จำนวน sample ÷ batch) × วินาที/step × จำนวน epoch ÷ 3600
+</div>
+<p>ตัวอย่าง: 8,000 sample, batch 4 → 2,000 step/epoch · ถ้า ~0.5 วิ/step → 1,000 วิ/epoch ≈ 0.28 ชม./epoch · เทรน 30 epoch ≈ <b>8.3 ชม.</b> · เหลือ buffer ~7 ชม. สำหรับ debug/ลองใหม่</p>
+<div class="warn"><b>วินัยงบ:</b> วัด "วินาที/step" จากการรันสั้น ๆ 50 step ก่อน → คูณกลับเป็นชั่วโมง → ตัดสินใจว่าคุ้มไหมก่อนปล่อยยาว · อย่าเดา · 1 รันยาวพลาด = เสียงบไป 1/3 ของทั้งโปรเจกต์</div>
+
+<!-- 2 -->
+<h2 id="p2">2. VRAM เต็มด้วยอะไร — รู้ศัตรูก่อนสู้</h2>
+<p>A100 มี VRAM ~40GB · เวลา OOM ต้องรู้ว่าอะไรกิน · 4 ก้อนหลัก:</p>
+<div class="bar">
+  <div style="width:8%;background:#58a6ff">params</div>
+  <div style="width:8%;background:#bc8cff">grads</div>
+  <div style="width:16%;background:#e3b341">optimizer</div>
+  <div style="width:68%;background:#3fb950">activations</div>
+</div>
+<table>
+<tr><th>ก้อน</th><th>คืออะไร</th><th>ขนาดขึ้นกับ</th></tr>
+<tr><td>Parameters</td><td>น้ำหนักโมเดล</td><td>จำนวนพารามิเตอร์</td></tr>
+<tr><td>Gradients</td><td>เกรเดียนต์ (เท่า params)</td><td>จำนวนพารามิเตอร์</td></tr>
+<tr><td>Optimizer states</td><td>Adam เก็บ ~2 เท่า params (m, v)</td><td>จำนวนพารามิเตอร์</td></tr>
+<tr><td style="color:var(--green)"><b>Activations</b></td><td><b>ค่ากลางทุกชั้น (เก็บไว้ทำ backward)</b></td><td><b>batch × ความละเอียด × ความลึก × ความยาว rollout</b></td></tr>
+</table>
+<div class="why"><b>กุญแจ:</b> สำหรับโมเดลภาพ/spatiotemporal อย่างเรา <b>activations คือก้อนที่ใหญ่ที่สุดและคุมได้</b> · มันโตตาม batch, ขนาดภาพ, และ <b>ความยาว rollout</b> (3.4) · ทุกเทคนิคลด VRAM ในบทนี้ส่วนใหญ่คือการ "ลด activations"</div>
+
+<!-- 3 -->
+<h2 id="p3">3. Mixed Precision (AMP) — ของฟรีที่ต้องเปิดเสมอ <span class="pin">★</span></h2>
+<p>ปกติเลขเป็น fp32 (32-bit) · <b>mixed precision</b> คำนวณบางส่วนด้วย 16-bit → <b>ใช้ VRAM ~ครึ่งเดียว + เร็วขึ้น</b> (A100 มี tensor core เร่ง 16-bit) · แทบไม่เสียความแม่น</p>
+<div class="bar"><div style="width:100%;background:#f85149">fp32 — activations เต็ม ๆ</div></div>
+<div class="bar"><div style="width:50%;background:#3fb950">bf16 — ครึ่งเดียว</div><div style="width:50%;background:#1c2330;color:var(--muted)">ว่าง</div></div>
+<p>บน A100 แนะนำ <b>bf16</b> (bfloat16) — ช่วงเลขกว้างเท่า fp32 จึงเสถียร ไม่ต้องใช้ GradScaler ให้ยุ่ง:</p>
+<pre><code><span class="kw">for</span> X, y <span class="kw">in</span> loader:
+    X, y = X.cuda(), y.cuda()
+    <span class="kw">with</span> torch.<span class="fn">autocast</span>(<span class="st">"cuda"</span>, dtype=torch.bfloat16):   <span class="cm"># ← เปิด AMP</span>
+        pred = <span class="fn">model</span>(X)
+        loss = <span class="fn">loss_fn</span>(pred, y)
+    opt.<span class="fn">zero_grad</span>()
+    loss.<span class="fn">backward</span>()
+    opt.<span class="fn">step</span>()</code></pre>
+<div class="green-box"><b>ทำก่อนเลย:</b> เปิด bf16 เป็นค่าเริ่มต้นของทุกการเทรน · เป็นวิธีลด VRAM + เพิ่มความเร็วที่ "แทบไม่มีข้อเสีย" → ได้ทั้งประหยัด VRAM และประหยัด A100-ชม.พร้อมกัน</div>
+<div class="warn"><b>หมายเหตุ fp16 vs bf16:</b> ถ้าใช้ fp16 (เช่นบน GPU เก่า) ต้องมี <code>GradScaler</code> กัน gradient underflow · บน A100 ใช้ bf16 ตัดปัญหานี้ทิ้งได้เลย</div>
+
+<!-- 4 -->
+<h2 id="p4">4. Gradient Checkpointing — แลกเวลาเพื่อหน่วยความจำ <span class="pin">★ สำคัญต่อ rollout</span></h2>
+<p>ปกติ backward ต้องเก็บ activations ของ <b>ทุกชั้น</b> ไว้ → กิน VRAM มหาศาลเมื่อ rollout ยาว · <b>gradient checkpointing</b> = ไม่เก็บ activations กลางทาง แต่ <b>คำนวณใหม่ตอน backward</b> → ลด VRAM ลงมาก แลกกับเวลาเพิ่ม ~20–30%</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 130" width="92%" xmlns="http://www.w3.org/2000/svg">
+  <text x="140" y="16" fill="#f85149" font-size="11.5" text-anchor="middle">ปกติ: เก็บ activations ทุกชั้น (กิน VRAM)</text>
+  <g><circle cx="50" cy="60" r="11" fill="#f85149"/><circle cx="110" cy="60" r="11" fill="#f85149"/><circle cx="170" cy="60" r="11" fill="#f85149"/><circle cx="230" cy="60" r="11" fill="#f85149"/></g>
+  <line x1="61" y1="60" x2="99" y2="60" stroke="#9aa7b4"/><line x1="121" y1="60" x2="159" y2="60" stroke="#9aa7b4"/><line x1="181" y1="60" x2="219" y2="60" stroke="#9aa7b4"/>
+  <text x="140" y="92" fill="#9aa7b4" font-size="10" text-anchor="middle">ทุกจุดสีแดง = เก็บในแรม</text>
+
+  <text x="420" y="16" fill="#3fb950" font-size="11.5" text-anchor="middle">checkpoint: เก็บบางจุด เหลือคำนวณใหม่</text>
+  <g><circle cx="330" cy="60" r="11" fill="#3fb950"/><circle cx="390" cy="60" r="11" fill="#1c2330" stroke="#3fb950"/><circle cx="450" cy="60" r="11" fill="#3fb950"/><circle cx="510" cy="60" r="11" fill="#1c2330" stroke="#3fb950"/></g>
+  <line x1="341" y1="60" x2="379" y2="60" stroke="#9aa7b4"/><line x1="401" y1="60" x2="439" y2="60" stroke="#9aa7b4"/><line x1="461" y1="60" x2="499" y2="60" stroke="#9aa7b4"/>
+  <text x="420" y="92" fill="#9aa7b4" font-size="10" text-anchor="middle">จุดกลวง = คำนวณใหม่ตอน backward</text>
+</svg>
+</div>
+<pre><code><span class="kw">from</span> torch.utils.checkpoint <span class="kw">import</span> checkpoint
+<span class="cm"># ใน rollout ยาว: ห่อแต่ละ step ด้วย checkpoint → เก็บแค่ state ไม่เก็บ activations</span>
+state = init_state
+<span class="kw">for</span> t <span class="kw">in</span> <span class="fn">range</span>(rollout_len):
+    state = <span class="fn">checkpoint</span>(model.step, state, forcings[t], use_reentrant=<span class="kw">False</span>)</code></pre>
+<div class="green-box"><b>เชื่อมกับงานวิจัยที่อ่านมา:</b> ทั้งไฟล์ adjoint chemistry emulator และ NeuralGCM ชี้ว่า <b>backprop ผ่าน rollout ยาว = ระเบิดหน่วยความจำ</b> · gradient checkpointing คือคำตอบมาตรฐาน — ทำให้เราเทรน rollout หลาย step บน A100 เดียวได้ · นี่คือเทคนิคที่ทำให้ rollout curriculum (3.4) เป็นไปได้จริงในงบเรา</div>
+
+<!-- 5 -->
+<h2 id="p5">5. Gradient Accumulation — แกล้งว่า batch ใหญ่</h2>
+<p>บางทีอยากได้ batch ใหญ่ (เทรนนิ่งกว่า) แต่ใส่ทีเดียวไม่พอ VRAM · <b>accumulation</b> = สะสม gradient จากหลาย batch ย่อยก่อนค่อย <code>step()</code> ครั้งเดียว → ได้ผลเท่า batch ใหญ่ โดยใช้ VRAM เท่า batch เล็ก:</p>
+<pre><code>accum = <span class="nm">4</span>                         <span class="cm"># batch จริง 2 → เสมือน 8</span>
+opt.<span class="fn">zero_grad</span>()
+<span class="kw">for</span> i, (X, y) <span class="kw">in</span> <span class="fn">enumerate</span>(loader):
+    <span class="kw">with</span> torch.<span class="fn">autocast</span>(<span class="st">"cuda"</span>, dtype=torch.bfloat16):
+        loss = <span class="fn">loss_fn</span>(<span class="fn">model</span>(X.cuda()), y.cuda()) / accum
+    loss.<span class="fn">backward</span>()
+    <span class="kw">if</span> (i+<span class="nm">1</span>) % accum == <span class="nm">0</span>:
+        opt.<span class="fn">step</span>(); opt.<span class="fn">zero_grad</span>()</code></pre>
+<div class="why"><b>เมื่อไรใช้:</b> เมื่อ batch ที่พอ VRAM เล็กจน training ไม่นิ่ง (loss กระโดด) · accumulation ให้ effective batch ใหญ่ขึ้นโดยไม่เพิ่ม VRAM · แลกกับเวลาต่อ optimizer step ที่นานขึ้น</div>
+
+<!-- 6 -->
+<h2 id="p6">6. ลดงานลงตรง ๆ — ถ้ายัง OOM</h2>
+<p>ถ้าเทคนิคข้างบนยังไม่พอ ลดภาระจริง ๆ (เรียงจากกระทบผลน้อย→มาก):</p>
+<table>
+<tr><th>วิธี</th><th>ลด VRAM</th><th>ข้อแลก</th></tr>
+<tr><td>ลด batch size</td><td>เชิงเส้น</td><td>training นิ่งน้อยลง (ชดเชยด้วย accumulation)</td></tr>
+<tr><td>เทรนเป็น tile/crop (เช่น 96×96) แทนทั้งภาพ</td><td>มาก</td><td>ต้องระวัง boundary; เหมาะกับ CNN/local</td></tr>
+<tr><td>ลด rollout length (เริ่มสั้น)</td><td>มาก</td><td>ค่อยเพิ่มด้วย curriculum (3.4)</td></tr>
+<tr><td>ลดความละเอียด/จำนวน channel</td><td>มาก</td><td>กระทบความสามารถโมเดล — ทำเป็นทางสุดท้าย</td></tr>
+</table>
+<div class="ex"><b>กลยุทธ์ที่เข้ากับงานเรา:</b> เริ่ม prototype ด้วย <b>rollout สั้น + tile เล็ก + ราย 3 ชม.</b> ให้ทั้ง pipeline วิ่งครบรอบก่อน · พอแน่ใจว่าโค้ดถูก ค่อยขยาย rollout/ความละเอียดในรันจริง · "ให้มันวิ่งก่อน แล้วค่อยทำให้ใหญ่"</div>
+
+<!-- 7 -->
+<h2 id="p7">7. เอาตัวรอดบน Colab — Session หลุดได้ตลอด</h2>
+<p>Colab ตัด session เมื่อหมดเวลา/ไม่ active · ถ้าไม่เซฟ = เทรน 6 ชม.หายเกลี้ยง · กฎเหล็ก 3 ข้อ:</p>
+<div class="step-list">
+<p><b>① เซฟ checkpoint ลง Google Drive เป็นระยะ</b> (ไม่ใช่แค่ <code>/content</code> ที่หายเมื่อ session ตาย):</p>
+<pre><code><span class="kw">from</span> google.colab <span class="kw">import</span> drive; drive.<span class="fn">mount</span>(<span class="st">"/content/drive"</span>)
+CK = <span class="st">"/content/drive/MyDrive/hazenet/ckpt.pt"</span>
+<span class="cm"># ทุก ๆ N epoch:</span>
+torch.<span class="fn">save</span>({<span class="st">"model"</span>:model.<span class="fn">state_dict</span>(), <span class="st">"opt"</span>:opt.<span class="fn">state_dict</span>(),
+            <span class="st">"epoch"</span>:ep, <span class="st">"best"</span>:best_val}, CK)</code></pre>
+<p><b>② เขียนโค้ด "รันต่อจากเดิม" (resume):</b> เริ่มโปรแกรมด้วยการเช็คว่ามี ckpt ไหม → โหลดต่อ ไม่เริ่มศูนย์</p>
+<pre><code><span class="kw">import</span> os
+<span class="kw">if</span> os.path.<span class="fn">exists</span>(CK):
+    s = torch.<span class="fn">load</span>(CK); model.<span class="fn">load_state_dict</span>(s[<span class="st">"model"</span>]); opt.<span class="fn">load_state_dict</span>(s[<span class="st">"opt"</span>]); start = s[<span class="st">"epoch"</span>]+<span class="nm">1</span></code></pre>
+<p><b>③ เดบั๊กบน "ของถูก" ก่อน:</b> เขียน/ทดสอบโค้ดบน CPU หรือ GPU ฟรี (T4) ด้วย datacube จิ๋ว · เปลี่ยนมา A100 <u>เฉพาะตอนเทรนจริง</u> เท่านั้น</p>
+</div>
+<div class="danger"><b>บาปที่ทำงบหมดเร็วสุด:</b> เปิด A100 ทิ้งไว้ตอนนั่งแก้ bug / โหลดข้อมูล / นั่งคิด · A100-ชม.เดินตลอดที่ runtime เปิด ไม่ว่าจะคำนวณหรือไม่ · <b>เปิด A100 ตอนพร้อมเทรนแล้วเท่านั้น แล้วปิดทันทีที่เสร็จ</b></div>
+
+<!-- 8 -->
+<h2 id="p8">8. DataLoader ไม่ให้ GPU "หิว"</h2>
+<p>ถ้าโหลดข้อมูลช้ากว่าที่ GPU คำนวณ → GPU นั่งรอข้อมูล = เสีย A100-ชม.ฟรี ๆ · จูน DataLoader (ต่อจาก 4.4):</p>
+<pre><code>loader = torch.utils.data.<span class="fn">DataLoader</span>(
+    ds, batch_size=<span class="nm">4</span>, shuffle=<span class="kw">True</span>,
+    num_workers=<span class="nm">2</span>,            <span class="cm"># โหลดขนานหลาย process</span>
+    pin_memory=<span class="kw">True</span>,          <span class="cm"># ส่งเข้า GPU เร็วขึ้น</span>
+    persistent_workers=<span class="kw">True</span>,  <span class="cm"># ไม่ตั้ง worker ใหม่ทุก epoch</span>
+    prefetch_factor=<span class="nm">2</span>)         <span class="cm"># เตรียม batch ถัดไปล่วงหน้า</span></code></pre>
+<div class="why"><b>วิธีรู้ว่าใคร bottleneck:</b> ดู GPU utilization (<code>nvidia-smi</code>) — ถ้าต่ำ ๆ แกว่ง = GPU หิว (ติดที่ data) → เพิ่ม workers / ปรับ chunk Zarr (4.2) · ถ้าเต็ม ~100% = ติดที่ compute (ถูกแล้ว) · <b>วัดเสมอ อย่าเดา</b></div>
+<pre><code><span class="cm"># เช็ค VRAM ที่ใช้สูงสุด (หา OOM ก่อนมันเกิด)</span>
+<span class="fn">print</span>(torch.cuda.<span class="fn">max_memory_allocated</span>()/<span class="nm">1e9</span>, <span class="st">"GB"</span>)</code></pre>
+
+<!-- 9 -->
+<h2 id="p9">9. แผนใช้งบ 15 A100-ชม. — ทำจริง <span class="pin">★</span></h2>
+<div class="card">
+<table>
+<tr><th>เฟส</th><th>ทำอะไร</th><th>ฮาร์ดแวร์</th><th>งบ A100</th></tr>
+<tr><td>0 · พัฒนา</td><td>เขียน/ทดสอบ pipeline+โมเดล ด้วย cube จิ๋ว</td><td>CPU / T4 ฟรี</td><td>0 ชม.</td></tr>
+<tr><td>1 · overfit test</td><td>เทรน 1 batch ให้ loss ลงใกล้ 0 (พิสูจน์โค้ดถูก)</td><td>A100 สั้น</td><td>~0.5 ชม.</td></tr>
+<tr><td>2 · run สั้น</td><td>เทรนไม่กี่ epoch วัดวินาที/step + จูน batch/LR</td><td>A100</td><td>~2 ชม.</td></tr>
+<tr><td>3 · run จริง</td><td>เทรนเต็ม + checkpoint ลง Drive</td><td>A100</td><td>~8 ชม.</td></tr>
+<tr><td>4 · ablation/เผื่อ</td><td>ตัดชิ้นส่วนทดสอบ (5.4) + เผื่อพลาด</td><td>A100</td><td>~4 ชม.</td></tr>
+</table>
+<p class="center muted">รวม ~14.5 ชม. — พอดีงบ โดยเฟส 0–1 กันพลาดก่อนเปลือง A100</p>
+</div>
+<div class="green-box"><b>หลักคิดเดียวที่ต้องจำ:</b> <b>ค่าใช้จ่ายแพงสุดไม่ใช่การเทรน — แต่คือการเทรนผิดแล้วต้องเทรนใหม่</b> · เฟส 0–2 (overfit test + run สั้น) ราคาถูกมากเทียบกับการค้นพบว่าโค้ดมี bug ตอนชั่วโมงที่ 8 · ลงทุนกับการตรวจก่อนเสมอ</div>
+<div class="warn"><b>ความซื่อสัตย์เรื่อง scale:</b> ด้วยงบนี้เราพิสูจน์ได้แค่ "แนวคิดใช้ได้ (proof-of-concept)" ในโดเมน/ช่วงเวลาจำกัด — <b>ไม่ใช่</b>โมเดลระดับ operational · ต้องเขียนในรายงานให้ชัดว่าผลลัพธ์อยู่ภายใต้ข้อจำกัดทรัพยากร และอะไรจะดีขึ้นถ้ามี compute มากกว่านี้</div>
+
+<!-- cheat -->
+<h2 id="cheat">10. Cheat sheet + แบบฝึกหัด</h2>
+<div class="card">
+<h4>Cheat sheet — ลด VRAM / ประหยัดงบ</h4>
+<ul>
+<li><b>เปิด bf16 เสมอ</b> (autocast) → VRAM ครึ่ง + เร็วขึ้น ฟรี ๆ</li>
+<li><b>gradient checkpointing</b> สำหรับ rollout ยาว → แลกเวลา ลด VRAM มาก</li>
+<li><b>accumulation</b> → effective batch ใหญ่ขึ้นโดย VRAM เท่าเดิม</li>
+<li><b>ลดจริง:</b> batch → tile → rollout → res/channel (ตามลำดับกระทบ)</li>
+<li><b>checkpoint ลง Drive + resume</b> — กัน session หลุด</li>
+<li><b>เดบั๊กบน CPU/T4 · A100 ตอนเทรนจริงเท่านั้น · ปิดทันทีที่เสร็จ</b></li>
+<li><b>วัดก่อนรันยาว:</b> วินาที/step → ประเมินชั่วโมง · GPU util เช็ก bottleneck</li>
+</ul>
+</div>
+<div class="chk">
+<p class="q">❓ แบบฝึกหัด</p>
+<ol>
+<li>ใน VRAM ก้อนไหนใหญ่สุดและคุมได้สำหรับโมเดล spatiotemporal? ขึ้นกับอะไร?</li>
+<li>ทำไมบน A100 แนะนำ bf16 มากกว่า fp16?</li>
+<li>gradient checkpointing แลกอะไรกับอะไร และสำคัญต่อ rollout ยังไง?</li>
+<li>อยาก effective batch = 16 แต่ VRAM พอแค่ 4 — ทำยังไง?</li>
+<li>ทำไม "เดบั๊กบน A100" ถึงเป็นการผลาญงบ?</li>
+</ol>
+<details><summary>เฉลย</summary>
+<ol>
+<li>Activations — ขึ้นกับ batch × ความละเอียด × ความลึก × ความยาว rollout</li>
+<li>bf16 มีช่วงเลขกว้างเท่า fp32 → เสถียร ไม่ต้องใช้ GradScaler (fp16 ต้องมีกัน underflow)</li>
+<li>แลก "เวลา (คำนวณ activations ใหม่)" เพื่อ "ลด VRAM" → ทำให้ backprop ผ่าน rollout ยาวได้บน A100 เดียว (โยง adjoint/NeuralGCM/3.4)</li>
+<li>gradient accumulation: batch 4 สะสม gradient 4 ครั้งก่อน step (4×4=16)</li>
+<li>A100-ชม.เดินตลอดที่ runtime เปิด ไม่ว่าจะคำนวณหรือนั่งแก้ bug → ควรเดบั๊กบน CPU/T4 แล้วเปิด A100 เฉพาะตอนเทรน</li>
+</ol>
+</details>
+</div>
+<div class="chk">
+<p class="q">✅ เช็กลิสต์ก่อนกดเทรนจริง (เฟส 3)</p>
+<ul>
+<li>☐ ผ่าน overfit test (loss ลงใกล้ 0 บน 1 batch)</li>
+<li>☐ เปิด bf16 + (ถ้าจำเป็น) checkpointing/accumulation</li>
+<li>☐ วัดวินาที/step แล้ว → ประเมินชั่วโมงรวม ≤ งบที่เหลือ</li>
+<li>☐ checkpoint→Drive + resume ทำงานจริง (ทดสอบ kill แล้วต่อได้)</li>
+<li>☐ GPU util สูง (ไม่หิวข้อมูล)</li>
+<li>☐ บันทึก hyperparams/config ของรันนี้ไว้</li>
+</ul>
+</div>
+
+<hr>
+<div class="green-box center"><b>🎉 จบโมดูล 4 — ข้อมูล + วิศวกรรม</b><br>
+4.1 แหล่งข้อมูล → 4.2 รูปแบบไฟล์ → 4.3 regrid → 4.4 datacube → 4.5 เทรนบน A100<br>
+<span class="muted">ตอนนี้คุณมีเส้นทางครบจาก "ข้อมูลดิบบนอินเทอร์เน็ต" ถึง "โมเดลที่เทรนได้บน Colab" · ขั้นถัดไปคือโมดูล 5 (การประเมิน/rigor) เพื่อพิสูจน์ว่ามันดีจริง</span></div>
+
+<p class="center muted" style="margin-top:20px">4.5 — Colab / A100 Workflow · ปิดโมดูล 4 · ต่อไป: <b style="color:var(--cyan)">โมดูล 5 — Metrics &amp; การทดลอง (5.1 เริ่มที่ RMSE/CSI/onset-lead)</b></p>
+
+</div>
+</body>
+</html>

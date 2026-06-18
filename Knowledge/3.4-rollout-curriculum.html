@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.4 — Autoregressive Rollout + Curriculum Training (สอนละเอียด)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.6px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>3.4 — Autoregressive Rollout + Curriculum Training</h1>
+<p class="tagline">เทรนยังไงให้พยากรณ์ไกลถึง t+48 ได้โดย error ไม่สะสมจนพัง</p>
+<p class="sub">ต่อยอด ε_rollout จาก 2.1 · บทนี้คือ "วิธีเทรน" ที่ทำให้โมเดลเดินไกลได้จริง · ผูกกับ HazeNet ตลอด</p>
+
+<div class="lead">
+<b>ปัญหาที่บทนี้แก้:</b> จาก 2.1 เรารู้ว่าพยากรณ์ไกล = เดิน update equation ซ้ำ ๆ (<b>autoregressive rollout</b>) และ error <b>สะสมทบต้น</b> ทุก step (<code>ε_rollout</code>) · ถ้าเทรนโมเดลให้เก่งแค่ "เดิน 1 step" แล้วเอาไปเดิน 48 step จริง มันจะ<b>เพี้ยนสะสมจนระเบิด</b> · <b class="k">Curriculum training</b> คือวิธีเทรนที่ค่อย ๆ สอนให้โมเดลเดินไกลขึ้นเรื่อย ๆ จนทนการสะสม error ได้ · บทนี้เป็น 🟡 (วิธีเทรน ไม่ใช่คณิตหัวใจ) แต่สำคัญมากต่อความสำเร็จจริง — โมเดลดีแค่ไหนถ้าเทรน rollout ผิดก็พังที่ t+12
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. Autoregressive rollout (ทบทวน+ลึก) ★</a><br>
+<a href="#p2">2. ทำไม error สะสม (exposure bias) ★★</a><br>
+<a href="#p3">3. เทรน 1-step ไม่พอ</a><br>
+<a href="#p4">4. Multi-step / rollout training ★</a><br>
+<a href="#p5">5. Curriculum: ค่อย ๆ เพิ่ม step ★★</a><br>
+<a href="#p6">6. เทคนิคเสริม (TBPTT, pushforward)</a><br>
+<a href="#p7">7. แผนของ HazeNet + เชื่อม error</a><br>
+<a href="#p8">8. โค้ด curriculum loop</a><br>
+<a href="#cheat">9. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. Autoregressive rollout — ทบทวนและเจาะลึก <span class="pin">★</span></h2>
+<p>"Autoregressive" = เอา<b>เอาต์พุตของตัวเองมาเป็นอินพุตของก้าวถัดไป</b> · พยากรณ์ฝุ่นล่วงหน้าทำแบบนี้:</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 540 100" width="96%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker></defs>
+  <rect x="10" y="35" width="60" height="34" rx="6" fill="#1c2330" stroke="#3fb950"/><text x="40" y="57" fill="#3fb950" font-size="12" text-anchor="middle">C⁰</text>
+  <line x1="70" y1="52" x2="98" y2="52" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="100" y="35" width="70" height="34" rx="6" fill="#0f1f17" stroke="#58a6ff"/><text x="135" y="57" fill="#58a6ff" font-size="11" text-anchor="middle">model</text>
+  <line x1="170" y1="52" x2="198" y2="52" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="200" y="35" width="60" height="34" rx="6" fill="#1c2330" stroke="#3fb950"/><text x="230" y="57" fill="#3fb950" font-size="12" text-anchor="middle">C¹</text>
+  <line x1="260" y1="52" x2="288" y2="52" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="290" y="35" width="70" height="34" rx="6" fill="#0f1f17" stroke="#58a6ff"/><text x="325" y="57" fill="#58a6ff" font-size="11" text-anchor="middle">model</text>
+  <line x1="360" y1="52" x2="388" y2="52" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="390" y="35" width="60" height="34" rx="6" fill="#1c2330" stroke="#3fb950"/><text x="420" y="57" fill="#3fb950" font-size="12" text-anchor="middle">C²</text>
+  <text x="490" y="56" fill="#9aa7b4" font-size="16">…</text>
+</svg>
+</div>
+<p>โมเดลตัวเดียวกัน เดินซ้ำ · อินพุตของ step 2 คือ <b>C¹ ที่โมเดลเพิ่งทำนายเอง</b> (ไม่ใช่ค่าจริง) · นี่คือต้นตอของปัญหา (ข้อ 2)</p>
+<div class="why"><b>เชื่อม HazeNet:</b> แต่ละ step = สมการแกน <code>𝒜C + gE − D⊙C</code> (จาก 2.3) · met (ลม/อากาศ) ของแต่ละ step มาจากพยากรณ์อากาศ (เช่น ป้อน ERA5/forecast เป็นอินพุตภายนอกราย step) · ส่วน C เดินต่อจากตัวเอง</p>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. ทำไม error สะสม — exposure bias <span class="pin">★★</span></h2>
+<p>นี่คือหัวใจของปัญหา · ตอน<b>เทรนแบบ 1-step ปกติ</b> โมเดลเห็นแต่ "อินพุตที่เป็นค่าจริง (clean)" · แต่ตอน<b>ใช้งานจริง</b> มันต้องกินอินพุตที่ "ตัวเองทำนาย (มี error)" · โมเดลไม่เคยฝึกรับมือกับอินพุตเพี้ยน → เรียกว่า <b>exposure bias</b></p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 520 160" width="92%" xmlns="http://www.w3.org/2000/svg">
+  <line x1="40" y1="130" x2="500" y2="130" stroke="#30363d"/>
+  <line x1="40" y1="20" x2="40" y2="130" stroke="#30363d"/>
+  <text x="30" y="125" fill="#9aa7b4" font-size="9" text-anchor="end">error</text>
+  <text x="270" y="150" fill="#9aa7b4" font-size="10" text-anchor="middle">step (ขอบฟ้าพยากรณ์) →</text>
+  <!-- 1-step trained (blows up) -->
+  <path d="M40,125 Q150,118 250,95 Q330,60 420,20" fill="none" stroke="#f85149" stroke-width="2.5"/>
+  <text x="430" y="25" fill="#f85149" font-size="10">เทรน 1-step → ระเบิด</text>
+  <!-- rollout trained (controlled) -->
+  <path d="M40,125 Q200,120 350,108 Q450,100 500,95" fill="none" stroke="#3fb950" stroke-width="2.5"/>
+  <text x="350" y="90" fill="#3fb950" font-size="10">เทรน rollout → คุมได้</text>
+</svg>
+</div>
+<div class="ex"><b>อุปมา:</b> เหมือนฝึกขับรถในซิมที่ถนนตรงเป๊ะตลอด · พอออกถนนจริงที่มีหลุมนิดหน่อย (error เล็ก) คุณแก้ไม่เป็น → รถส่ายมากขึ้นเรื่อย ๆ จนหลุดโค้ง · ทางแก้คือ<b>ฝึกในสภาพที่มี error บ้าง</b> ให้เรียนรู้ที่จะ "ดึงกลับเข้าเลน"</p>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. ทำไมเทรน 1-step อย่างเดียวไม่พอ</h2>
+<p>เทรน 1-step = ลดเฉพาะ error ของก้าวเดียว (<code>‖model(C_จริง) − C¹_จริง‖</code>) · โมเดลเก่งเรื่อง "ก้าวเดียวจากค่าจริง" แต่:</p>
+<ul>
+<li>ไม่เคยเห็นอินพุตที่ตัวเองทำให้เพี้ยน → ไม่รู้จัก "แก้ทรง" กลับ</li>
+<li>error เล็ก ๆ แต่ละก้าวอาจ<b>ขยายตัว</b> (โมเดลไม่ได้ถูกลงโทษเรื่องการขยาย error)</li>
+<li>ผลคือ rollout ยาวจะเพี้ยนเร็ว — มักพังที่ t+6 ถึง t+24</li>
+</ul>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. Multi-step / Rollout training <span class="pin">★</span></h2>
+<p>ไอเดีย: <b>เทรนให้ตรงกับวิธีใช้งานจริง</b> · ให้โมเดลเดิน k step ระหว่างเทรน แล้วคิด loss จากทุก step (รวม error สะสม) → backprop ผ่านทั้งโซ่</p>
+<div class="card center" style="font-family:'Cambria Math',serif;font-size:15px">
+Loss = Σ<sub>i=1..k</sub> w<sub>i</sub> · ‖ Ĉ<sup>i</sup> − C<sup>i</sup><sub>จริง</sub> ‖
+<div style="font-family:'Segoe UI';font-size:12px;color:var(--muted);margin-top:6px">Ĉⁱ = ทำนายสะสม i ก้าว (เดินจากตัวเอง) · เทียบกับค่าจริงทุกก้าว</div>
+</div>
+<p>เพราะ loss นับ error ที่ step ปลาย ๆ ด้วย → gradient บังคับให้โมเดล<b>เรียนรู้ที่จะไม่ให้ error ขยาย</b> · มันเห็นอินพุตที่ตัวเองทำเพี้ยนตอนเทรน → แก้ exposure bias</p>
+<div class="warn"><b>ต้นทุน:</b> เดิน k step ตอนเทรน = หน่วยความจำ+เวลา ×k (ต้องเก็บ gradient ทั้งโซ่) · กับ 1 GPU/2 เดือน เดิน k ใหญ่ตั้งแต่แรกแพงเกิน → จึงต้องใช้ "curriculum" (ข้อ 5) ค่อย ๆ เพิ่ม</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. Curriculum training — ค่อย ๆ เพิ่ม step <span class="pin">★★</span></h2>
+<p><b>Curriculum learning</b> = สอนจากง่ายไปยาก (เหมือนหลักสูตรเรียน) · กับ rollout: เริ่มเทรนเดินสั้น แล้ว<b>ค่อย ๆ เพิ่มความยาว rollout</b> เมื่อโมเดลเก่งขึ้น</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 520 110" width="94%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="c" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#bc8cff"/></marker></defs>
+  <rect x="20" y="40" width="100" height="40" rx="7" fill="#1c2330" stroke="#3fb950"/><text x="70" y="58" fill="#3fb950" font-size="11" text-anchor="middle">เริ่ม: 1 step</text><text x="70" y="73" fill="#9aa7b4" font-size="9" text-anchor="middle">ง่าย เร็ว</text>
+  <line x1="120" y1="60" x2="148" y2="60" stroke="#bc8cff" stroke-width="1.6" marker-end="url(#c)"/>
+  <rect x="150" y="40" width="100" height="40" rx="7" fill="#1c2330" stroke="#58a6ff"/><text x="200" y="58" fill="#58a6ff" font-size="11" text-anchor="middle">เพิ่ม: 2–4 step</text><text x="200" y="73" fill="#9aa7b4" font-size="9" text-anchor="middle">เมื่อ val ดีขึ้น</text>
+  <line x1="250" y1="60" x2="278" y2="60" stroke="#bc8cff" stroke-width="1.6" marker-end="url(#c)"/>
+  <rect x="280" y="40" width="100" height="40" rx="7" fill="#1c2330" stroke="#e3b341"/><text x="330" y="58" fill="#e3b341" font-size="11" text-anchor="middle">8–12 step</text>
+  <line x1="380" y1="60" x2="408" y2="60" stroke="#bc8cff" stroke-width="1.6" marker-end="url(#c)"/>
+  <rect x="410" y="40" width="100" height="40" rx="7" fill="#0f1f17" stroke="#f85149"/><text x="460" y="58" fill="#f85149" font-size="11" text-anchor="middle">เป้า: 48 step</text><text x="460" y="73" fill="#9aa7b4" font-size="9" text-anchor="middle">t+48</text>
+</svg>
+</div>
+<p>ข้อดี: (1) ช่วงแรกเทรนเร็ว/ถูก (1-step) ให้โมเดลเรียนพื้นฐานก่อน · (2) ค่อยเพิ่มภาระเมื่อพร้อม → เสถียร ไม่ระเบิดตั้งแต่แรก · (3) ประหยัด GPU โดยรวม (ไม่ต้องเดิน 48 step ตั้งแต่ epoch แรก)</p>
+<div class="why"><b>เชื่อม curriculum กับข้อจำกัดเรา:</b> นี่คือเทคนิคที่<b>จำเป็น</b>กับ 1 GPU/2 เดือน — มันให้เราได้โมเดลที่เดินไกลโดยไม่ต้องจ่ายต้นทุน rollout เต็มตลอดการเทรน · เป็นมาตรฐานที่ FourCastNet/GraphCast (โมเดลพยากรณ์อากาศ) ใช้ → เรายืมมาตรง ๆ</div>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. เทคนิคเสริม (รู้จักไว้)</h2>
+<ul>
+<li><b>Truncated BPTT (TBPTT):</b> backprop ย้อนแค่บางช่วงของโซ่ (ไม่ทั้ง 48 step) → ประหยัดหน่วยความจำ · จำเป็นเมื่อ rollout ยาว</li>
+<li><b>Pushforward trick:</b> เดินบาง step โดย<b>ไม่เก็บ gradient</b> (detach) เพื่อสร้าง "อินพุตเพี้ยน" ให้โมเดลเห็น แล้วค่อยคิด loss จาก step สุดท้าย → สอนให้ทน error โดยถูกกว่า full rollout</li>
+<li><b>Scheduled sampling:</b> สุ่มสลับระหว่างป้อน "ค่าจริง" กับ "ค่าทำนาย" เป็นอินพุต → ค่อย ๆ เปลี่ยนผ่าน</li>
+<li><b>Noise injection:</b> เติม noise เล็กน้อยในอินพุตตอนเทรน → จำลอง error ให้โมเดลทนทาน</li>
+</ul>
+<div class="warn"><b>อย่าใช้ทุกอย่างพร้อมกัน:</b> เลือก 1–2 เทคนิคที่จำเป็น (curriculum + pushforward มักพอ) · ใส่หมดทุกอันคือ over-engineering ที่ขัดข้อจำกัดโครงการ · เริ่มเรียบง่าย เพิ่มเมื่อเจอปัญหาจริง</div>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. แผน HazeNet + เชื่อม error analysis</h2>
+<h4>แผนปฏิบัติ (เข้ากับ 2 เดือน)</h4>
+<ol>
+<li>เริ่ม 1-step training ให้ pipeline ครบ + ผ่าน physics test (2.4)</li>
+<li>เปิด curriculum: 1 → 2 → 4 → 8 step เพิ่มเมื่อ validation นิ่ง</li>
+<li>เพิ่ม pushforward/TBPTT ถ้าหน่วยความจำตึงหรือ rollout ยาวเริ่มเพี้ยน</li>
+<li>เทรนถึงเป้า (เช่น 24–48 step ตามขอบฟ้าพยากรณ์ที่ต้องการ)</li>
+</ol>
+<div class="why"><b>เชื่อม ε_rollout (Module 5):</b> เราจะ<b>วัด error เทียบกับขอบฟ้า</b> (error ที่ t+6, t+12, t+24, t+48) เป็นกราฟ · ความชันของกราฟ = อัตราการสะสม error = <code>ε_rollout</code> · เทียบ "ก่อน/หลัง curriculum" เพื่อพิสูจน์ว่าวิธีเทรนช่วยลดการสะสมจริง · นี่คือหนึ่งในการทดลองเชิงระบบของเรา — ไม่ใช่แค่ "เทรนแล้วหวังว่าดี" แต่<b>วัดว่า curriculum ลด ε_rollout เท่าไร</b></div>
+<div class="ex"><b>โบนัสจาก physics structure:</b> เพราะ HazeNet บังคับ non-negativity + mass conservation (2.4) โดยโครงสร้าง → rollout ของเรา<b>ระเบิดยากกว่า</b>นิวรอลดิบ (ค่าติดลบ/มวลรั่วที่มักทำให้ rollout พัง ถูกตัดทิ้งตั้งแต่ออกแบบ) · physics-structured ช่วยเรื่อง rollout stability ด้วย — เป็นจุดที่เขียนเน้นได้ในเปเปอร์</div>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. โค้ด curriculum loop</h2>
+<pre><code><span class="kw">def</span> <span class="fn">rollout_loss</span>(model, C0, met, targets, k):
+    <span class="st">"""เดิน k step จากตัวเอง คิด loss ทุก step"""</span>
+    C, loss = C0, <span class="nm">0.0</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(k):
+        C = model(C, met[i])                  <span class="cm"># เดินจากเอาต์พุตตัวเอง</span>
+        loss = loss + huber(C, targets[i])    <span class="cm"># เทียบค่าจริงทุก step (Huber, 0.3)</span>
+    <span class="kw">return</span> loss / k
+
+<span class="cm"># --- curriculum: ค่อย ๆ เพิ่มความยาว rollout ---</span>
+schedule = [(<span class="nm">1</span>, <span class="nm">10</span>), (<span class="nm">2</span>, <span class="nm">10</span>), (<span class="nm">4</span>, <span class="nm">15</span>), (<span class="nm">8</span>, <span class="nm">15</span>)]  <span class="cm"># (k step, จำนวน epoch)</span>
+<span class="kw">for</span> k, n_epochs <span class="kw">in</span> schedule:
+    <span class="kw">for</span> epoch <span class="kw">in</span> <span class="fn">range</span>(n_epochs):
+        <span class="kw">for</span> C0, met, targets <span class="kw">in</span> loader:
+            opt.zero_grad()
+            loss = rollout_loss(model, C0, met, targets, k)
+            loss.backward()                   <span class="cm"># backprop ผ่านทั้งโซ่ k step</span>
+            opt.step()
+    print(<span class="st">f"จบ curriculum k={k}"</span>)</code></pre>
+<div class="why"><b>เชื่อมบทก่อน:</b> <code>huber</code> = loss ที่ทนค่าพีค (เลือกใน 0.3 สำหรับวันวิกฤต) · <code>model()</code> = สมการแกน physics-structured (2.3) · 5-step training loop (zero_grad→forward→loss→backward→step) จาก 0.2 ยังเหมือนเดิม แค่ loss ซับซ้อนขึ้นเป็น rollout</div>
+
+<!-- ============ cheat ============ -->
+<h2 id="cheat">9. Cheat sheet + แบบฝึกหัด</h2>
+<div class="card">
+<b>สรุปจำ:</b>
+<ul>
+<li><b>Autoregressive rollout:</b> เอาเอาต์พุตตัวเองเป็นอินพุตก้าวถัดไป → พยากรณ์ไกล</li>
+<li><b>exposure bias:</b> เทรน 1-step เห็นแต่ค่าจริง · ใช้งานจริงกินค่าทำนาย(เพี้ยน) → แก้ไม่เป็น → error สะสมระเบิด</li>
+<li><b>Multi-step training:</b> เดิน k step ตอนเทรน คิด loss ทุก step → สอนให้ไม่ขยาย error</li>
+<li><b>★★ Curriculum:</b> เริ่มเดินสั้น (1) ค่อยเพิ่ม (2→4→8→...) เมื่อ val ดีขึ้น → เสถียร+ประหยัด</li>
+<li><b>เสริม:</b> TBPTT (backprop บางช่วง), pushforward (detach สร้างอินพุตเพี้ยน), scheduled sampling, noise — เลือก 1–2 พอ</li>
+<li><b>HazeNet:</b> 1-step→curriculum→pushforward ถ้าจำเป็น · วัด error ตามขอบฟ้า = ε_rollout</li>
+<li><b>โบนัส:</b> physics structure (2.4) ทำให้ rollout ระเบิดยากกว่านิวรอลดิบ</li>
+</ul>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 1 — "exposure bias" คืออะไร และทำไมมันทำให้โมเดลที่เทรน 1-step พังตอน rollout ยาว?</p>
+<details><summary>เฉลย</summary>
+<p>exposure bias = ความไม่ตรงกันระหว่าง<b>ตอนเทรน</b> (โมเดลเห็นอินพุตเป็นค่าจริง clean) กับ<b>ตอนใช้งาน</b> (โมเดลกินอินพุตที่ตัวเองทำนาย ซึ่งมี error) · โมเดลที่เทรน 1-step ไม่เคยฝึกรับมือกับอินพุตเพี้ยน → ไม่รู้จัก "ดึงกลับเข้าทรง" → error เล็ก ๆ แต่ละก้าวขยายสะสมจนพยากรณ์เพี้ยน/ระเบิดที่ step ปลาย ๆ</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 2 — ทำไมเราใช้ curriculum (ค่อยเพิ่ม step) แทนที่จะเทรน 48-step rollout ตั้งแต่แรกเลย?</p>
+<details><summary>เฉลย</summary>
+<p>(1) <b>ต้นทุน:</b> 48-step rollout ตั้งแต่แรก = หน่วยความจำ+เวลา ×48 ทุก batch → แพงเกินสำหรับ 1 GPU/2 เดือน · (2) <b>เสถียรภาพ:</b> โมเดลที่ยังไม่เก่งพื้นฐานถ้าเดิน 48 step เลยจะเพี้ยนสะสมรุนแรงจน gradient พัง (เรียนไม่ได้) · curriculum ให้โมเดลเรียน 1-step ก่อน (เร็ว/ถูก) แล้วค่อยเพิ่มภาระเมื่อพร้อม → เสถียรและประหยัดกว่ามาก</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 3 — physics structure (non-negativity, mass conservation จาก 2.4) ช่วยเรื่อง rollout stability ยังไง?</p>
+<details><summary>เฉลย</summary>
+<p>สาเหตุที่ rollout ของนิวรอลดิบมักระเบิดคือ<b>ค่าผิดฟิสิกส์สะสม</b> — เช่น ค่าติดลบโผล่แล้วถูกป้อนกลับขยายตัว หรือมวลรั่ว/พุ่งจนค่าวิ่งหนี · HazeNet บังคับ <b>C ≥ 0 และมวลไม่รั่ว โดยโครงสร้าง</b> (2.4) → ความผิดประเภทนี้ถูกตัดทิ้งตั้งแต่ออกแบบ → rollout เสถียรกว่า ระเบิดยากกว่า · เป็นข้อได้เปรียบของ physics-structured ที่เขียนเน้นในเปเปอร์ได้</p>
+</details>
+</div>
+
+<div class="lead">
+<b>จบ 3.4 แล้วคุณควร:</b> เข้าใจ autoregressive rollout (เดินจากตัวเอง), รู้ว่า <b>exposure bias</b> ทำให้เทรน 1-step พังตอน rollout ยาว, และวิธีแก้ด้วย <b>multi-step + curriculum</b> (ค่อยเพิ่ม step) บวกเทคนิคเสริม (pushforward/TBPTT) · เห็นว่าเราจะวัด error ตามขอบฟ้า = <code>ε_rollout</code> และ physics structure ช่วย rollout เสถียร
+<br><br>
+<b>ขั้นต่อไป — บทไคลแมกซ์ของทั้งหลักสูตร:</b> <b>3.5 Conditionally-linear operator</b> (⭐🔴 <b>หัวใจ 3/3 สุดท้าย</b>) — รวม 1.2 (ADR) + 2.5 (superposition) + 3.2 (AFNO) เข้าเป็นสถาปัตยกรรมจริง · นี่คือที่ที่ทุกอย่างมาบรรจบเป็น "งานใหม่" · บอก "3.5" ได้เลยครับ
+</div>
+
+</div>
+</body>
+</html>

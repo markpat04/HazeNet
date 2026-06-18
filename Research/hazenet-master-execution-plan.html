@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HazeNet — Master Execution Plan (2 เดือน · A*-rigor)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.72;font-size:16px;}
+  .wrap{max-width:1120px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:31px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:17px;margin:0 0 6px}
+  h2{font-size:23px;margin:50px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:18.5px;margin:24px 0 6px;color:var(--cyan)}
+  h4{font-size:16px;margin:16px 0 5px;color:var(--purple)}
+  p{margin:9px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:16px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:14px 0}
+  .star{background:linear-gradient(180deg,#161b22,#11161d);border:1px solid var(--amber);border-radius:12px;padding:18px 22px;margin:18px 0}
+  .eq{background:#11161d;border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:8px;padding:13px 17px;margin:12px 0;font-size:15.5px;overflow-x:auto;font-family:"Cambria Math","Segoe UI",serif;line-height:1.95}
+  .eq .lbl{display:block;color:var(--muted);font-size:12.5px;font-family:"Segoe UI",sans-serif;margin-top:4px}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.7px}
+  th,td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:13.5px}
+  .muted{color:var(--muted)} b.k{color:var(--green)}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px}
+  .toc a{color:var(--blue);text-decoration:none;margin-right:14px;white-space:nowrap;line-height:2}
+  .center{text-align:center}
+  .pill{display:inline-block;font-size:11.5px;padding:1px 9px;border-radius:20px;margin:2px 3px 2px 0;border:1px solid var(--border);color:var(--muted)}
+  .gate{border-left:4px solid var(--amber);background:rgba(227,179,65,.07);padding:10px 16px;border-radius:0 8px 8px 0;margin:8px 0;font-size:14px}
+  .flow text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:26px 0}
+  .q{color:var(--cyan);font-style:italic}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>HazeNet — Master Execution Plan</h1>
+<p class="tagline">2 เดือน · 1×A100 · ยึด rigor แบบ A* · แก้ pain จริง · benchmark ตลอด · error analysis เต็มรูป</p>
+<p class="sub">ไฟล์ลงมือฉบับสุดท้าย — รวมทุกการตัดสินใจก่อนหน้า · คู่กับ <a href="hazenet-focused-plan.html">focused-plan</a> · <a href="hazenet-overview-endtoend.html">overview</a> · <a href="hazenet-path-to-astar.html">path-to-A*</a></p>
+
+<div class="toc">
+<b>สารบัญ:</b>
+<a href="#a">A. อัลกอริทึมใหม่ (สิ่งที่สร้าง)</a>
+<a href="#b">B. ปรัชญาการทดลอง</a>
+<a href="#c">C. Benchmark protocol</a>
+<a href="#d">D. Systematic experiment matrix</a>
+<a href="#e">★ E. Error analysis (แยก error)</a>
+<a href="#f">F. Timeline 8 สัปดาห์</a>
+<a href="#g">G. Deliverables + ความเสี่ยง</a>
+</div>
+
+<div class="lead">
+<b>เป้าหมายเดียว:</b> สร้าง <b class="k">อัลกอริทึมใหม่</b> — physics-structured conditionally-linear neural transport operator — ที่ <b>(1)</b> พยากรณ์ PM2.5 แม่นกว่า baseline <b>(2)</b> ระบุแหล่งควันได้ exact <b>(3)</b> ตอบ what-if ได้ฟรี — แล้วพิสูจน์ทุกข้อด้วย <b>systematic experiment + benchmark + error decomposition</b> ที่บอกได้ว่า error แต่ละส่วนมาจากไหน
+</div>
+
+<!-- ============ A ============ -->
+<h2 id="a">A. อัลกอริทึมใหม่ที่สร้าง (สรุปแกน)</h2>
+<p>SOTA tech ที่หยิบมา + ผสมคณิต/ฟิสิกส์ → อัลกอริทึมใหม่:</p>
+<table>
+<tr><th>หยิบ SOTA อะไรมา</th><th>ผสมกับคณิต/ฟิสิกส์อะไร</th><th>ได้ของใหม่อะไร</th></tr>
+<tr><td>AFNO (FourCastNet) — neural operator โดเมนความถี่</td><td>operator splitting + advection-diffusion eq. (เชิงเส้นใน C)</td><td><b>conditionally-linear operator</b>: AFNO ทำนายสัมประสิทธิ์ แต่กระทำต่อ C เชิงเส้น</td></tr>
+<tr><td>semi-Lagrangian (NWP)</td><td>monotone interpolation (ไม่ติดลบ)</td><td>physics hard-constraint ในเน็ต</td></tr>
+<tr><td>tagged-tracer (CTM)</td><td>superposition: C = Σ C⁽ˢ⁾</td><td><b>attribution exact inline</b> + counterfactual ฟรี</td></tr>
+<tr><td>autodiff (PyTorch)</td><td>adjoint = ∂output/∂E</td><td><b>source inversion</b> ฟรี (stretch)</td></tr>
+</table>
+<div class="eq">
+C<sub>t+1</sub>⁽ˢ⁾ = 𝒜<sub>mono</sub>(<b>u</b><sub>t</sub>) C<sub>t</sub>⁽ˢ⁾ + g<sub>θ</sub>(Met,Static)·E<sub>t</sub>⁽ˢ⁾ − D<sub>θ</sub>(Met,Static)⊙C<sub>t</sub>⁽ˢ⁾
+<span class="lbl">เชิงเส้นใน C → superposition exact · ไม่ติดลบโดยโครงสร้าง · สัมประสิทธิ์ (g,D,K) ทำนายโดย AFNO</span>
+</div>
+<p class="muted">รายละเอียดเต็ม + ทำไมดีกว่าของเดิม: <a href="hazenet-focused-plan.html">focused-plan</a> ส่วน 5–6 · ทำไมไม่ใช้ diffusion: ขัด superposition</p>
+
+<!-- ============ B ============ -->
+<h2 id="b">B. ปรัชญาการทดลอง — "ทุกเคลม = การทดลองควบคุม 1 ชุด"</h2>
+<div class="card">
+<p>กฎ 4 ข้อที่ทุกการทดลองต้องเคารพ (มาตรฐาน A*):</p>
+<ol>
+<li><b>เทียบ baseline เสมอ</b> — ไม่มีตัวเลขไหนยืนเดี่ยว ต้องมี "ดีกว่าอะไร เท่าไร"</li>
+<li><b>เปลี่ยนทีละตัวแปร</b> — ablation ที่ control ทุกอย่างยกเว้นสิ่งที่ทดสอบ</li>
+<li><b>มีนัยสำคัญทางสถิติ</b> — bootstrap CI / paired test ข้ามวัน-สถานี ไม่ใช่ตัวเลขเดียว</li>
+<li><b>ป้องกัน data leakage</b> — split ตามเวลา (test = ปีที่ไม่เคยเห็น) + spatially-blocked / leave-stations-out CV</li>
+</ol>
+</div>
+<div class="gate"><b>กฎทองของ split:</b> Train 2016–2022 · Validation 2024 · <b>Test = 2023 + 2025</b> (ปีวิกฤตที่โมเดลไม่เคยเห็น) · สถานีบางส่วนกันไว้ test เชิงพื้นที่ล้วน</div>
+
+<!-- ============ C ============ -->
+<h2 id="c">C. Benchmark Protocol — เทียบกับใคร ด้วยอะไร</h2>
+<h4>บันได baseline (อ่อน → แข็ง)</h4>
+<table>
+<tr><th>ระดับ</th><th>baseline</th><th>พิสูจน์อะไรถ้าชนะ</th></tr>
+<tr><td>0 (floor)</td><td>Persistence (ค่าเดิม), Climatology</td><td>โมเดลเรียนรู้อะไรจริง</td></tr>
+<tr><td>1 (ML ทั่วไป)</td><td>CNN, ConvLSTM</td><td>spatiotemporal ช่วย</td></tr>
+<tr><td>2 (SOTA มลพิษ)</td><td><b>PM2.5-GNN, AirPhyNet</b></td><td>ดีกว่างานเฉพาะทาง</td></tr>
+<tr><td>3 (operational)</td><td><b>PCD/GISTDA forecast</b> (ถ้าเข้าถึงได้)</td><td>ดีกว่าระบบใช้จริง = impact</td></tr>
+<tr><td>4 (physics)</td><td>WRF-Chem (จากวรรณกรรม) — เทียบเชิง attribution</td><td>เร็วกว่ามากที่ความแม่นใกล้กัน</td></tr>
+</table>
+<h4>Metric (แยกตามสิ่งที่วัด)</h4>
+<table>
+<tr><th>วัดอะไร</th><th>metric</th></tr>
+<tr><td>ความแม่นค่าต่อเนื่อง</td><td>RMSE, MAE, bias, ACC</td></tr>
+<tr><td>การจับ "วันวิกฤต" (สำคัญสุดเชิง pain)</td><td><b>CSI, POD, FAR</b> ที่เกณฑ์ 37.5 & 75 µg/m³</td></tr>
+<tr><td>เตือนล่วงหน้า</td><td><b>onset-lead time</b> (จับวันเริ่มวิกฤตล่วงหน้ากี่ชม.)</td></tr>
+<tr><td>attribution</td><td>สัดส่วนแหล่ง vs WRF-Chem/PMF (MAE ของ %)</td></tr>
+<tr><td>uncertainty</td><td><b>CRPS</b>, rank histogram, reliability diagram</td></tr>
+</table>
+
+<!-- ============ D ============ -->
+<h2 id="d">D. Systematic Experiment Matrix — การทดลองทั้งหมด</h2>
+<p>แต่ละแถวตอบ <span class="q">"คำถามวิจัย"</span> หนึ่งข้อ ด้วยการ control เฉพาะตัวแปรที่สนใจ:</p>
+<table>
+<tr><th>#</th><th>การทดลอง</th><th class="q">ตอบคำถาม</th><th>control / setup</th><th>isolate อะไร</th></tr>
+<tr><td>E1</td><td>Baseline ladder</td><td>เราดีกว่าของเดิมไหม</td><td>โมเดลเดียวกัน, ข้อมูลเดียวกัน</td><td>คุณค่าสุทธิของอัลกอริทึม</td></tr>
+<tr><td>E2</td><td>Ablation: ตัด advection</td><td>ฟิสิกส์การพัดพาช่วยไหม</td><td>𝒜 on/off</td><td>ε_structure (advection)</td></tr>
+<tr><td>E3</td><td>Ablation: 𝒜 อย่างเดียว (ไม่มี ℱθ)</td><td>ส่วนเรียนรู้เพิ่มอะไร</td><td>ℱθ on/off</td><td>ส่วนที่ learning เพิ่ม</td></tr>
+<tr><td>E4</td><td>conditionally-linear vs nonlinear เต็ม</td><td>เสีย accuracy แค่ไหนเพื่อ attribution</td><td>ℱθ linear ↔ nonlinear</td><td>expressivity gap (ℛ)</td></tr>
+<tr><td>E5</td><td>structural non-neg vs softplus clamp</td><td>การออกแบบจำเป็นต่อ attribution ไหม</td><td>วิธีบังคับ ≥0</td><td>superposition error</td></tr>
+<tr><td>E6</td><td>feature ablation (static/AOD/PBL)</td><td>อินพุตไหนสำคัญ</td><td>เปิด-ปิดทีละ feature</td><td>contribution ต่อ feature</td></tr>
+<tr><td>E7</td><td><b>Oracle substitution</b> (ดูส่วน E)</td><td>error มาจากส่วนไหน</td><td>แทนอินพุตด้วยค่าอุดมคติทีละตัว</td><td>ε แต่ละแหล่ง</td></tr>
+<tr><td>E8</td><td>Attribution validation (V3)</td><td>ระบุแหล่งถูกไหม</td><td>เทียบ WRF-Chem TB% + PMF</td><td>ความแม่น attribution</td></tr>
+<tr><td>E9</td><td>Counterfactual validation (V4)</td><td>what-if เชื่อถือได้ไหม</td><td>เทียบ WRF-Chem source-off</td><td>causal validity (aggregate)</td></tr>
+<tr><td>E10</td><td>UQ calibration</td><td>ความไม่แน่นอน calibrate ไหม</td><td>CRPS, rank histogram</td><td>คุณภาพ UQ</td></tr>
+<tr><td>E11</td><td>Stratified error (ดูส่วน E)</td><td>error อยู่ที่ไหน/เมื่อไหร่</td><td>แยกตามจังหวัด/ภูมิประเทศ/regime/horizon</td><td>โครงสร้างเชิงพื้นที่-เวลาของ error</td></tr>
+<tr><td>E12</td><td>Source inversion PoC (stretch)</td><td>แก้ย้อนหาแหล่งได้ไหม</td><td>ไฟจุดเดียวที่รู้คำตอบ → ขยาย</td><td>ความเป็นไปได้ของ adjoint</td></tr>
+</table>
+
+<!-- ============ E ============ -->
+<h2 id="e">★ E. Error Analysis — แยก error รวมว่ามาจากส่วนไหน</h2>
+<div class="star">
+<b>หัวใจของความเข้มงวด:</b> งาน ML-weather ส่วนใหญ่รายงานแค่ "RMSE = X" แต่ไม่บอกว่า X <u>ประกอบจากอะไร</u> — เราจะ<b>แตก error รวมเป็นงบ (error budget)</b> เพื่อตอบว่า "ถ้าจะลด error อีก ต้องไปแก้ตรงไหนคุ้มสุด"
+</div>
+
+<h3>E.1 สมการงบ error</h3>
+<div class="eq">
+ε<sub>total</sub> ≈ ε<sub>wind</sub> + ε<sub>emission</sub> + ε<sub>structure</sub> + ε<sub>learning</sub> + ε<sub>rollout</sub> + ε<sub>interaction</sub>
+<span class="lbl">ลม ERA5 หยาบ/ผิด · ไฟ FRP พลาด(เมฆบัง)/แปลงปริมาณ · ฟิสิกส์ที่ขาด(เคมี/3D/linearity gap) · โมเดลเรียนไม่สุด/generalization · สะสมตอน rollout · ส่วนปนกัน</span>
+</div>
+
+<h3>E.2 วิธีแยกแต่ละส่วน — Oracle Substitution Protocol</h3>
+<p>แทนอินพุต/เงื่อนไขด้วย "ค่าในอุดมคติ" ทีละตัว — <b>error ที่ลดลง = contribution ของ error นั้น</b></p>
+<table>
+<tr><th>ส่วน error</th><th>oracle ที่ใส่แทน</th><th>วัดยังไง</th></tr>
+<tr><td><b>ε_wind</b></td><td>ลมความละเอียดสูงกว่า (เช่น ERA5 + downscale หรือ HRES) แทน ERA5 0.25°</td><td>error(oracle wind) − error(จริง)</td></tr>
+<tr><td><b>ε_emission</b></td><td>emission ที่ปรับด้วย AOD (constrained) แทน FRP ดิบ</td><td>error(oracle emission) − error(จริง)</td></tr>
+<tr><td><b>ε_structure</b></td><td>เปิดพจน์ nonlinear correction เต็ม (ลด linearity gap) + เทียบ 2D vs missing-physics</td><td>error(nonlinear) − error(linear) = expressivity; ส่วนที่เหลือหลังทุก oracle = missing physics</td></tr>
+<tr><td><b>ε_learning</b></td><td>train error vs test error</td><td>generalization gap = test − train</td></tr>
+<tr><td><b>ε_rollout</b></td><td>error ที่ t+1 (ไม่มีสะสม) vs t+48</td><td>error(t+48) − error(t+1) ปรับฐาน</td></tr>
+</table>
+<div class="card"><b>ความซื่อสัตย์:</b> ส่วนเหล่านี้ <u>ไม่ได้บวกกันเป๊ะ</u> (มี interaction) — เราจะรายงานเป็น <b>decomposition โดยประมาณ + interaction residual</b> และระบุลำดับการ substitute (เพราะผลขึ้นกับลำดับ → ใช้ Shapley-style averaging ถ้าเวลาพอ)</div>
+
+<h3>E.3 ภาพ error budget (ตัวอย่างผลที่คาดหวัง)</h3>
+<div class="center card">
+<svg class="flow" viewBox="0 0 760 300" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <text x="380" y="22" fill="#e6edf3" font-size="14" font-weight="bold" text-anchor="middle">Error Budget — แยก RMSE รวมเป็นส่วน ๆ (ภาพประกอบ ไม่ใช่ผลจริง)</text>
+  <!-- axis -->
+  <line x1="120" y1="250" x2="700" y2="250" stroke="#30363d"/>
+  <line x1="120" y1="60" x2="120" y2="250" stroke="#30363d"/>
+  <text x="60" y="155" fill="#9aa7b4" font-size="11" text-anchor="middle" transform="rotate(-90 60 155)">RMSE (µg/m³)</text>
+  <!-- stacked bar total -->
+  <g>
+    <rect x="180" y="80"  width="120" height="40" fill="#f778ba"/><text x="240" y="105" fill="#0d1117" font-size="11" text-anchor="middle" font-weight="bold">wind 28%</text>
+    <rect x="180" y="120" width="120" height="34" fill="#e3b341"/><text x="240" y="142" fill="#0d1117" font-size="11" text-anchor="middle" font-weight="bold">emission 24%</text>
+    <rect x="180" y="154" width="120" height="46" fill="#bc8cff"/><text x="240" y="182" fill="#0d1117" font-size="11" text-anchor="middle" font-weight="bold">structure 31%</text>
+    <rect x="180" y="200" width="120" height="22" fill="#58a6ff"/><text x="240" y="216" fill="#0d1117" font-size="10.5" text-anchor="middle" font-weight="bold">learn 10%</text>
+    <rect x="180" y="222" width="120" height="20" fill="#56d4dd"/><text x="240" y="237" fill="#0d1117" font-size="10.5" text-anchor="middle" font-weight="bold">rollout 7%</text>
+    <text x="240" y="265" fill="#9aa7b4" font-size="11" text-anchor="middle">ε_total</text>
+  </g>
+  <!-- arrow to insight -->
+  <text x="430" y="120" fill="#3fb950" font-size="12.5" font-weight="bold">→ insight:</text>
+  <text x="430" y="142" fill="#e6edf3" font-size="12">structure (ฟิสิกส์ขาด) + wind ใหญ่สุด</text>
+  <text x="430" y="162" fill="#e6edf3" font-size="12">→ ลงทุนแก้ advection/ลม คุ้มกว่า</text>
+  <text x="430" y="182" fill="#e6edf3" font-size="12">→ learning/rollout เล็ก = โมเดลโอเคแล้ว</text>
+  <text x="430" y="210" fill="#9aa7b4" font-size="11">(ตัวเลขจริงได้จาก E7 oracle substitution)</text>
+</svg>
+</div>
+
+<h3>E.4 Stratified Error — error อยู่ "ที่ไหน เมื่อไหร่"</h3>
+<table>
+<tr><th>แยกตาม</th><th>คำถาม</th><th>ใช้ตัดสินใจอะไร</th></tr>
+<tr><td>จังหวัด/ภูมิประเทศ</td><td>หุบเขา (เชียงใหม่) error สูงกว่าที่ราบไหม</td><td>ต้องเพิ่ม static/3D ไหม</td></tr>
+<tr><td>regime (ข้ามแดนหนัก vs ในพื้นที่)</td><td>วันที่ควันข้ามแดนเยอะ error ต่างไหม</td><td>attribution เชื่อถือ regime ไหน</td></tr>
+<tr><td>horizon (t+6 … t+48)</td><td>error โตเร็วแค่ไหนตามเวลา</td><td>horizon ที่ยัง trust ได้</td></tr>
+<tr><td>ระดับความเข้มข้น</td><td>พลาดช่วง "พีค" (วิกฤต) ไหม</td><td>จุดที่ pain สำคัญสุด</td></tr>
+</table>
+<div class="gate">ทุกตารางผลต้องมี <b>bootstrap 95% CI</b> และทดสอบ <b>paired significance</b> เทียบ baseline — ไม่มีการเคลม "ดีกว่า" โดยไม่มีนัยสำคัญ</div>
+
+<!-- ============ F ============ -->
+<h2 id="f">F. Timeline 8 สัปดาห์ (จับคู่การทดลอง + gate)</h2>
+<table>
+<tr><th>สัปดาห์</th><th>งาน</th><th>การทดลองที่รัน</th><th>Gate (ต้องผ่านถึงไปต่อ)</th></tr>
+<tr><td><b>W1</b></td><td>Datacube + emission tagging + split + EDA</td><td>—</td><td>Zarr พร้อม, baseline persistence รันได้</td></tr>
+<tr><td><b>W2</b></td><td>𝒜 semi-Lagrangian (monotone) + baseline ladder ระดับ 0–1</td><td>E1 (บางส่วน)</td><td>advection-only เทียบ persistence ได้</td></tr>
+<tr><td><b>W3–4</b></td><td>ℱθ conditionally-linear + train + tune</td><td>E1, E2, E3</td><td><b class="k">⭐ ชนะ PM2.5-GNN/AirPhyNet (E1 ระดับ 2)</b> — ถ้าไม่ผ่าน หยุดเพิ่มฟีเจอร์ ทุ่มแก้แกน</td></tr>
+<tr><td><b>W5</b></td><td>Tagged-tracer attribution + E8 (V3)</td><td>E5, E8</td><td>attribution สอดคล้อง WRF-Chem ~30–45% / PMF ~51%</td></tr>
+<tr><td><b>W6</b></td><td>Ablation เต็ม + Error decomposition</td><td>E4, E6, <b>E7 (oracle)</b>, E11</td><td>error budget ออกมาเป็นตัวเลข + stratified</td></tr>
+<tr><td><b>W7</b></td><td>Counterfactual + UQ + (stretch) inversion</td><td>E9, E10, E12</td><td>counterfactual calibration plot + CRPS</td></tr>
+<tr><td><b>W8</b></td><td>เขียน report/preprint + roadmap slide + ซ้อมเดโม + ปล่อย benchmark v0</td><td>รวมผลทั้งหมด</td><td>ส่งงาน + arXiv draft</td></tr>
+</table>
+<div class="gate"><b>กฎเหล็ก:</b> Gate W3–4 คือจุดตัดสิน — ถ้าแกนพยากรณ์ไม่ชนะ baseline ภายใน W4 ให้<b>หยุดทุกฟีเจอร์เสริม</b> (attribution/counterfactual/inversion) แล้วทุ่มแก้แกน · แกนวิทยาศาสตร์ห้ามตายเพื่อของเสริม</div>
+
+<!-- ============ G ============ -->
+<h2 id="g">G. Deliverables + ความเสี่ยง</h2>
+<h4>ส่งมอบเมื่อจบ 2 เดือน</h4>
+<p>
+<span class="pill">โมเดล + โค้ด reproducible</span>
+<span class="pill">ตาราง benchmark vs 5 baselines (มี CI)</span>
+<span class="pill">error budget + stratified analysis</span>
+<span class="pill">attribution/counterfactual validation เทียบ WRF-Chem+PMF</span>
+<span class="pill">benchmark dataset v0</span>
+<span class="pill">arXiv preprint draft</span>
+<span class="pill">เดโม what-if เดียว</span>
+<span class="pill">roadmap slide (multi-region/LLM/twin)</span>
+</p>
+<h4>ความเสี่ยงหลัก + ทางลด (พูดตรง)</h4>
+<table>
+<tr><th>ความเสี่ยง</th><th>ทางลด</th></tr>
+<tr><td>W4 ไม่ชนะ baseline</td><td>มี gate ตัดชัด → ลดสโคปเหลือแกน + error analysis (ยังเป็นงานที่ดีได้)</td></tr>
+<tr><td>conditionally-linear แม่นน้อยกว่า nonlinear</td><td>E4 โชว์ trade-off; ถ้าแพ้ขาด → ใช้ nonlinear + รายงาน superposition error + bound (①)</td></tr>
+<tr><td>oracle wind/emission หายาก</td><td>ใช้ proxy: ลม downscale, emission constrained ด้วย AOD; ระบุข้อจำกัด</td><td></td></tr>
+<tr><td>counterfactual per-event ไม่มี ground-truth</td><td>เคลมแค่ aggregate (WRF-Chem source-off) + natural experiment เป็น stretch</td></tr>
+<tr><td>GPU 15 ชม.ไม่พอ</td><td>กริด/ภูมิภาคเล็กลง; physics prior ลดข้อมูลที่ต้องใช้; mixed precision</td></tr>
+<tr><td>inversion (E12) ill-posed</td><td>เริ่มเคสไฟจุดเดียวที่รู้คำตอบ + regularization; เป็น stretch ตัดได้</td></tr>
+</table>
+
+<hr>
+<div class="lead center">
+<b>บรรทัดสุดท้าย:</b> แผนนี้ให้ <b class="k">อัลกอริทึมใหม่ที่ผสม SOTA+ฟิสิกส์</b> · แก้ pain ไทยจริง · <b>benchmark ตลอด</b> · และที่สำคัญที่สุดตามที่เน้น — <b>error analysis ที่แยกได้ว่า error รวมมาจากส่วนไหน</b> ด้วย oracle substitution → ทำให้งานมีความเข้มงวดระดับตีพิมพ์ ภายในกรอบ 2 เดือนที่ทำได้จริง
+</div>
+
+<p class="center muted" style="margin-top:30px">HazeNet · Master Execution Plan · ไฟล์ลงมือฉบับสุดท้าย</p>
+
+</div>
+</body>
+</html>

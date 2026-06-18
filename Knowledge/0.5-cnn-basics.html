@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>0.5 — CNN Basics: Convolution & Receptive Field (สอนละเอียด)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:30px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  pre{background:#0a0e14;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;margin:12px 0;font-size:14px;line-height:1.6}
+  code{font-family:"Consolas","Courier New",monospace}
+  pre code{color:#e6edf3}
+  .cm{color:#6e7a89}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#7ee787}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .eq{background:#11161d;border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:8px;padding:13px 17px;margin:13px 0;font-size:16px;text-align:center;font-family:"Cambria Math","Segoe UI",serif}
+  .eq .lbl{display:block;color:var(--muted);font-size:12.5px;font-family:"Segoe UI",sans-serif;margin-top:6px}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Consolas",monospace}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>0.5 — CNN Basics: Convolution &amp; Receptive Field</h1>
+<p class="tagline">เน็ตที่ "เห็นภาพเชิงพื้นที่" — ฐานของ U-Net และเหตุผลที่เราต้องมี AFNO + ฟิสิกส์</p>
+<p class="sub">ปิดโมดูล 0 · เน้น convolution + receptive field · ผูกกับ HazeNet ตลอด · พิมพ์ตามด้วย PyTorch ได้</p>
+
+<div class="lead">
+<b>ทำไม CNN สำคัญกับเรา:</b> ข้อมูล HazeNet คือ "ภาพหลายชั้น" — แผนที่ฝุ่น + แผนที่ลม + แผนที่อุณหภูมิ ซ้อนกัน · CNN คือเครื่องมือที่ออกแบบมาเพื่อหา pattern เชิงพื้นที่บนภาพแบบนี้โดยเฉพาะ · <b class="k">และที่สำคัญ — "ข้อจำกัด" ของ CNN (มองได้แค่ใกล้ ๆ) คือเหตุผลโดยตรงที่งานเราต้องเพิ่ม AFNO (มองทั่วทั้งภาพ) และ advection (ฟิสิกส์ขนส่งระยะไกล)</b> เข้าใจ CNN = เข้าใจว่าทำไม design เราเป็นแบบนั้น
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. ทำไมไม่ใช้ FC กับภาพ</a><br>
+<a href="#p2">2. Convolution คืออะไร ★</a><br>
+<a href="#p3">3. Filter เรียนรู้อะไร</a><br>
+<a href="#p4">4. kernel / stride / padding</a><br>
+<a href="#p5">5. Channels &amp; feature maps</a><br>
+<a href="#p6">6. Receptive field ★★</a><br>
+<a href="#p7">7. Pooling (ย่อภาพ)</a><br>
+<a href="#p8">8. CNN stack + โค้ด PyTorch</a><br>
+<a href="#p9">9. ★ เชื่อม HazeNet (ทำไมต้อง AFNO+ฟิสิกส์)</a><br>
+<a href="#cheat">10. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. ทำไมไม่ใช้ Fully-Connected (FC) กับภาพ</h2>
+<p>จาก 0.2 เรารู้จัก <code>nn.Linear</code> (fully-connected) ที่เชื่อมทุก input เข้ากับทุก neuron · ลองใช้กับแผนที่ของเรา:</p>
+<div class="card">
+<p>แผนที่ <code>85×105 = 8,925</code> จุด ต่อ 1 ตัวแปร · ถ้าเชื่อมเข้าชั้นซ่อน 1,000 neuron แบบ FC:</p>
+<div class="eq" style="font-size:15px">8,925 × 1,000 ≈ <b style="color:var(--red)">9 ล้าน</b> พารามิเตอร์ — แค่ชั้นเดียว ตัวแปรเดียว!</div>
+<p>ปัญหา 2 ข้อ:</p>
+<ul>
+<li><b>พารามิเตอร์ระเบิด</b> → เปลือง memory + overfit ง่าย (ข้อมูลไม่พอเทรน)</li>
+<li><b>ทิ้งโครงสร้างพื้นที่</b> → FC มองทุกจุดเป็นอิสระ ไม่รู้ว่า "จุดข้าง ๆ กันเกี่ยวข้องกัน" ทั้งที่ฝุ่นที่จุดหนึ่งสัมพันธ์กับเพื่อนบ้านโดยตรง</li>
+</ul>
+</div>
+<div class="why"><b>CNN แก้ทั้ง 2 ข้อ ด้วย 2 ไอเดีย:</b> <b>(1) local</b> — มองทีละหน้าต่างเล็ก ๆ (เพื่อนบ้าน) · <b>(2) weight sharing</b> — ใช้ตัวกรอง (filter) ชุดเดียวกันเลื่อนไปทั้งภาพ → พารามิเตอร์น้อยลงมหาศาล + เคารพโครงสร้างพื้นที่</div>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. Convolution คืออะไร — หัวใจของ CNN <span class="pin">★</span></h2>
+<p><b>convolution</b> = เอา "ตัวกรอง" (kernel/filter) ก้อนเล็ก ๆ <b>เลื่อนไปทั่วภาพ</b> แต่ละตำแหน่งทำ "คูณตรงช่องแล้วบวกรวม" ได้ออกมา 1 ตัวเลข</p>
+
+<div class="center card">
+<svg class="svg" viewBox="0 0 720 250" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <text x="120" y="18" fill="#e6edf3" font-size="12" text-anchor="middle">input 4×4</text>
+  <!-- input grid 4x4 -->
+  <g font-size="13" fill="#e6edf3">
+    <!-- highlight top-left 3x3 -->
+    <rect x="30" y="30" width="120" height="120" fill="rgba(86,212,221,0.10)" stroke="#56d4dd" stroke-width="2"/>
+    <g stroke="#30363d" fill="none">
+      <rect x="30" y="30" width="40" height="40"/><rect x="70" y="30" width="40" height="40"/><rect x="110" y="30" width="40" height="40"/><rect x="150" y="30" width="40" height="40"/>
+      <rect x="30" y="70" width="40" height="40"/><rect x="70" y="70" width="40" height="40"/><rect x="110" y="70" width="40" height="40"/><rect x="150" y="70" width="40" height="40"/>
+      <rect x="30" y="110" width="40" height="40"/><rect x="70" y="110" width="40" height="40"/><rect x="110" y="110" width="40" height="40"/><rect x="150" y="110" width="40" height="40"/>
+      <rect x="30" y="150" width="40" height="40"/><rect x="70" y="150" width="40" height="40"/><rect x="110" y="150" width="40" height="40"/><rect x="150" y="150" width="40" height="40"/>
+    </g>
+    <text x="50" y="55">1</text><text x="90" y="55">2</text><text x="130" y="55">0</text><text x="170" y="55">1</text>
+    <text x="50" y="95">0</text><text x="90" y="95">1</text><text x="130" y="95">3</text><text x="170" y="95">2</text>
+    <text x="50" y="135">2</text><text x="90" y="135">1</text><text x="130" y="135">0</text><text x="170" y="135">0</text>
+    <text x="50" y="175">1</text><text x="90" y="175">0</text><text x="130" y="175">2</text><text x="170" y="175">1</text>
+  </g>
+
+  <text x="290" y="18" fill="#bc8cff" font-size="12" text-anchor="middle">kernel 3×3</text>
+  <g font-size="13" fill="#bc8cff">
+    <g stroke="#bc8cff" fill="none">
+      <rect x="245" y="50" width="32" height="32"/><rect x="277" y="50" width="32" height="32"/><rect x="309" y="50" width="32" height="32"/>
+      <rect x="245" y="82" width="32" height="32"/><rect x="277" y="82" width="32" height="32"/><rect x="309" y="82" width="32" height="32"/>
+      <rect x="245" y="114" width="32" height="32"/><rect x="277" y="114" width="32" height="32"/><rect x="309" y="114" width="32" height="32"/>
+    </g>
+    <text x="258" y="71">1</text><text x="290" y="71">0</text><text x="322" y="71">1</text>
+    <text x="258" y="103">0</text><text x="290" y="103">1</text><text x="322" y="103">0</text>
+    <text x="258" y="135">1</text><text x="290" y="135">0</text><text x="322" y="135">1</text>
+  </g>
+
+  <text x="375" y="110" fill="#3fb950" font-size="22">→</text>
+
+  <!-- computation -->
+  <g font-size="12" fill="#9aa7b4">
+    <text x="410" y="60">คูณตรงช่อง แล้วบวก:</text>
+    <text x="410" y="82" fill="#e6edf3">1·1 + 2·0 + 0·1</text>
+    <text x="410" y="100" fill="#e6edf3">+ 0·0 + 1·1 + 3·0</text>
+    <text x="410" y="118" fill="#e6edf3">+ 2·1 + 1·0 + 0·1</text>
+    <text x="410" y="140" fill="#56d4dd">= 1+1+2 = 4</text>
+  </g>
+
+  <text x="640" y="60" fill="#e6edf3" font-size="12" text-anchor="middle">output</text>
+  <rect x="615" y="72" width="44" height="44" fill="#0f1f17" stroke="#3fb950" stroke-width="2"/>
+  <text x="637" y="100" fill="#7ee787" font-size="16" text-anchor="middle">4</text>
+  <text x="637" y="138" fill="#9aa7b4" font-size="10" text-anchor="middle">มุมซ้ายบน</text>
+</svg>
+</div>
+<p>แล้ว <b>เลื่อน kernel</b> ไปขวา/ลง ทำซ้ำทุกตำแหน่ง → ได้ output map ใหม่ (เรียก <b>feature map</b>) · input 4×4 กับ kernel 3×3 (ไม่ pad) → output 2×2</p>
+<div class="eq">
+output[i,j] = Σ (patch ที่ตำแหน่ง i,j × kernel)
+<span class="lbl">เลื่อน kernel ทุกตำแหน่ง คำนวณซ้ำ — "kernel ชุดเดียว ใช้ทั้งภาพ" (weight sharing)</span>
+</div>
+<div class="why"><b>จุดสำคัญ:</b> kernel เล็ก (เช่น 3×3 = 9 ตัวเลข) แต่ใช้กับทั้งภาพ → พารามิเตอร์น้อยมากเทียบ FC · และเพราะมันดู "หน้าต่างรอบ ๆ จุด" มันจึงจับความสัมพันธ์เชิงพื้นที่ได้</div>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. Filter เรียนรู้อะไร — จากขอบสู่ pattern</h2>
+<p>ค่าใน kernel <b>ไม่ได้ตั้งเอง — โมเดลเรียนรู้เอง</b> ผ่าน gradient descent (0.3) · filter ต่าง ๆ จะเรียนตรวจจับสิ่งต่างกัน:</p>
+<ul>
+<li><b>ชั้นต้น:</b> ตรวจจับของพื้นฐาน — ขอบ, เส้น, การไล่ระดับ (เช่น "ฝุ่นเปลี่ยนเข้มฉับพลันตรงไหน")</li>
+<li><b>ชั้นลึก:</b> ประกอบของพื้นฐานเป็น pattern ซับซ้อน — "กลุ่มควันรูปลิ้น", "แนวควันตามหุบเขา"</li>
+</ul>
+<p>เรามี <b>หลาย filter ต่อชั้น</b> (เช่น 64 อัน) แต่ละอันจับ pattern คนละแบบ → ได้ feature map 64 ชั้น</p>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. Hyperparameters: kernel size / stride / padding</h2>
+<table>
+<tr><th>พารามิเตอร์</th><th>คืออะไร</th><th>ผล</th></tr>
+<tr><td><b>kernel size</b></td><td>ขนาดหน้าต่าง (3×3, 5×5)</td><td>ใหญ่ = เห็นบริบทกว้างขึ้นต่อชั้น แต่พารามิเตอร์มากขึ้น</td></tr>
+<tr><td><b>stride</b></td><td>เลื่อนทีละกี่ช่อง</td><td>stride 2 = กระโดดทีละ 2 → output เล็กลงครึ่ง (ย่อภาพ)</td></tr>
+<tr><td><b>padding</b></td><td>เติมขอบ (มักเติม 0)</td><td>"same" = output ขนาดเท่า input · "valid" = ไม่เติม output เล็กลง</td></tr>
+</table>
+<div class="eq" style="font-size:15px">
+output size = (W + 2·padding − kernel) / stride + 1
+<span class="lbl">เช่น W=4, kernel=3, pad=0, stride=1 → (4−3)/1+1 = 2 ✓ (ตรงกับตัวอย่างส่วน 2)</span>
+</div>
+<div class="why"><b>เชื่อมกับงานเรา:</b> เรามักใช้ <b>padding="same"</b> เพื่อให้แผนที่ output ขนาดเท่า input (กริด 85×105 เข้า → 85×105 ออก) เพราะเราพยากรณ์ฝุ่นทุกจุดบนกริดเดิม</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. Channels &amp; Feature Maps — มิติที่ซ่อนอยู่</h2>
+<p>จาก 0.1: ภาพจริงไม่ใช่แค่ 2D แต่มี <b>channel</b> · รูปสีมี 3 channel (R,G,B) · convolution ทำงานบนทุก channel พร้อมกัน</p>
+<div class="eq" style="font-size:15px">
+Conv2d: (batch, <b style="color:#58a6ff">C_in</b>, H, W) → (batch, <b style="color:#3fb950">C_out</b>, H', W')
+<span class="lbl">C_in = channel เข้า · C_out = จำนวน filter = channel ออก · (รูปแบบ tensor จาก 0.1)</span>
+</div>
+<div class="ex"><b>★ Channels ใน HazeNet คืออะไร:</b> input channel ของเราคือ <b>ตัวแปรต่าง ๆ ที่ซ้อนเป็นแผนที่</b>:
+<pre style="margin-top:6px"><code>x.shape = (batch, <span class="nm">6</span>, <span class="nm">85</span>, <span class="nm">105</span>)
+          <span class="cm">#  6 channel = [PM2.5, wind_u, wind_v, temp, humidity, AOD]</span></code></pre>
+convolution จะมองทุกตัวแปรพร้อมกันที่แต่ละจุด → เรียนรู้ว่า "ฝุ่น+ลมแรง+อุณหภูมิแบบนี้ → ชั่วโมงหน้าฝุ่นจะเป็นยังไง" · output channel คือ feature ที่โมเดลสกัดได้</div>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. Receptive Field — "นิวรอนหนึ่งตัวมองได้ไกลแค่ไหน" <span class="pin">★★ สำคัญสุดของบท</span></h2>
+<p><b>receptive field (RF)</b> = พื้นที่บน input ที่มีผลต่อ output 1 จุด · kernel 3×3 ชั้นเดียว → RF = 3×3 (เห็นแค่เพื่อนบ้านติดกัน) · <b>แต่พอซ้อนหลายชั้น RF จะโตขึ้นเรื่อย ๆ</b></p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 640 200" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <text x="320" y="16" fill="#e6edf3" font-size="12" text-anchor="middle">ยิ่งซ้อนชั้น receptive field ยิ่งกว้าง</text>
+  <!-- layer 1 -->
+  <text x="90" y="40" fill="#3fb950" font-size="11" text-anchor="middle">1 ชั้น conv 3×3</text>
+  <g stroke="#30363d" fill="none">
+    <rect x="40" y="50" width="100" height="100"/>
+    <line x1="60" y1="50" x2="60" y2="150"/><line x1="80" y1="50" x2="80" y2="150"/><line x1="100" y1="50" x2="100" y2="150"/><line x1="120" y1="50" x2="120" y2="150"/>
+    <line x1="40" y1="70" x2="140" y2="70"/><line x1="40" y1="90" x2="140" y2="90"/><line x1="40" y1="110" x2="140" y2="110"/><line x1="40" y1="130" x2="140" y2="130"/>
+  </g>
+  <rect x="60" y="70" width="60" height="60" fill="rgba(63,185,80,0.25)" stroke="#3fb950" stroke-width="2"/>
+  <text x="90" y="170" fill="#9aa7b4" font-size="10" text-anchor="middle">RF = 3×3</text>
+
+  <!-- layer 2 -->
+  <text x="250" y="40" fill="#58a6ff" font-size="11" text-anchor="middle">2 ชั้น</text>
+  <g stroke="#30363d" fill="none">
+    <rect x="200" y="50" width="100" height="100"/>
+    <line x1="220" y1="50" x2="220" y2="150"/><line x1="240" y1="50" x2="240" y2="150"/><line x1="260" y1="50" x2="260" y2="150"/><line x1="280" y1="50" x2="280" y2="150"/>
+    <line x1="200" y1="70" x2="300" y2="70"/><line x1="200" y1="90" x2="300" y2="90"/><line x1="200" y1="110" x2="300" y2="110"/><line x1="200" y1="130" x2="300" y2="130"/>
+  </g>
+  <rect x="220" y="70" width="80" height="80" fill="rgba(88,166,255,0.22)" stroke="#58a6ff" stroke-width="2"/>
+  <text x="250" y="170" fill="#9aa7b4" font-size="10" text-anchor="middle">RF = 5×5</text>
+
+  <!-- layer many -->
+  <text x="470" y="40" fill="#f85149" font-size="11" text-anchor="middle">ต้องซ้อน "หลายสิบชั้น"</text>
+  <g stroke="#30363d" fill="none">
+    <rect x="400" y="50" width="140" height="100"/>
+  </g>
+  <rect x="402" y="52" width="136" height="96" fill="rgba(248,81,73,0.16)" stroke="#f85149" stroke-width="2"/>
+  <text x="470" y="105" fill="#f85149" font-size="11" text-anchor="middle">เพื่อให้เห็น "ไกล"</text>
+  <text x="470" y="170" fill="#9aa7b4" font-size="10" text-anchor="middle">RF กว้าง = แพง (ชั้นเยอะ)</text>
+</svg>
+</div>
+<p>กฎคร่าว ๆ: ซ้อน conv 3×3 จำนวน L ชั้น → RF ≈ <code>2L+1</code> · จะเห็นไกล 50 ช่อง ต้องซ้อน ~25 ชั้น (ถ้าไม่ใช้ pooling) = ลึกและแพง</p>
+
+<div class="ex"><b>★★ นี่คือจุดเชื่อมที่สำคัญที่สุดของทั้งบท:</b><br>
+ควันข้ามแดนเดินทาง <b>หลายร้อยกิโลเมตร</b> — บนกริด 11 กม. = หลายสิบช่อง · ฝุ่นที่เชียงใหม่<u>วันนี้</u>ขึ้นกับไฟที่เมียนมา<u>ไกลออกไปมาก</u> · CNN ธรรมดาต้องซ้อนชั้นมหาศาลเพื่อ "มองไกล" พอ = แพงและเทรนยาก<br><br>
+<b>นี่คือเหตุผลโดยตรงที่ design เราเป็นแบบนั้น:</b>
+<ul style="margin:6px 0">
+<li><b>AFNO (หัวข้อ 3.2)</b> ทำงานในโดเมนความถี่ → มี receptive field <b>ทั่วทั้งภาพในชั้นเดียว</b> (global) ไม่ต้องซ้อนเยอะ → แก้ปัญหา RF ของ CNN</li>
+<li><b>Advection (หัวข้อ 2.2)</b> = ฟิสิกส์ขนส่งฝุ่นระยะไกลตามลม<u>โดยตรง</u> → ไม่ต้องให้เน็ตเรียนการเคลื่อนที่ไกล ๆ เอง</li>
+</ul>
+สรุป: <b>ข้อจำกัด receptive field ของ CNN = แรงผลักดันให้เราผสม Fourier + ฟิสิกส์</b> · ตอนนี้คุณเข้าใจ "ทำไม" ของสถาปัตยกรรมเราแล้ว</div>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. Pooling — ย่อภาพเพื่อมองกว้างขึ้น (และประหยัด)</h2>
+<p><b>pooling</b> = ยุบหน้าต่าง (เช่น 2×2) ให้เหลือค่าเดียว → ภาพเล็กลงครึ่ง · ช่วยให้ RF โตเร็วขึ้นและลดการคำนวณ</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 420 150" width="72%" xmlns="http://www.w3.org/2000/svg">
+  <text x="90" y="18" fill="#e6edf3" font-size="12" text-anchor="middle">input 4×4</text>
+  <g font-size="12" fill="#e6edf3" stroke="#30363d">
+    <rect x="30" y="28" width="120" height="120" fill="none"/>
+    <line x1="60" y1="28" x2="60" y2="148"/><line x1="90" y1="28" x2="90" y2="148"/><line x1="120" y1="28" x2="120" y2="148"/>
+    <line x1="30" y1="58" x2="150" y2="58"/><line x1="30" y1="88" x2="150" y2="88"/><line x1="30" y1="118" x2="150" y2="118"/>
+  </g>
+  <!-- highlight one 2x2 -->
+  <rect x="30" y="28" width="60" height="60" fill="rgba(227,179,65,0.18)" stroke="#e3b341" stroke-width="2"/>
+  <g font-size="12" fill="#e6edf3"><text x="42" y="48">1</text><text x="72" y="48">3</text><text x="42" y="78">2</text><text x="72" y="78">0</text></g>
+  <text x="200" y="92" fill="#e3b341" font-size="11" text-anchor="middle">max</text>
+  <text x="200" y="78" fill="#3fb950" font-size="20" text-anchor="middle">→</text>
+  <text x="300" y="18" fill="#e6edf3" font-size="12" text-anchor="middle">output 2×2</text>
+  <g stroke="#3fb950" fill="none"><rect x="260" y="48" width="80" height="80"/><line x1="300" y1="48" x2="300" y2="128"/><line x1="260" y1="88" x2="340" y2="88"/></g>
+  <text x="280" y="74" fill="#7ee787" font-size="13">3</text>
+  <text x="300" y="140" fill="#9aa7b4" font-size="10" text-anchor="middle">max ของ {1,3,2,0} = 3</text>
+</svg>
+</div>
+<p><b>Max pooling</b> เก็บค่าเด่นสุดในหน้าต่าง · <b>Average pooling</b> เฉลี่ย · ทั้งคู่ทำให้ภาพเล็กลง → ชั้นถัด ๆ ไป "เห็นกว้าง" ขึ้นต่อ kernel เดิม</p>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. CNN Stack ทั่วไป + โค้ด PyTorch</h2>
+<p>CNN จริงคือการซ้อน block <code>conv → activation → (pool)</code> หลาย ๆ ชั้น</p>
+<pre><code><span class="kw">import</span> torch.nn <span class="kw">as</span> nn
+
+<span class="kw">class</span> <span class="fn">SmallCNN</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        <span class="fn">super</span>().__init__()
+        <span class="cm"># Conv2d(in_channels, out_channels, kernel_size, padding)</span>
+        self.conv1 = nn.Conv2d(<span class="nm">6</span>, <span class="nm">32</span>, <span class="nm">3</span>, padding=<span class="nm">1</span>)   <span class="cm"># 6 ตัวแปร → 32 feature</span>
+        self.conv2 = nn.Conv2d(<span class="nm">32</span>, <span class="nm">32</span>, <span class="nm">3</span>, padding=<span class="nm">1</span>)
+        self.out   = nn.Conv2d(<span class="nm">32</span>, <span class="nm">1</span>, <span class="nm">3</span>, padding=<span class="nm">1</span>)    <span class="cm"># → แผนที่ฝุ่น 1 channel</span>
+
+    <span class="kw">def</span> <span class="fn">forward</span>(self, x):                 <span class="cm"># x: (batch, 6, 85, 105)</span>
+        x = torch.relu(self.conv1(x))      <span class="cm"># (batch, 32, 85, 105)</span>
+        x = torch.relu(self.conv2(x))      <span class="cm"># padding=1 → ขนาดคงเดิม</span>
+        x = self.out(x)                    <span class="cm"># (batch, 1, 85, 105)</span>
+        <span class="kw">return</span> x</code></pre>
+<p>สังเกต <code>padding=1</code> กับ kernel 3 → output ขนาดเท่าเดิม (same) · เทรนด้วยวงจร 5 ขั้นจาก 0.2 ได้เลย</p>
+<div class="why"><b>เชื่อมกับงานเรา:</b> นี่คือ "baseline CNN" ที่เราจะเทียบในการทดลอง (E1 ในแผน master) · และ <b>U-Net (หัวข้อ 3.3)</b> ก็สร้างจาก conv block แบบนี้ แค่เพิ่มโครง encoder-decoder + skip connection</div>
+
+<!-- ============ 9 ============ -->
+<h2 id="p9">9. ★ สรุปเชื่อม HazeNet — ทำไม CNN อย่างเดียวไม่พอ</h2>
+<table>
+<tr><th>คุณสมบัติ CNN</th><th>ดีต่อเรายังไง</th><th>ข้อจำกัด → เราแก้ด้วย</th></tr>
+<tr><td>local + weight sharing</td><td>จับ pattern เชิงพื้นที่ พารามิเตอร์น้อย</td><td>—</td></tr>
+<tr><td>translation-equivariant<br>(เลื่อนภาพ output เลื่อนตาม)</td><td>เหมาะกับฟิสิกส์ที่เหมือนกันทุกที่</td><td>—</td></tr>
+<tr><td><b>receptive field จำกัด</b></td><td>—</td><td><b>AFNO</b> (global RF) + <b>advection</b> (ขนส่งไกล)</td></tr>
+<tr><td>มองทุกอย่างเป็นภาพ</td><td>รวมหลายตัวแปรเป็น channel ได้</td><td>เพิ่ม physics เพื่อไม่ต้องเรียนการเคลื่อนที่จากศูนย์</td></tr>
+</table>
+<div class="ex"><b>ภาพใหญ่ที่ควรจำออกจากบทนี้:</b> CNN คือ "เครื่องมือพื้นฐานเห็นภาพ" ที่ดีและเป็นฐานของ U-Net · แต่ปัญหาของเรา (ควันเดินทางไกล) เกินกำลัง CNN ล้วน → เราจึงผสม <b>Fourier (AFNO) + ฟิสิกส์ (advection)</b> เข้าไป · <b>การเข้าใจ CNN ทำให้คุณเข้าใจว่าแต่ละชิ้นใน design เราแก้ปัญหาอะไร ไม่ใช่ใส่มั่ว</b></div>
+
+<!-- ============ CHEAT ============ -->
+<h2 id="cheat">10. Cheat Sheet + แบบฝึกหัด</h2>
+<div class="card">
+<table>
+<tr><th>เรื่อง</th><th>จุดสำคัญ</th></tr>
+<tr><td>convolution</td><td>kernel เล็กเลื่อนทั่วภาพ คูณ-บวก · weight sharing → พารามิเตอร์น้อย</td></tr>
+<tr><td>output size</td><td><code>(W+2p−k)/s + 1</code> · ใช้ padding="same" คงขนาด</td></tr>
+<tr><td>channels</td><td><code>(batch, C_in, H, W) → (batch, C_out, H, W)</code> · C_in = ตัวแปรเรา</td></tr>
+<tr><td>receptive field</td><td>โตตามความลึก · CNN เห็นไกลได้ยาก → AFNO/advection ช่วย</td></tr>
+<tr><td>pooling</td><td>ย่อภาพ → RF โตเร็ว + ประหยัด</td></tr>
+<tr><td>PyTorch</td><td><code>nn.Conv2d(in, out, k, padding=...)</code></td></tr>
+</table>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด</p>
+<ol>
+<li>input 32×32 · kernel 5×5 · padding 0 · stride 1 → output ขนาดเท่าไร?</li>
+<li>ทำไม CNN ใช้พารามิเตอร์น้อยกว่า FC มาก?</li>
+<li><code>nn.Conv2d(6, 64, 3)</code> — ตัวเลข 6 กับ 64 หมายถึงอะไร?</li>
+<li>"receptive field" คืออะไร และทำไมมันเป็นปัญหากับควันข้ามแดน?</li>
+<li>เราแก้ปัญหา receptive field ของ CNN ด้วย 2 อย่างอะไรใน HazeNet?</li>
+</ol>
+<details>
+<summary style="cursor:pointer;color:var(--cyan)">▶ เฉลย</summary>
+<ol style="margin-top:8px">
+<li><code>(32−5)/1+1 = 28</code> → output 28×28</li>
+<li>weight sharing (kernel ชุดเดียวใช้ทั้งภาพ) + local (มองหน้าต่างเล็ก ไม่เชื่อมทุกจุด)</li>
+<li>6 = input channels (ตัวแปรเข้า) · 64 = output channels (จำนวน filter = feature ที่สกัด)</li>
+<li>พื้นที่บน input ที่มีผลต่อ output 1 จุด · ควันข้ามแดนเดินไกลหลายร้อย กม. CNN ต้องซ้อนชั้นมหาศาลถึงจะ "เห็น" ต้นทางได้ = แพง</li>
+<li>AFNO (receptive field ทั่วภาพในชั้นเดียว) + advection (ฟิสิกส์ขนส่งระยะไกลโดยตรง)</li>
+</ol>
+</details>
+</div>
+
+<hr>
+<div class="lead">
+<b>จบ 0.5 และจบโมดูล 0 อย่างสมบูรณ์! 🎉</b> คุณมีพื้นฐานครบ: tensor (0.1) · เทรนโมเดล (0.2) · optimization (0.3) · แบ่งข้อมูล (0.4) · CNN (0.5)<br><br>
+<b>ที่สำคัญ:</b> ตอนนี้คุณเข้าใจ "ทำไม" ของสถาปัตยกรรม HazeNet แล้ว — receptive field ที่จำกัดของ CNN คือเหตุผลที่เราต้อง AFNO + ฟิสิกส์<br><br>
+<b>ขั้นต่อไป:</b> เข้าสู่ <b>โมดูล 1 — โดเมนปัญหา</b> เริ่มที่ <b>1.1 PM2.5 / AOD / FRP คืออะไร</b> (เห็นข้อมูลจริงของเราเป็นครั้งแรก) หรือถ้าอยากลุยสถาปัตยกรรมต่อเลยก็กระโดดไป <b>3.3 U-Net</b> ได้ (พื้นฐาน CNN พอแล้ว)
+</div>
+
+<p class="center muted">HazeNet · Knowledge · 0.5 CNN Basics · — จบโมดูล 0 พื้นฐาน ML —</p>
+
+</div>
+</body>
+</html>

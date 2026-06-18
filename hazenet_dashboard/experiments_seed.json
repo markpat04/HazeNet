@@ -1,0 +1,38 @@
+[
+  {
+    "exp": "Phase0", "model": "mean predictor", "domain": "Chiang Mai 16x21",
+    "split": "temporal (last 3 days)", "MAE": 59.8, "RMSE": 98.3,
+    "tag": "baseline", "note": "floor baseline"
+  },
+  {
+    "exp": "Phase0", "model": "XGBoost", "domain": "Chiang Mai 16x21",
+    "split": "temporal", "MAE": 32.4, "RMSE": 57.2,
+    "tag": "baseline", "note": "tabular ML"
+  },
+  {
+    "exp": "Phase0", "model": "MLP", "domain": "Chiang Mai 16x21",
+    "split": "temporal", "MAE": 36.0, "RMSE": 46.9,
+    "tag": "baseline", "note": "GPU"
+  },
+  {
+    "exp": "Phase0", "model": "CLNO (ours)", "domain": "Chiang Mai 16x21",
+    "split": "temporal", "MAE": 28.1, "RMSE": 36.7,
+    "tag": "ours", "note": "best on both — attribution + inversion work"
+  },
+  {
+    "exp": "M2", "model": "CLNOLowRank r32", "domain": "SEA 111x101",
+    "split": "year (test 2023)", "MAE": 55.0, "RMSE": 81.5,
+    "tag": "ours", "note": "domain 33x larger; attribution map OK; inversion r=-0.04"
+  },
+  {
+    "exp": "M2r2", "model": "CLNOGlobalV r16 (6 met ch)", "domain": "SEA 111x101",
+    "split": "3-way (val 2022 / test 2023)", "MAE": 73.9, "RMSE": null,
+    "tag": "ours", "note": "median per-station MAE 45.4; mean dragged by few broken stations"
+  },
+  {
+    "exp": "LOYO", "model": "per-year bias diagnosis", "domain": "SEA 111x101",
+    "split": "leave-one-year-out", "MAE": null, "RMSE": null,
+    "tag": "diagnosis",
+    "note": "KEY FINDING: low-PM years (2021,2022) over-predicted +45~50; 2023 bias only -2. core issue = non-stationary FRP->PM2.5"
+  }
+]

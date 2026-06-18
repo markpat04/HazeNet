@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HazeCast — แผนโปรเจกต์ GeoAI พยากรณ์ฝุ่น PM2.5 ภาคเหนือ + ระบุแหล่งควัน</title>
+<style>
+  :root{
+    --bg:#0c0f14; --card:#151b24; --card2:#1b232e; --ink:#e6edf3; --muted:#9aa7b4; --dim:#6b7785;
+    --line:#252e3a; --green:#76b900; --green-d:#5a8c00; --green-soft:rgba(118,185,0,.12);
+    --blue:#4aa3ff; --blue-soft:rgba(74,163,255,.12); --orange:#ff9f43; --orange-soft:rgba(255,159,67,.12);
+    --purple:#b984ff; --purple-soft:rgba(185,132,255,.12); --red:#ff6b6b; --red-soft:rgba(255,107,107,.12);
+    --cyan:#36d6c3; --cyan-soft:rgba(54,214,195,.12);
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:"Segoe UI","Sarabun","Tahoma",sans-serif; line-height:1.74; font-size:16px;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 18px;}
+  header.hero{background:radial-gradient(1000px 420px at 18% -10%,rgba(255,159,67,.16),transparent),linear-gradient(160deg,#0c0f14,#10151c); border-bottom:1px solid var(--line); padding:44px 20px 34px;}
+  .badge{display:inline-block; background:var(--orange-soft); color:var(--orange); border:1px solid rgba(255,159,67,.4); padding:4px 13px; border-radius:20px; font-size:13px; font-weight:600; margin:0 6px 12px 0;}
+  .badge.g{background:var(--green-soft); color:var(--green); border-color:var(--green-d);}
+  header.hero h1{margin:0 0 8px; font-size:30px; line-height:1.3;}
+  header.hero .sub{color:var(--muted); font-size:17px; margin:0;}
+  nav{position:sticky; top:0; z-index:30; background:rgba(12,15,20,.93); backdrop-filter:blur(6px); border-bottom:1px solid var(--line);}
+  nav .wrap{display:flex; flex-wrap:wrap; gap:5px; padding:9px 18px;}
+  nav a{text-decoration:none; color:var(--muted); font-size:12.5px; padding:5px 9px; border-radius:7px; white-space:nowrap;}
+  nav a:hover{background:var(--orange-soft); color:var(--orange);}
+  section{padding:30px 0 6px;}
+  h2{font-size:23px; margin:0 0 6px; display:flex; align-items:center; gap:11px;}
+  h2 .n{background:var(--orange); color:#0c0f14; min-width:34px; height:34px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; font-size:15px; font-weight:800; flex:none;}
+  h3{font-size:18px; margin:22px 0 6px; color:#fff;}
+  h4{font-size:15px; margin:14px 0 4px; color:var(--cyan);}
+  p{margin:8px 0;} .lead{color:var(--muted); font-size:16.5px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 22px; margin:15px 0;}
+  .grid{display:grid; gap:14px;} .g2{grid-template-columns:1fr 1fr;} .g3{grid-template-columns:1fr 1fr 1fr;}
+  @media(max-width:780px){.g2,.g3{grid-template-columns:1fr;}}
+  table{border-collapse:collapse; width:100%; font-size:14px; margin:10px 0; border-radius:10px; overflow:hidden;}
+  th,td{border:1px solid var(--line); padding:8px 11px; text-align:left; vertical-align:top;}
+  th{background:#1c2530; color:#fff; font-weight:600;} td{background:var(--card);}
+  tr:hover td{background:var(--card2);}
+  .note{border-left:3px solid var(--orange); background:var(--orange-soft); padding:12px 16px; border-radius:9px; margin:13px 0;}
+  .note.g{border-color:var(--green); background:var(--green-soft);}
+  .note.b{border-color:var(--blue); background:var(--blue-soft);}
+  .note.r{border-color:var(--red); background:var(--red-soft);}
+  .note.p{border-color:var(--purple); background:var(--purple-soft);}
+  .label{font-size:11.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--dim); margin-bottom:5px;}
+  ul,ol{margin:8px 0; padding-left:20px;} li{margin:5px 0;}
+  svg{max-width:100%; height:auto; display:block; margin:8px auto;}
+  .cap{text-align:center; color:var(--dim); font-size:13px; margin-top:2px;}
+  code{background:#0a0d12; border:1px solid var(--line); padding:1px 6px; border-radius:5px; font-size:13.5px; color:var(--cyan);}
+  .eq{background:#0a0d12; border:1px solid var(--line); border-left:3px solid var(--green); border-radius:10px; padding:14px 18px; margin:12px 0; font-size:17px; color:#f0f4f8; overflow-x:auto;}
+  .eq .lbl{display:block; color:var(--dim); font-size:12.5px; margin-top:6px; font-style:italic;}
+  .stat{font-size:26px; font-weight:800; color:var(--orange); line-height:1.15;}
+  .statlbl{color:var(--muted); font-size:12.5px;}
+  .kill{text-decoration:line-through; color:var(--dim);}
+  .vs{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  @media(max-width:680px){.vs{grid-template-columns:1fr;}}
+  .atk{background:var(--red-soft); border:1px solid rgba(255,107,107,.3); border-radius:12px; padding:15px 18px; margin:12px 0;}
+  .atk .ahead{color:var(--red); font-weight:700; font-size:14.5px;}
+  .fix{background:var(--green-soft); border:1px solid rgba(118,185,0,.3); border-radius:12px; padding:15px 18px; margin:12px 0;}
+  .fix .fhead{color:var(--green); font-weight:700; font-size:14.5px;}
+  .miniflow{display:flex; align-items:stretch; gap:7px; flex-wrap:wrap; margin:12px 0;}
+  .step{background:var(--card2); border:1px solid var(--line); border-radius:10px; padding:9px 12px; flex:1; min-width:118px; text-align:center; font-size:13px;}
+  .step b{display:block; color:var(--cyan); margin-bottom:2px; font-size:12.5px;}
+  .arrow{display:flex; align-items:center; color:var(--dim); font-size:19px;}
+  @media(max-width:600px){.arrow{transform:rotate(90deg);}}
+  footer{padding:26px 18px 50px; color:var(--dim); font-size:13px; border-top:1px solid var(--line); margin-top:24px;}
+  .anchor{scroll-margin-top:58px;}
+  .src{font-size:13px; color:var(--muted);} .src a{color:var(--blue);}
+  .num-good{color:var(--green); font-weight:700;}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="badge">🎯 โปรเจกต์ใหม่ · เป้าหมายเหรียญทอง</span>
+    <span class="badge g">⏱ 2 เดือน · 1× A100 (Colab Pro) · Open Data เท่านั้น</span>
+    <h1>🔥 HazeCast — พยากรณ์ฝุ่น PM2.5 ภาคเหนือล่วงหน้า 48 ชม. + ระบุว่า "ควันมาจากไหน"</h1>
+    <p class="sub">AI Emulator ของแบบจำลองการเคลื่อนตัวของควันไฟ (chemical transport) ที่เร็วระดับวินาที
+    ขับเคลื่อนด้วยจุดความร้อนจากดาวเทียม + ลม + AOD รายชั่วโมง — สิ่งที่สถานีวัดและโมเดลฟิสิกส์ทำไม่ได้ภายใต้ข้อจำกัดจริงของไทย</p>
+  </div>
+</header>
+
+<nav>
+  <div class="wrap">
+    <a href="#tldr">สรุป 60 วิ</a>
+    <a href="#funnel">ทำไมเลือกปัญหานี้</a>
+    <a href="#pain">Pain + สถิติ</a>
+    <a href="#why-geoai">ฆ่าวิธีง่าย</a>
+    <a href="#gap">ช่องว่าง vs งานเดิม</a>
+    <a href="#product">ตัวโปรดักต์</a>
+    <a href="#design">System Design</a>
+    <a href="#data">ข้อมูล</a>
+    <a href="#eval">การทดลอง</a>
+    <a href="#plan">แผน 8 สัปดาห์</a>
+    <a href="#critique">บันทึกการโจมตีแผน</a>
+    <a href="#gold">เทียบเกณฑ์เหรียญทอง</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- ============ TLDR ============ -->
+<section id="tldr" class="anchor">
+  <h2><span class="n">0</span> สรุปทั้งแผนใน 60 วินาที</h2>
+  <div class="card">
+    <p class="lead"><b>ปัญหา:</b> ทุกปี ก.พ.–เม.ย. ภาคเหนือจมฝุ่นควันไฟป่า/เผาเกษตร เชียงใหม่ขึ้นอันดับ 1 เมืองอากาศแย่ที่สุดในโลกซ้ำ ๆ
+    ควันส่วนใหญ่<b>ลอยข้ามแดนมาจากเมียนมา/ลาว</b> — ระบบปัจจุบันบอกได้แค่ "ตอนนี้ฝุ่นเท่าไหร่" แต่<b>บอกไม่ได้ว่าพรุ่งนี้-มะรืนจะหนักแค่ไหน และควันมาจากไหน</b></p>
+    <p class="lead"><b>โซลูชัน:</b> สร้าง AI จำลองการ "เกิด-ลอย-สลาย" ของควันบนกริดแผนที่ 0.1° (~10 กม.)
+    โดยใช้พิมพ์เขียวเดียวกับงานเหรียญทอง (AI emulator + physics advection + rolling + วัดผลเป็นระบบ) แต่เปลี่ยนโดเมนจาก "อากาศ" เป็น "ควันไฟ" ซึ่ง<b>ฟิสิกส์ advection ยิ่งตรงกว่าเดิม</b> (ควันคือสิ่งที่ถูกลมพาไปจริง ๆ)</p>
+    <div class="miniflow">
+      <div class="step"><b>เข้า</b>จุดไฟ (ดาวเทียม) + ลม/อุตุฯ + AOD + ฝุ่นปัจจุบัน</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>Stage A</b>Fusion สร้างแผนที่ฝุ่น "ตอนนี้" จากหลายแหล่ง</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>Stage B</b>Forecast: ลมพาควัน (ฟิสิกส์) + NN เติมเกิด/สลาย วน 48 ชม.</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>Stage C</b>Smoke Fingerprint: ควันเซลล์นี้มาจากแหล่งไหน %</div>
+    </div>
+    <div class="grid g3" style="margin-top:12px">
+      <div class="card" style="margin:0;text-align:center"><div class="stat">48 ชม.</div><div class="statlbl">พยากรณ์ล่วงหน้า รายชั่วโมง รายตำบล</div></div>
+      <div class="card" style="margin:0;text-align:center"><div class="stat">~10 กม.</div><div class="statlbl">ละเอียดกว่า CAMS (~40 กม.) 4 เท่า</div></div>
+      <div class="card" style="margin:0;text-align:center"><div class="stat">วินาที</div><div class="statlbl">แทน WRF-Chem ที่ใช้คลัสเตอร์รันเป็นชั่วโมง</div></div>
+    </div>
+    <div class="note g" style="margin-top:12px"><b>ทำไมตอนนี้คือจังหวะทอง:</b> ม.ค. 2026 ไทย–ลาว–เมียนมา เพิ่งลงนามแผนปฏิบัติการ 2026–2027
+    ใช้ดาวเทียมร่วมกันสู้หมอกควันข้ามแดน — รัฐบาล 3 ประเทศประกาศว่า "ต้องการเครื่องมือแบบนี้" แต่<b>ยังไม่มีใครสร้างตัวพยากรณ์ AI ที่ใช้งานได้จริง</b></div>
+  </div>
+</section>
+
+<!-- ============ FUNNEL ============ -->
+<section id="funnel" class="anchor">
+  <h2><span class="n">1</span> กระบวนการเลือกปัญหา — ฆ่าทิ้ง 7 ตัวเลือกอย่างไร้ความปรานี</h2>
+  <p class="lead">ผมไม่ได้เลือกฝุ่นเพราะชอบ แต่เพราะอีก 7 ตัวเลือกตายด้วยเกณฑ์ใดเกณฑ์หนึ่ง:
+  สถิติ pain ไม่แรงพอ / มีคนทำดีอยู่แล้ว / ข้อมูล open ไม่พอ / 2 เดือนไม่ทัน / ไม่จำเป็นต้องใช้ GeoAI</p>
+  <table>
+    <tr><th>ตัวเลือก</th><th>เหตุผลที่ถูกฆ่า</th></tr>
+    <tr><td class="kill">แผนที่น้ำท่วม (flood mapping)</td><td>สนามแดงเดือด — UNOSAT FloodAI, GISTDA ทำ operational อยู่แล้ว ใน 2 เดือนแทบเป็นไปไม่ได้ที่จะ "ชนะของเดิม" อย่างเห็นได้ชัด</td></tr>
+    <tr><td class="kill">แผ่นดินทรุดกรุงเทพฯ (InSAR)</td><td>ไม่มี InSAR time series สำเร็จรูปครอบคลุมไทย (EGMS มีแค่ยุโรป) — ต้องประมวลผล SLC stack เองหลาย TB กิน CPU มหาศาล ไม่ใช่งาน A100 1 ตัว + ปรากฏการณ์ช้า เดโมไม่เร้าใจใน 2 เดือน</td></tr>
+    <tr><td class="kill">เตือนภัยดินถล่ม/น้ำป่า</td><td>ข้อมูลเรดาร์ฝนของ ทอท./กรมอุตุฯ ไม่ open จริง — ขาดวัตถุดิบหลักตั้งแต่ต้น โซ่ทั้งระบบ (ฝน→ดิน→ถล่ม) กว้างเกิน 2 เดือน</td></tr>
+    <tr><td class="kill">ประเมินความเสียหายพืชผล (ประกันภัย)</td><td>RIICE + GISTDA ทำเชิงปฏิบัติการแล้ว — งานเราจะเป็นแค่ส่วนเพิ่มเล็ก ๆ (incremental)</td></tr>
+    <tr><td class="kill">กัดเซาะชายฝั่ง</td><td>กระบวนการช้าระดับปี — โชว์พลัง "พยากรณ์" ไม่ได้ใน 2 เดือน, CoastSat ครอบพื้นที่นี้แล้วบางส่วน</td></tr>
+    <tr><td class="kill">พยากรณ์ไข้เลือดออก</td><td>สัญญาณหลักอยู่ในข้อมูลผู้ป่วย (time series) ไม่ใช่ภาพดาวเทียม — สอบตกเกณฑ์ "ต้องจำเป็นต้องใช้ GeoAI" ทันที</td></tr>
+    <tr><td class="kill">เกาะความร้อนเมือง (UHI)</td><td>งานส่วนใหญ่เป็น "การทำแผนที่" (อธิบายอดีต) ไม่ใช่พยากรณ์ — ความเร่งด่วน/ความใหม่สู้ฝุ่นไม่ได้</td></tr>
+    <tr><td><b style="color:var(--orange)">✓ หมอกควัน PM2.5 ภาคเหนือ</b></td><td><b>รอดทุกเกณฑ์:</b> สถิติหนัก (§2) · วิธีง่ายแก้ไม่ได้จริง (§3) · ช่องว่างชัด — ไม่มีใครทำ AI forecast เชิงพื้นที่+attribution (§4) · ข้อมูล open ครบ 100% (§7) · โดเมนเล็กพอสำหรับ A100 เดียว · ฟิสิกส์ advection ตรงกับปัญหาแบบเป๊ะ ๆ</td></tr>
+  </table>
+</section>
+
+<!-- ============ PAIN ============ -->
+<section id="pain" class="anchor">
+  <h2><span class="n">2</span> Pain Point — สถิติที่ปฏิเสธไม่ได้</h2>
+  <div class="grid g3">
+    <div class="card" style="text-align:center"><div class="stat">12,671</div><div class="statlbl">ผู้ป่วยทางเดินหายใจ/ภูมิแพ้ <b>ใน รพ. เดียว</b> (มหาราชนครเชียงใหม่) แค่ ม.ค.–มี.ค. 2023</div></div>
+    <div class="card" style="text-align:center"><div class="stat">~1.7 ล้านคน</div><div class="statlbl">ได้รับผลกระทบทั่วประเทศ ตามแถลงรัฐบาล 28 มี.ค. 2023</div></div>
+    <div class="card" style="text-align:center"><div class="stat">223 µg/m³</div><div class="statlbl">ค่า PM2.5 เชียงใหม่ 6 เม.ย. 2023 ≈ 15 เท่าของเกณฑ์ WHO — ขึ้น <b>อันดับ 1 โลก</b> หลายวันติด</div></div>
+    <div class="card" style="text-align:center"><div class="stat">&gt; 5,000 จุด</div><div class="statlbl">hotspots ฝั่งเมียนมาช่วงพีค — ควัน<b>ข้ามแดน</b> มักมากกว่าแหล่งในประเทศ (งานวิจัย WRF-Chem)</div></div>
+    <div class="card" style="text-align:center"><div class="stat">51%</div><div class="statlbl">สัดส่วน PM2.5 จากการเผาเกษตรในเชียงใหม่ช่วง มี.ค.–เม.ย.</div></div>
+    <div class="card" style="text-align:center"><div class="stat">1,850 ล้านบาท</div><div class="statlbl">มูลค่าต้นทุนสุขภาพที่ประหยัดได้ในเชียงใหม่จังหวัดเดียว หากคุมฝุ่นตามมาตรฐานใหม่ 37.5 µg/m³ ได้</div></div>
+  </div>
+  <div class="note r">
+    <b>แก่นของ pain ที่ระบบปัจจุบันไม่ตอบ:</b> Air4Thai/IQAir บอก "ตอนนี้" ได้ดี แต่คำถามที่ประชาชน โรงพยาบาล โรงเรียน
+    และผู้ว่าฯ ต้องการคือ <b>"อีก 24–48 ชม. จะหนักแค่ไหน ที่อำเภอไหน"</b> (เพื่อปิดโรงเรียน เลื่อนกิจกรรมกลางแจ้ง เตรียมเตียง รพ. ประกาศ WFH)
+    และ <b>"ควันมาจากแหล่งไหน"</b> (เพื่อบังคับใช้ห้ามเผาให้ถูกที่ถูกเวลา + เจรจาข้ามแดนด้วยหลักฐาน) — สองคำถามนี้คือสิ่งที่ HazeCast ตอบ
+  </div>
+</section>
+
+<!-- ============ WHY GEOAI ============ -->
+<section id="why-geoai" class="anchor">
+  <h2><span class="n">3</span> "ทำไมต้อง GeoAI?" — เราพยายามฆ่าโปรเจกต์ตัวเองด้วยวิธีง่ายกว่า 4 วิธี แล้วฆ่าไม่ตาย</h2>
+  <p class="lead">เกณฑ์ของคุณ: ถ้าวิธีง่ายกว่าแก้ได้ ไม่ต้องทำ — ผมจึงเอาวิธีง่ายทั้งหมดมาไล่ยิงก่อน</p>
+  <table>
+    <tr><th>วิธีที่ "ง่ายกว่า"</th><th>ทำไมไม่พอ (เหตุผลเชิงโครงสร้าง ไม่ใช่ข้ออ้าง)</th></tr>
+    <tr><td><b>1. LSTM/GBM รายสถานี</b><br>(สิ่งที่งานวิจัยไทยเกือบทั้งหมดทำ)</td><td>
+      • มันเรียนรู้ <b>autocorrelation</b> ของสถานีตัวเอง → ทำนาย "พรุ่งนี้เหมือนวันนี้" ได้แม่นตอนสถานการณ์นิ่ง แต่<b>พลาดตรงจุดเปลี่ยน</b> (onset) ตอนที่ลมเปลี่ยนทิศพาควันก้อนใหม่จากเมียนมาเข้ามา — ซึ่งคือเวลาเดียวที่การเตือนภัยมีค่า<br>
+      • ครอบคลุมเฉพาะ ~จุดที่มีสถานี — อำเภอ/ตำบลส่วนใหญ่ของภาคเหนือไม่มีสถานี<br>
+      • ตอบคำถาม "ควันมาจากไหน" ไม่ได้เลย เพราะไม่มีมิติพื้นที่</td></tr>
+    <tr><td><b>2. ใช้ CAMS forecast ของยุโรปเฉย ๆ</b></td><td>
+      • ความละเอียด ~0.4° (~40 กม.) — ทั้งแอ่งเชียงใหม่เป็นพิกเซลเดียว แยกหุบเขา/เมืองไม่ได้<br>
+      • มี bias ใต้ประมาณค่าพีคในเอเชียตะวันออกเฉียงใต้ช่วง biomass burning (วรรณกรรมยืนยัน)<br>
+      • ไม่ calibrate กับสถานีไทย ไม่มี attribution → ใช้เป็น <b>baseline ให้เราชนะ</b> เหมาะกว่าใช้เป็นคำตอบ</td></tr>
+    <tr><td><b>3. Persistence / ค่าเฉลี่ยฤดูกาล</b></td><td>เจ๊งที่จุดเปลี่ยนเสมอ (วันเริ่ม/วันจบ episode) — เป็น baseline บังคับที่เราต้องรายงานเทียบ</td></tr>
+    <tr><td><b>4. รัน WRF-Chem (ฟิสิกส์เต็ม)</b></td><td>
+      • ต้องใช้คลัสเตอร์ CPU + รันหลายชั่วโมงต่อ 1 พยากรณ์ + emission inventory ที่อัปเดตช้า<br>
+      • นี่คือเหตุผลที่งานวิจัย WRF-Chem ของไทยเป็น "การศึกษาเฉพาะ episode ย้อนหลัง" ไม่ใช่ระบบ operational รายวัน<br>
+      • <b>ช่องว่างนี้คือที่ของเราเป๊ะ ๆ</b> — เหมือนที่ FourCastNet เกิดมาแทน NWP: เรา emulate transport physics ให้รันได้ในวินาทีบน GPU เดียว</td></tr>
+  </table>
+  <div class="note g"><b>ข้อสรุป:</b> ปัญหานี้เป็น <b>spatiotemporal transport problem</b> โดยธรรมชาติ — แหล่งกำเนิด (ไฟ) อยู่คนละที่กับผู้รับผลกระทบ (เมือง)
+  เชื่อมกันด้วยลมและภูมิประเทศ ข้อมูลอยู่ในรูปแผนที่หลายชั้นหลายเวลา (ดาวเทียม+อุตุฯ+สถานี) — ตรงนิยาม GeoAI 100% และวิธีที่ไม่ใช้มิติพื้นที่ตอบโจทย์ไม่ได้เชิงโครงสร้าง</div>
+</section>
+
+<!-- ============ GAP ============ -->
+<section id="gap" class="anchor">
+  <h2><span class="n">4</span> ช่องว่างเทียบงานที่มีอยู่ — เราใหม่ตรงไหนกันแน่</h2>
+  <table>
+    <tr><th>งานที่มีอยู่</th><th>มันทำอะไร</th><th>สิ่งที่มันไม่ทำ (= ที่ว่างของเรา)</th></tr>
+    <tr><td>งาน ML ไทย (เชียงใหม่/กทม./หาดใหญ่)</td><td>พยากรณ์ <b>รายสถานี</b> ด้วย LSTM/GB/RF</td><td>ไม่มีมิติพื้นที่ ไม่มีไฟ/ลมเป็นเหตุ ไม่ generalize นอกสถานี</td></tr>
+    <tr><td>TabNet + TROPOMI (Thailand)</td><td><b>ประมาณค่า</b> PM2.5 ปัจจุบันจากดาวเทียม (estimation)</td><td>ไม่พยากรณ์อนาคต — เป็น nowcast/ย้อนหลัง</td></tr>
+    <tr><td>FINNv2.5 NRT (ภาคเหนือ)</td><td>ประเมิน <b>การปล่อย</b> (emission) จากไฟใกล้เรียลไทม์</td><td>ได้แค่ต้นทาง ไม่ได้แปลงเป็น "ความเข้มข้นที่จมูกคน" + ไม่พยากรณ์</td></tr>
+    <tr><td>WRF-Chem studies (เชียงใหม่ฯ)</td><td>วิเคราะห์ transboundary ย้อนหลัง เชิงวิจัย</td><td>ช้า แพง ไม่ operational ไม่เปิด — และนี่คือ "ครู" ที่เราใช้เทียบ attribution</td></tr>
+    <tr><td>CAMS / GEOS โกลบอล</td><td>พยากรณ์เคมีบรรยากาศทั้งโลก</td><td>หยาบ 40–50 กม., bias ใน SEA, ไม่ calibrate ไทย</td></tr>
+    <tr><td>GISTDA/SERVIR fire dashboards</td><td>โชว์ hotspot + AQ เรียลไทม์</td><td><b>monitoring ไม่ใช่ forecasting</b> และไม่มี attribution</td></tr>
+  </table>
+  <div class="note p"><b>ตำแหน่งของ HazeCast (สิ่งที่ยังไม่มีใครทำรวมกันในที่เดียว):</b>
+  ① พยากรณ์เป็น "<b>สนามทั้งแผ่น</b>" ไม่ใช่จุดสถานี · ② <b>มีไฟเป็นเงื่อนไขเชิงเหตุ</b> (fire-conditioned) ·
+  ③ <b>ฟิสิกส์ advection แบบ hard constraint</b> ในตัวโมเดล · ④ มีชั้น <b>attribution "Smoke Fingerprint"</b> ·
+  ⑤ ทดสอบกับ <b>ฤดูวิกฤตจริง (2023)</b> ที่โมเดลไม่เคยเห็น · ⑥ เปิดทั้งโค้ด-น้ำหนัก-สูตรข้อมูล</div>
+</section>
+
+<!-- ============ PRODUCT ============ -->
+<section id="product" class="anchor">
+  <h2><span class="n">5</span> ตัวโปรดักต์ — ผู้ใช้ได้อะไร</h2>
+  <div class="grid g2">
+    <div class="card"><div class="label">🗺️ Output 1 — แผนที่พยากรณ์</div>PM2.5 รายชั่วโมง ล่วงหน้า 48 ชม. กริด 0.1° (~10 กม.) ครอบภาคเหนือ+ชายแดนเมียนมา/ลาว — ซูมถึงระดับอำเภอ</div>
+    <div class="card"><div class="label">🚨 Output 2 — คำเตือนเชิงเขต</div>"อ.แม่สาย จะเกิน 75 µg/m³ (แดง) ตั้งแต่พรุ่งนี้ 14:00 ต่อเนื่อง ~18 ชม." → ใช้ตัดสินใจปิดโรงเรียน/เตรียม รพ. ได้จริง</div>
+    <div class="card"><div class="label">🔍 Output 3 — Smoke Fingerprint (จุดขายสร้างสรรค์)</div>ทุกเซลล์แผนที่แตกสัดส่วนได้: ควันนี้ ~55% จากฝั่งเมียนมา (รัฐฉาน), 25% ไฟในจังหวัด, 20% ฉากหลังเก่า — หลักฐานเชิงเรขาคณิตสำหรับนโยบายห้ามเผา + การเจรจา 3 ประเทศ</div>
+    <div class="card"><div class="label">📦 Output 4 — ของแถมที่กรรมการรัก</div>โค้ด + โมเดล + สูตรสร้าง datacube เปิดทั้งหมด · เดโม dashboard เบา ๆ (แผนที่ HTML + mock การ์ดแจ้งเตือน LINE) — จงใจ<b>ไม่</b>สร้างเว็บแอปเต็มรูปแบบ เพื่อไม่ over-engineer</div>
+  </div>
+</section>
+
+<!-- ============ SYSTEM DESIGN ============ -->
+<section id="design" class="anchor">
+  <h2><span class="n">6</span> System Design — 3 Stages</h2>
+
+  <svg viewBox="0 0 1000 560" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,Sarabun,sans-serif">
+    <defs><marker id="ar" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#6b7785"/></marker></defs>
+    <!-- inputs -->
+    <rect x="15" y="20" width="190" height="200" rx="11" fill="#11161d" stroke="#4aa3ff"/>
+    <text x="110" y="44" text-anchor="middle" fill="#4aa3ff" font-size="13" font-weight="bold">INPUTS (open ทั้งหมด)</text>
+    <text x="110" y="68" text-anchor="middle" fill="#e6edf3" font-size="10.5">🔥 FIRMS VIIRS FRP (375ม.)</text>
+    <text x="110" y="88" text-anchor="middle" fill="#e6edf3" font-size="10.5">🛰️ Himawari AOD รายชม. (5กม.)</text>
+    <text x="110" y="108" text-anchor="middle" fill="#e6edf3" font-size="10.5">🌬️ ERA5: ลม u,v · BLH · RH · ฝน</text>
+    <text x="110" y="128" text-anchor="middle" fill="#e6edf3" font-size="10.5">🧪 CAMS PM2.5 (prior หยาบ)</text>
+    <text x="110" y="148" text-anchor="middle" fill="#e6edf3" font-size="10.5">📡 สถานี Air4Thai/OpenAQ</text>
+    <text x="110" y="168" text-anchor="middle" fill="#e6edf3" font-size="10.5">⛰️ DEM + แอ่งเขา + land cover</text>
+    <text x="110" y="195" text-anchor="middle" fill="#6b7785" font-size="9.5">กริดร่วม 0.1° · 94–104.5°E, 14–22.5°N</text>
+
+    <line x1="205" y1="120" x2="245" y2="120" stroke="#6b7785" stroke-width="2" marker-end="url(#ar)"/>
+
+    <!-- stage A -->
+    <rect x="248" y="40" width="220" height="160" rx="12" fill="#0f1620" stroke="#36d6c3" stroke-width="1.5"/>
+    <text x="358" y="66" text-anchor="middle" fill="#36d6c3" font-size="14" font-weight="bold">STAGE A · HazeFusion</text>
+    <text x="358" y="86" text-anchor="middle" fill="#9aa7b4" font-size="10.5">"แผนที่ฝุ่นตอนนี้ที่เชื่อได้"</text>
+    <text x="358" y="110" text-anchor="middle" fill="#e6edf3" font-size="10.5">U-Net: CAMS+AOD+อุตุฯ+ภูมิประเทศ</text>
+    <text x="358" y="128" text-anchor="middle" fill="#e6edf3" font-size="10.5">→ สนาม PM2.5 0.1° เต็มแผ่น</text>
+    <text x="358" y="152" text-anchor="middle" fill="#76b900" font-size="10">เทรนด้วย loss เฉพาะพิกเซลสถานีจริง</text>
+    <text x="358" y="170" text-anchor="middle" fill="#76b900" font-size="10">+ ตรวจแบบ leave-stations-out</text>
+
+    <line x1="468" y1="120" x2="508" y2="120" stroke="#6b7785" stroke-width="2" marker-end="url(#ar)"/>
+
+    <!-- stage B -->
+    <rect x="511" y="20" width="300" height="240" rx="12" fill="#0f1620" stroke="#76b900" stroke-width="1.5"/>
+    <text x="661" y="46" text-anchor="middle" fill="#76b900" font-size="14" font-weight="bold">STAGE B · HazeCast (หัวใจ)</text>
+    <text x="661" y="64" text-anchor="middle" fill="#9aa7b4" font-size="10.5">ก้าวเวลา 1 ชม. แบบ autoregressive</text>
+    <rect x="528" y="76" width="266" height="46" rx="8" fill="#1b232e" stroke="#ff9f43"/>
+    <text x="661" y="95" text-anchor="middle" fill="#ff9f43" font-size="11.5" font-weight="bold">สาขาฟิสิกส์: Advection ลมพาควัน</text>
+    <text x="661" y="112" text-anchor="middle" fill="#9aa7b4" font-size="10">C̃ = Advect(C_t ; ลมชี้นำ) — อนุรักษ์มวล</text>
+    <text x="661" y="138" text-anchor="middle" fill="#e6edf3" font-size="13">＋</text>
+    <rect x="528" y="148" width="266" height="58" rx="8" fill="#1b232e" stroke="#b984ff"/>
+    <text x="661" y="167" text-anchor="middle" fill="#b984ff" font-size="11.5" font-weight="bold">สาขา NN: U-Net + AFNO bottleneck</text>
+    <text x="661" y="184" text-anchor="middle" fill="#9aa7b4" font-size="10">เรียน "ส่วนที่ฟิสิกส์ง่ายไม่ครอบ": แหล่งใหม่จากไฟ,</text>
+    <text x="661" y="198" text-anchor="middle" fill="#9aa7b4" font-size="10">การสะสมใต้ inversion, ฝนชะ, สลายตัว</text>
+    <text x="661" y="228" text-anchor="middle" fill="#e6edf3" font-size="11">C_{t+1} = softplus( C̃ + residual )</text>
+    <text x="661" y="246" text-anchor="middle" fill="#6b7785" font-size="9.5">≥ 0 เสมอ · วน 48 รอบ = 48 ชม.</text>
+
+    <line x1="811" y1="130" x2="851" y2="130" stroke="#6b7785" stroke-width="2" marker-end="url(#ar)"/>
+
+    <!-- outputs -->
+    <rect x="854" y="60" width="130" height="140" rx="11" fill="#0f1f12" stroke="#76b900"/>
+    <text x="919" y="86" text-anchor="middle" fill="#76b900" font-size="12" font-weight="bold">OUTPUT</text>
+    <text x="919" y="110" text-anchor="middle" fill="#e6edf3" font-size="10.5">แผนที่ PM2.5</text>
+    <text x="919" y="128" text-anchor="middle" fill="#e6edf3" font-size="10.5">+48 ชม. รายชั่วโมง</text>
+    <text x="919" y="152" text-anchor="middle" fill="#e6edf3" font-size="10.5">คำเตือนรายอำเภอ</text>
+    <text x="919" y="176" text-anchor="middle" fill="#9aa7b4" font-size="10">รันใน ~วินาที</text>
+
+    <!-- rolling loop -->
+    <path d="M919,200 C919,290 661,300 661,262" stroke="#5a8c00" stroke-width="1.6" stroke-dasharray="5 4" fill="none" marker-end="url(#ar)"/>
+    <text x="800" y="295" text-anchor="middle" fill="#6b7785" font-size="10">ผลชั่วโมงนี้ = อินพุตชั่วโมงถัดไป (rolling 48)</text>
+
+    <!-- stage C -->
+    <rect x="248" y="330" width="563" height="120" rx="12" fill="#0f1620" stroke="#b984ff" stroke-width="1.5"/>
+    <text x="529" y="356" text-anchor="middle" fill="#b984ff" font-size="14" font-weight="bold">STAGE C · Smoke Fingerprint (attribution)</text>
+    <text x="529" y="380" text-anchor="middle" fill="#e6edf3" font-size="11">ฉีด "สีย้อม" ดิจิทัลให้ควันจากแต่ละแหล่ง: เมียนมาตะวันตก · รัฐฉาน · ลาวเหนือ · ไฟรายจังหวัดไทย · เมือง</text>
+    <text x="529" y="400" text-anchor="middle" fill="#9aa7b4" font-size="10.5">เพราะ advection เป็น "เชิงเส้นต่อความเข้มข้น" → พาควันแต่ละสีไปตามลมแยกกันได้ แล้วคิดสัดส่วน % ต่อเซลล์</text>
+    <text x="529" y="422" text-anchor="middle" fill="#76b900" font-size="10.5">ไม่ต้องเทรนเพิ่ม — ใช้สาขาฟิสิกส์ตัวเดิมรัน K รอบ · ตรวจกับข้อสรุป WRF-Chem ในวรรณกรรม</text>
+    <line x1="661" y1="262" x2="661" y2="328" stroke="#6b7785" stroke-width="1.6" marker-end="url(#ar)" stroke-dasharray="3 3"/>
+
+    <!-- eval strip -->
+    <rect x="15" y="480" width="969" height="58" rx="11" fill="#11161d" stroke="#4aa3ff"/>
+    <text x="500" y="504" text-anchor="middle" fill="#4aa3ff" font-size="12.5" font-weight="bold">การวัดผล: เทียบกับ "สถานีจริงที่กันไว้" เท่านั้น · baselines 5 ตัว · ablation 4 ชุด · ทดสอบฤดูวิกฤต 2023+2025 ที่โมเดลไม่เคยเห็น</text>
+    <text x="500" y="524" text-anchor="middle" fill="#6b7785" font-size="10.5">RMSE/MAE ราย lead time · CSI/POD/FAR ที่เกณฑ์ 37.5 และ 75 µg/m³ · เวลาเตือนล่วงหน้า ณ จุด onset ของ episode</text>
+  </svg>
+  <p class="cap">สถาปัตยกรรมรวม: โครงเดียวกับงานเหรียญทอง (emulator + physics + rolling) แต่กับโดเมนที่ฟิสิกส์ advection "จริง" ยิ่งกว่าเดิม</p>
+
+  <h3>คณิตศาสตร์แกนกลาง (ย่อ)</h3>
+  <div class="eq">
+    C<sub>t+1</sub> = softplus( 𝒜(C<sub>t</sub>, <b>u</b><sub>eff</sub>) + f<sub>θ</sub>(C<sub>t</sub>, Fire<sub>t</sub>, Met<sub>t</sub>, AOD<sub>t</sub>, Static) )
+    <span class="lbl">𝒜 = semi-Lagrangian advection (อนุรักษ์มวล ทำนายระยะไกลเสถียร) · <b>u</b><sub>eff</sub> = ลมชี้นำ = ผสม u₁₀ กับลมชั้น ~700hPa ด้วยน้ำหนัก α ที่เรียนรู้ได้ · f<sub>θ</sub> = U-Net(AFNO bottleneck) เรียนส่วนเกิด-สลาย-ผสมแนวดิ่ง · softplus บังคับค่าฝุ่นไม่ติดลบ (hard physics constraint)</span>
+  </div>
+  <div class="grid g2">
+    <div class="card"><div class="label">ทำไม U-Net + AFNO bottleneck (ไม่ใช่อย่างใดอย่างหนึ่ง)</div>
+    ฝุ่นถูกคุมด้วย 2 สเกลพร้อมกัน: <b>local</b> (แอ่งเขาเชียงใหม่กักควันใต้ชั้น inversion — ต้องการ conv inductive bias)
+    และ <b>ระยะไกล</b> (ควันรัฐฉานลอยมา 300 กม. — ต้องการ global mixing) → conv ชั้นนอกจับ local, AFNO ตรงกลางจับ long-range ใน O(N log N) · กริดเรา 105×85 เล็กมาก เทรนไว ทดลองได้หลายรอบ</div>
+    <div class="card"><div class="label">ทำไม BLH (ความสูงชั้นผสม) คือฟีเจอร์ลับ</div>
+    ปรากฏการณ์ "เช้าฝุ่นหนัก บ่ายคลาย" ของแอ่งเชียงใหม่มาจาก <b>temperature inversion</b> — ฝุ่นเท่าเดิมแต่ถูกบีบในอากาศตื้น
+    BLH จาก ERA5 + DEM + ชั่วโมงของวัน ให้โมเดลเรียน "ฝาหม้อ" นี้ได้ — โมเดลรายสถานีไม่มีทางเห็นกลไกนี้</div>
+  </div>
+</section>
+
+<!-- ============ DATA ============ -->
+<section id="data" class="anchor">
+  <h2><span class="n">7</span> ข้อมูล — open 100% พร้อมแผนสำรองทุกตัว</h2>
+  <table>
+    <tr><th>ชั้นข้อมูล</th><th>แหล่ง (open)</th><th>ความละเอียด</th><th>บทบาท</th><th>แผนสำรอง</th></tr>
+    <tr><td>จุดไฟ + FRP</td><td>NASA FIRMS (VIIRS S-NPP/NOAA-20)</td><td>375 ม. · ~4 รอบ/วัน</td><td>เงื่อนไขแหล่งกำเนิด (เชิงเหตุ)</td><td>MODIS MCD14; Himawari hotspot เสริมรอบวัน</td></tr>
+    <tr><td>AOD รายชั่วโมง</td><td>JAXA P-Tree Himawari-8/9 L3</td><td>5 กม. · รายชั่วโมง</td><td>ดวงตามองควันจริงระหว่างสถานี</td><td>MODIS MAIAC รายวัน (หยาบเวลาแต่ชัวร์)</td></tr>
+    <tr><td>อุตุนิยมวิทยา</td><td>ERA5 (CDS)</td><td>0.25° · รายชั่วโมง</td><td>ลม u,v (10ม.+700hPa), BLH, RH, ฝน, T</td><td>—(เสถียรมาก) · โหมด operational ใช้ GFS 0.25°</td></tr>
+    <tr><td>PM2.5 prior</td><td>CAMS global forecast (ADS)</td><td>~0.4° · 3 ชม.</td><td>พื้นหลังให้ Stage A แก้ bias</td><td>MERRA-2 aerosol (0.5°)</td></tr>
+    <tr><td>สถานีภาคพื้น</td><td>OpenAQ (มิเรอร์ Air4Thai) + DustBoy (มช.)</td><td>จุด · รายชั่วโมง</td><td><b>ความจริงเพียงหนึ่งเดียว</b> สำหรับ loss + eval</td><td>ไฟล์รายงานประจำปี PCD</td></tr>
+    <tr><td>ภูมิประเทศ/พื้นผิว</td><td>Copernicus DEM 30ม. · ESA WorldCover · WorldPop</td><td>30–100 ม.</td><td>แอ่งเขา ดัชนีหุบเขา ป่า/เกษตร ประชากร (ชั้น impact)</td><td>SRTM</td></tr>
+  </table>
+  <div class="note b"><b>ช่วงข้อมูล:</b> ฤดูเผา (ธ.ค.–พ.ค.) ปี 2016→2025 = 10 ฤดู (Himawari-8 เริ่มกลางปี 2015)
+  · ทุกชั้น regrid ลงกริดร่วม 0.1° เก็บเป็น <b>Zarr datacube</b> ก้อนเดียว (~15–25 GB) — โหลดเร็ว ใช้ซ้ำได้ทุกการทดลอง สอดรับ Colab ที่หลุด session บ่อย</div>
+</section>
+
+<!-- ============ EVAL ============ -->
+<section id="eval" class="anchor">
+  <h2><span class="n">8</span> Systematic Experiment — ออกแบบให้แพ้ไม่ได้เพราะมั่ว ชนะได้เพราะจริง</h2>
+  <h3>การแบ่งข้อมูล (กันโกงเวลาเด็ดขาด)</h3>
+  <div class="miniflow">
+    <div class="step"><b>Train</b>ฤดู 2016–2022 (7 ฤดู)</div>
+    <div class="arrow">→</div>
+    <div class="step"><b>Validation</b>ฤดู 2024 (จูนทุกอย่างที่นี่)</div>
+    <div class="arrow">→</div>
+    <div class="step"><b>Test (แตะครั้งเดียว)</b>ฤดู 2023 (วิกฤตสุด) + 2025</div>
+  </div>
+  <p class="src">เจตนาเลือก 2023 เป็น test เพราะเป็นฤดูรุนแรงที่สุดในประวัติการณ์ — ถ้าโมเดล generalize ไปปีที่หนักที่สุดที่ไม่เคยเห็นได้ คือหลักฐานที่กรรมการเถียงยาก · เสริมความแข็ง: spatial holdout (เว้นสถานี 20% ไว้ไม่ให้ทั้ง Stage A/B เห็นเลย)</p>
+
+  <h3>Baselines ที่ต้องชนะ (5) และ Ablations (4)</h3>
+  <div class="vs">
+    <div class="card"><div class="label" style="color:var(--red)">ต้องชนะ</div>
+    ① Persistence (พรุ่งนี้=วันนี้) · ② Climatology รายชั่วโมงของฤดู · ③ CAMS ดิบ · ④ CAMS + bias-correction เชิงเส้น ·
+    ⑤ <b>Station-LSTM</b> (ตัวแทน "วิธีง่าย" ของวรรณกรรมไทย — สร้างเองให้แฟร์)</div>
+    <div class="card"><div class="label" style="color:var(--green)">ต้องพิสูจน์ว่าแต่ละชิ้นจำเป็น</div>
+    − สาขา advection (NN ล้วน) · − ช่องไฟ FIRMS · − ช่อง AOD · − ช่อง BLH/ภูมิประเทศ
+    → ตาราง ablation นี้คือหลักฐาน "ผสานหลายเทคนิคแล้วดีขึ้นจริง" แบบเดียวกับตาราง ACC ของงานเหรียญทอง</div>
+  </div>
+
+  <h3>ตัวชี้วัด + เป้าที่ประกาศล่วงหน้า (pre-registered)</h3>
+  <table>
+    <tr><th>มิติ</th><th>ตัวชี้วัด</th><th>เป้าขั้นต่ำ</th></tr>
+    <tr><td>ความแม่นตัวเลข</td><td>RMSE / MAE ที่ lead 6/12/24/48 ชม. บนสถานี holdout</td><td>ชนะ baseline ที่ดีที่สุด ≥15% ที่ lead 24 ชม.</td></tr>
+    <tr><td>การเตือนเหตุการณ์</td><td>CSI / POD / FAR ที่เกณฑ์ 37.5 (มาตรฐานไทยใหม่) และ 75 µg/m³</td><td>CSI ดีกว่า baseline ≥ +0.10</td></tr>
+    <tr><td>คุณค่าการเตือนภัย</td><td>Onset lead time: เตือน "เริ่ม episode" ล่วงหน้ากี่ชม.</td><td>≥12 ชม. ใน ≥3 จาก 5 episodes ของฤดูทดสอบ</td></tr>
+    <tr><td>โครงสร้างเชิงพื้นที่</td><td>Spatial ACC เทียบสนามวิเคราะห์ (แบบเดียวกับงานเหรียญทอง)</td><td>สูงกว่า CAMS ทุก lead</td></tr>
+    <tr><td>Attribution</td><td>เทียบสัดส่วนข้ามแดนกับผล WRF-Chem ในวรรณกรรม + case study เชิงเหตุการณ์</td><td>ทิศทาง/ลำดับแหล่งสอดคล้อง</td></tr>
+  </table>
+  <div class="note r"><b>กติกาเหล็ก:</b> ถ้าแพ้ baseline ใด ให้รายงานตรง ๆ พร้อมวิเคราะห์ว่าแพ้ตอนไหนเพราะอะไร (เช่น ชั่วโมงกลางคืนที่ AOD ใช้ไม่ได้) — ความซื่อสัตย์เชิงทดลองคือสิ่งที่ทำให้งานเหรียญทองน่าเชื่อ ไม่ใช่ตัวเลขสวยอย่างเดียว</div>
+</section>
+
+<!-- ============ PLAN ============ -->
+<section id="plan" class="anchor">
+  <h2><span class="n">9</span> แผน 8 สัปดาห์ + งบ GPU + บันไดถอย</h2>
+  <svg viewBox="0 0 980 290" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,Sarabun,sans-serif">
+    <text x="20" y="28" fill="#9aa7b4" font-size="12">สัปดาห์ →</text>
+    <g font-size="11" fill="#6b7785">
+      <text x="160" y="28">1</text><text x="260" y="28">2</text><text x="360" y="28">3</text><text x="460" y="28">4</text>
+      <text x="560" y="28">5</text><text x="660" y="28">6</text><text x="760" y="28">7</text><text x="860" y="28">8</text>
+    </g>
+    <g font-size="11.5">
+      <text x="20" y="58" fill="#e6edf3">Datacube + ingest ทุกแหล่ง</text><rect x="140" y="44" width="200" height="18" rx="5" fill="#4aa3ff"/>
+      <text x="20" y="90" fill="#e6edf3">Baselines ①–⑤ + eval harness</text><rect x="240" y="76" width="160" height="18" rx="5" fill="#36d6c3"/>
+      <text x="20" y="122" fill="#e6edf3">Stage A: HazeFusion + CV สถานี</text><rect x="340" y="108" width="160" height="18" rx="5" fill="#36d6c3"/>
+      <text x="20" y="154" fill="#e6edf3">Stage B v0 (NN ล้วน, 6–12 ชม.)</text><rect x="440" y="140" width="120" height="18" rx="5" fill="#76b900"/>
+      <text x="20" y="186" fill="#e6edf3">+ Advection + AFNO + rolling 48 ชม.</text><rect x="540" y="172" width="160" height="18" rx="5" fill="#76b900"/>
+      <text x="20" y="218" fill="#e6edf3">Ablations + freeze + รัน test seasons</text><rect x="660" y="204" width="140" height="18" rx="5" fill="#ff9f43"/>
+      <text x="20" y="250" fill="#e6edf3">Smoke Fingerprint + case studies</text><rect x="740" y="236" width="120" height="18" rx="5" fill="#b984ff"/>
+      <text x="20" y="282" fill="#e6edf3">เดโม + โปสเตอร์สไตล์เหรียญทอง</text><rect x="840" y="268" width="120" height="18" rx="5" fill="#ff7eb6"/>
+    </g>
+  </svg>
+  <div class="grid g2">
+    <div class="card"><div class="label">💰 งบ GPU (ประมาณ — โดเมนเล็กคือแต้มต่อ)</div>
+    กริด 105×85 × ~16 ช่อง = จิ๋วมากเทียบงาน weather ระดับโลก<br>
+    • Stage A: ~8 A100-ชม. · Stage B หลัก: ~25 ชม. (รวม rolling fine-tune)<br>
+    • Ablations 4 ชุด: ~20 ชม. · รวมทั้งโปรเจกต์ <b>~60–70 A100-ชม.</b> — อยู่ในงบ Colab Pro แบบสบายถ้าวางวินัย:
+    mixed precision · checkpoint ทุก epoch ขึ้น Drive · datacube บน Drive โหลดครั้งเดียว</div>
+    <div class="card"><div class="label">🪜 บันไดถอย (descope ladder) — ตัดสินใจล่วงหน้า ไม่ใช่ตอนไฟลนก้น</div>
+    ① ถ้าช้า: ลด lead 48→24 ชม. · ② กริด 0.1°→0.15° · ③ ตัด AFNO เหลือ U-Net (ยังมี advection อยู่ = แก่นไม่หาย) ·
+    ④ Smoke Fingerprint เหลือ 3 แหล่ง (ข้ามแดน/ในประเทศ/ฉากหลัง) · <b>สิ่งที่ห้ามตัดเด็ดขาด:</b> สาขา advection, baseline ⑤, ฤดูทดสอบ 2023</div>
+  </div>
+</section>
+
+<!-- ============ CRITIQUE LOG ============ -->
+<section id="critique" class="anchor">
+  <h2><span class="n">10</span> บันทึกการโจมตีแผนตัวเอง 5 รอบ (ของจริง ไม่ใช่พิธีกรรม)</h2>
+
+  <div class="atk"><div class="ahead">⚔️ รอบ 1 — "PM2.5 น่ะเหรอ? งาน ML ฝุ่นมีเป็นร้อยเปเปอร์ ไม่ใหม่เลย"</div>
+  จริง 100% ถ้ามองแค่หัวข้อ งานไทยมีเพียบ: LSTM เชียงใหม่, GB กรุงเทพฯ (RMSE 2.17!), ConvLSTM หาดใหญ่</div>
+  <div class="fix"><div class="fhead">🛡️ คำตอบ (ที่ทำให้รอด)</div>
+  เปเปอร์พวกนั้นทั้งหมดเป็น <b>รายสถานี + ไร้กลไกเชิงเหตุ</b> — แม่นเพราะ autocorrelation ซึ่งพังตรง onset
+  ส่วนงานเชิงพื้นที่ของไทยเป็น "estimation ปัจจุบัน" (TabNet+TROPOMI) ไม่ใช่ forecast
+  ช่องที่ยังว่างจริงคือ <b>field-level + fire-conditioned + physics + attribution</b> ในแพ็กเดียว — ตรวจวรรณกรรมแล้ว (§4) ยังไม่มีใครประกอบครบ
+  และ RMSE 2.17 ของกรุงเทพฯ นั้นวัดบนสภาพนิ่ง ๆ เราจะวัดที่ <b>จุดเปลี่ยน episode</b> ซึ่งคือที่ที่คุณค่าจริงอยู่</div>
+
+  <div class="atk"><div class="ahead">⚔️ รอบ 2 — "จุดตายที่สุดของงานนี้: ไม่มี ground truth ทั้งแผ่น คุณจะเทรน field model จากอะไร? จะกลายเป็นเด็กลอกการบ้าน CAMS ที่ผิดอยู่แล้ว"</div>
+  นี่คือคำถามที่อันตรายที่สุดและเกือบฆ่าโปรเจกต์ — ถ้าเทรนกับ CAMS เราจะเก่งเท่า CAMS (ซึ่งห่วยใน SEA)</div>
+  <div class="fix"><div class="fhead">🛡️ การออกแบบใหม่ที่เกิดจากการโจมตีนี้ (เปลี่ยนสถาปัตยกรรมจริง)</div>
+  แยกเป็น 2 จังหวะ: <b>Stage A สร้าง "สนามวิเคราะห์"</b> โดย loss คิดเฉพาะ <b>พิกเซลที่มีสถานีจริง</b> (CAMS เป็นแค่ input ไม่ใช่ครู)
+  + ทำ leave-stations-out CV รายงาน error ของสนามเองแยกชัด ๆ · <b>Stage B วัดผลสุดท้ายกับสถานีจริง holdout เท่านั้น</b> ไม่อวดตัวเลขบนสนามสังเคราะห์
+  · ยอมรับเพดานตรง ๆ: ความแม่นเหนือเมียนมา (ไร้สถานี) ตรวจสอบไม่ได้โดยตรง — ระบุเป็น "ความไม่แน่นอนเชิงพื้นที่" บนแผนที่ ไม่ปกปิด</div>
+
+  <div class="atk"><div class="ahead">⚔️ รอบ 3 — "Smoke Fingerprint คือจุดขาย แต่ advection 2 มิติชั้นเดียวเป็น attribution แบบเด็กอนุบาลเทียบ WRF-Chem — โดนผู้เชี่ยวชาญยำแน่"</div>
+  ถูก — ไม่มีเคมี ไม่มีแนวดิ่งจริง การเคลมว่า "พิสูจน์แหล่งกำเนิด" จะเป็นการ overclaim ที่ทำลายความน่าเชื่อทั้งงาน</div>
+  <div class="fix"><div class="fhead">🛡️ การปรับกรอบ</div>
+  เปลี่ยนคำเคลมจาก "พิสูจน์แหล่ง" → <b>"แผนที่อิทธิพลการพัดพา (transport influence) อันดับหนึ่ง-สอง-สาม"</b>
+  ใช้ตอบคำถามระดับนโยบาย ("ช่วงนี้อิทธิพลหลักข้ามแดนหรือในประเทศ") ไม่ใช่ระดับฟ้องร้อง
+  + validate ทิศทางกับผล WRF-Chem ในวรรณกรรม (ที่ชี้ว่าข้ามแดนพีคเดือนมี.ค.) + case study ย้อน 2–3 เหตุการณ์ที่รู้คำตอบ
+  — กรอบที่ซื่อสัตย์แบบนี้แข็งแรงกว่าเคลมเกินแล้วโดนยิงตก</div>
+
+  <div class="atk"><div class="ahead">⚔️ รอบ 4 — "ความเสี่ยงข้อมูล/ปฏิบัติการ: AOD มี bias ใน SEA + กลางคืนไม่มีค่า · เทรนด้วยลม ERA5 (ย้อนหลังสมบูรณ์) แต่ตอนใช้จริงมีแค่ลมพยากรณ์ GFS — นี่คือ train/serve skew คลาสสิก · Colab หลุด session กลางเทรน"</div></div>
+  <div class="fix"><div class="fhead">🛡️ มาตรการรายข้อ</div>
+  • AOD: ใช้เป็น <b>predictor ไม่ใช่ truth</b> + ช่อง mask บอก "ข้อมูลหาย" ให้โมเดลเรียนจัดการเอง (โชคช่วย: ฤดูเผา=ฤดูแล้ง เมฆน้อยสุดของปี)<br>
+  • Wind skew: เฟสประเมินเพิ่ม "โหมด operational" — ป้อนลม GFS forecast จริงแทน ERA5 แล้ววัด skill ตก
+  เท่าไหร่ รายงานทั้งสองเลข (นี่จะกลายเป็นจุดแข็งเพราะแทบไม่มีเปเปอร์ไหนกล้ารายงาน)<br>
+  • ไฟพรุ่งนี้ไม่รู้ล่วงหน้า: ใช้สมมติฐาน persistence-ไฟ + วัฏจักรรายวัน (ไฟพีคบ่าย) ระบุเป็นข้อจำกัดเปิดเผย<br>
+  • Colab: datacube ก้อนเดียวบน Drive + checkpoint ทุก epoch + ทุกการทดลองเป็นสคริปต์ resume ได้ ไม่มี notebook ยาว 4 ชม.</div>
+
+  <div class="atk"><div class="ahead">⚔️ รอบ 5 — "กลิ่น over-engineering เริ่มมา: AFNO + diffusion ensemble + LINE bot + เว็บแอป — จะตายเพราะของเล่นเยอะแบบที่มือใหม่ตายกันทุกราย"</div></div>
+  <div class="fix"><div class="fhead">🛡️ มีดตัดของ</div>
+  ตัด diffusion ensemble → stretch goal เท่านั้น (แกนคือ deterministic + physics ก็เล่าเรื่องครบ) ·
+  ตัด LINE bot จริง → mock การ์ดภาพนิ่ง 1 ใบพอ · ตัดเว็บแอป → แผนที่ HTML เบา ๆ ·
+  <b>นิยาม MVP เดียวที่ศักดิ์สิทธิ์:</b> "พยากรณ์ 24 ชม. ชนะ 5 baselines บนฤดูทดสอบ 2023" — ทุกอย่างที่ไม่พาไปจุดนี้ภายใน W6 โดนตัดอัตโนมัติตามบันได §9</div>
+
+  <div class="note"><div class="label" style="color:var(--orange)">จุดอ่อนที่ "เหลืออยู่และยอมรับ" (ตอบกรรมการได้ ไม่ใช่แก้ตัว)</div>
+  ① ไม่มีเคมี secondary aerosol — รับได้เพราะฤดูเผา SEA ฝุ่นปฐมภูมิจากชีวมวลครองสัดส่วน และ NN residual ดูดซับส่วนที่เหลือโดยปริยาย ·
+  ② มิติแนวดิ่งถูกบีบเหลือ BLH ฉลาด ๆ 1 ช่อง — แลกกับความเร็ว/ความเป็นไปได้บน 1 GPU ·
+  ③ attribution เป็น first-order — ระบุกรอบชัดแล้ว (รอบ 3) ·
+  ④ สถานีฝั่งเมียนมาเป็นศูนย์ — ความแม่นเหนือแดนนั้นอิง AOD ทางอ้อม ระบุบนแผนที่ความเชื่อมั่น ·
+  ⑤ 10 ฤดูอาจบางสำหรับ extreme — บรรเทาด้วยการเลือก test=2023 (extreme) เพื่อวัด generalization ตรง ๆ</div>
+</section>
+
+<!-- ============ GOLD MAPPING ============ -->
+<section id="gold" class="anchor">
+  <h2><span class="n">11</span> เทียบพิมพ์เขียวเหรียญทอง — ข้อต่อข้อ</h2>
+  <table>
+    <tr><th>เหตุผลที่งานเดิมได้ทอง</th><th>HazeCast ตอบด้วย</th></tr>
+    <tr><td>① เทคนิค SOTA (FourCastNet + StormCast)</td><td>U-Net+AFNO hybrid + semi-Lagrangian physics branch + (stretch) diffusion ensemble — เลือกเพราะเหมาะกับสเกลปัญหา ไม่ใช่เพราะเท่</td></tr>
+    <tr><td>② ความคิดสร้างสรรค์ผสมศาสตร์ (advection correction)</td><td>ยก advection จาก "ตัวช่วยกัน drift" มาเป็น <b>กระดูกสันหลังของโมเดล</b> + ใช้ความเป็นเชิงเส้นของมันแถม Smoke Fingerprint ฟรี — ฟิสิกส์ชิ้นเดียว ได้ 2 ฟีเจอร์</td></tr>
+    <tr><td>③ Pain point จริง + เหตุการณ์จริง (ไต้ฝุ่นโนรู)</td><td>วิกฤตฝุ่น 2023: ผู้ป่วย 12,671 ราย รพ.เดียว · 1.7 ล้านคนกระทบ · อันดับ 1 โลก — และ test กับฤดูนั้นตรง ๆ</td></tr>
+    <tr><td>④ วัดผลเป็นระบบ (ตาราง ACC vs baseline)</td><td>5 baselines + 4 ablations + spatial ACC + CSI/onset-lead + เป้าประกาศล่วงหน้า + รายงานโหมด operational (GFS) — เข้มกว่าต้นฉบับ</td></tr>
+    <tr><td>⑤ Impact ชัด (เตือนภัย/พลังงาน)</td><td>เตือนล่วงหน้า 48 ชม. ระดับอำเภอ → ปิดโรงเรียน/เตรียม รพ./คุมการเผา + หลักฐานเชิงพื้นที่หนุนแผน 3 ประเทศ 2026–2027 ที่เพิ่งลงนาม — จังหวะเวลาเหมาะเจาะ</td></tr>
+  </table>
+  <div class="note g"><b>ประโยคปิดโปสเตอร์ (เตรียมไว้เลย):</b> "เราเปลี่ยนคำถามของภาคเหนือจาก <i>'วันนี้ฝุ่นเท่าไหร่'</i>
+  เป็น <i>'พรุ่งนี้ฝุ่นจะมาจากไหน หนักแค่ไหน ที่อำเภอไหน'</i> — ด้วยโมเดลที่รันบน GPU ตัวเดียว ข้อมูลเปิด 100% และฟิสิกส์ที่ตรวจสอบได้"</div>
+</section>
+
+<!-- ============ SOURCES ============ -->
+<section class="anchor">
+  <h2><span class="n">#</span> แหล่งอ้างอิงหลัก</h2>
+  <div class="card src">
+    <ul>
+      <li><a href="https://www.aljazeera.com/news/2023/4/12/how-chiang-mai-became-the-worlds-most-polluted-city">Al Jazeera — How Chiang Mai became the world's most polluted city (สถิติผู้ป่วย 12,671 / 1.7 ล้านคน / 223 µg/m³)</a></li>
+      <li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11280843/">WRF-Chem transboundary PM2.5 ภาคเหนือ (ข้ามแดนพีค มี.ค.)</a> · <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12444943/">Source attribution &amp; health burden Thailand</a></li>
+      <li><a href="https://earth.org/air-pollution-thailand/">Earth.Org — เผาเกษตร ~1/3 และ 51% ในเชียงใหม่ มี.ค.–เม.ย.</a> · <a href="https://www.nationthailand.com/blogs/news/general/40063529">Nation — hotspots ฝั่งเมียนมา &gt;5,000 จุด</a></li>
+      <li><a href="https://laotiantimes.com/2026/01/26/thailand-laos-myanmar-agree-on-satellite-plan-to-fight-pm2-5-pollution/">ม.ค. 2026 — ไทย/ลาว/เมียนมา ลงนามแผนดาวเทียมสู้ PM2.5 (จังหวะของโปรเจกต์)</a></li>
+      <li>Prior art ไทย: <a href="https://journals.mmupress.com/index.php/ijoras/article/view/1042">LSTM เชียงใหม่</a> · <a href="https://www.sciencedirect.com/science/article/pii/S2667010026000375">GB กรุงเทพฯ</a> · <a href="https://link.springer.com/article/10.1186/s40537-025-01079-9">ConvLSTM หาดใหญ่</a> · <a href="https://www.sciencedirect.com/science/article/pii/S1309104223002295">TabNet+TROPOMI (estimation)</a> · <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12846012/">FINNv2.5 NRT emission</a></li>
+      <li>ข้อมูล: <a href="https://firms.modaps.eosdis.nasa.gov/">NASA FIRMS</a> · <a href="https://www.eorc.jaxa.jp/ptree/">JAXA P-Tree (Himawari AOD 5กม./รายชม.)</a> · <a href="https://cds.climate.copernicus.eu/">ERA5 CDS</a> · <a href="https://ads.atmosphere.copernicus.eu/">CAMS ADS</a> · <a href="https://openaq.org/">OpenAQ</a></li>
+      <li>เทคนิคฐาน: FourCastNet (arXiv:2202.11214) · AFNO (arXiv:2111.13587) · StormCast (arXiv:2408.10958) — พิมพ์เขียวโครงสร้างจากเอกสารชุดก่อนหน้าในโฟลเดอร์นี้</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    HazeCast Master Plan — ออกแบบภายใต้ข้อจำกัด: 2 เดือน · A100 เดี่ยว (Colab Pro) · open data เท่านั้น · โฟกัสประเทศไทย ·
+    ผ่านการโจมตีแผน 5 รอบ พร้อมจุดอ่อนคงเหลือที่ประกาศตรงไปตรงมา · เอกสารชุดเดียวกัน: geoai-landscape.html · project1-ai-weather-simulation.html · concepts-deep-dive.html · math-deepdive-diffusion-fourier.html
+  </div>
+</footer>
+
+</body>
+</html>

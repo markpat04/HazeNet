@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HazeNet — เส้นทางสู่ A* Publication</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.72;font-size:16px;}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:30px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:17px;margin:0 0 6px}
+  h2{font-size:23px;margin:48px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:18px;margin:24px 0 6px;color:var(--cyan)}
+  p{margin:9px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:16px 20px;border-radius:8px;margin:20px 0}
+  .thesis{background:linear-gradient(180deg,#161b22,#11161d);border:1px solid var(--purple);border-radius:12px;padding:20px 24px;margin:22px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:14px 0}
+  .eq{background:#11161d;border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:8px;padding:13px 17px;margin:12px 0;font-size:16px;overflow-x:auto;font-family:"Cambria Math","Segoe UI",serif;line-height:1.95}
+  .eq .lbl{display:block;color:var(--muted);font-size:12.5px;font-family:"Segoe UI",sans-serif;margin-top:4px}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:13.5px}
+  .muted{color:var(--muted)} b.k{color:var(--green)}
+  .rank{display:inline-block;width:26px;height:26px;border-radius:50%;background:var(--panel2);border:1px solid var(--cyan);color:var(--cyan);text-align:center;line-height:25px;font-weight:bold;margin-right:8px}
+  .hot{color:var(--red);font-weight:bold}.warn-i{color:var(--amber)}.lo{color:var(--green)}
+  .up{border:1px solid var(--border);border-radius:11px;margin:16px 0;overflow:hidden}
+  .up .head{background:var(--panel2);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+  .up .head .t{font-size:17px;font-weight:bold}
+  .up .b{padding:14px 20px}
+  .badge{font-size:11.5px;padding:2px 9px;border-radius:20px;border:1px solid var(--border);margin-left:4px}
+  .b-now{background:rgba(63,185,80,.13);color:var(--green);border-color:var(--green)}
+  .b-ext{background:rgba(154,167,180,.12);color:var(--muted);border-color:var(--muted)}
+  .lift{font-size:12.5px;color:var(--muted)}
+  .center{text-align:center}
+  hr{border:none;border-top:1px solid var(--border);margin:28px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>HazeNet — เส้นทางสู่ A* Publication</h1>
+<p class="tagline">design ปัจจุบัน "ยังไม่ final" — นี่คือสิ่งที่ต้องเพิ่มเพื่อตีพิมพ์ระดับ top-tier</p>
+<p class="sub">คู่กับ <a href="hazenet-focused-plan.html">focused-plan</a> · <a href="hazenet-overview-endtoend.html">overview</a></p>
+
+<div class="lead">
+<b>ความจริงที่ต้องยอมรับก่อน:</b> งาน A* (NeurIPS/ICLR/ICML/KDD · Nature Comms/npj) ปกติใช้ <b>6–12 เดือน + compute หลายเท่า</b> — กรอบที่ถูกคือ <b class="k">"ใน 2 เดือนนี้ สร้างเวอร์ชันแข่ง + เมล็ดพันธุ์ของเปเปอร์ A*"</b> แล้วต่อยอดอีก 4–6 เดือน · พยายามทำ A* เต็มใน 2 เดือน = ได้ของครึ่ง ๆ ที่แพ้ทั้งสองสนาม
+</div>
+
+<h2>1. ช่องโหว่ปัจจุบันเทียบเพดาน A* (reviewer จะโจมตีตรงนี้)</h2>
+<table>
+<tr><th>ช่องโหว่</th><th>reviewer จะพูดว่า</th><th>อันตราย</th></tr>
+<tr><td>ทำภูมิภาคเดียว (ไทย)</td><td>"แคบ เป็น engineering application ไม่ generalize"</td><td class="hot">สูงสุด</td></tr>
+<tr><td>conditionally-linear ดูเหมือนข้อจำกัด</td><td>"เสีย expressivity เพื่อ attribution — พิสูจน์ว่าคุ้ม"</td><td class="hot">สูง</td></tr>
+<tr><td>ไม่มีทฤษฎี</td><td>"novelty คือ construction ไม่ใช่ contribution เชิงลึก"</td><td class="warn-i">กลาง</td></tr>
+<tr><td>UQ ลอย ๆ</td><td>"ensemble/quantile ไม่ calibrate ไม่ประเมิน"</td><td class="warn-i">กลาง</td></tr>
+<tr><td>counterfactual validity</td><td>"เคลม causal โดยไม่มี identifiability"</td><td class="warn-i">กลาง</td></tr>
+</table>
+
+<h2>2. Thesis ใหม่ที่ยกทั้งโปรเจกต์ขึ้นชั้น A*</h2>
+<div class="thesis">
+<h3 style="margin-top:0;color:var(--purple)">จาก "โมเดลพยากรณ์ที่ทำ attribution" → "neural CTM ที่ได้ adjoint ฟรีจาก autodiff"</h3>
+<p><b>HazeNet คือ differentiable, physics-structured neural chemical-transport model ตัวเดียวที่ autodiff ของมันให้ "adjoint operator" มาฟรี</b> → รวม 4 ความสามารถที่ปกติต้องสร้างแยกกัน:</p>
+<table style="margin:8px 0">
+<tr><th>ความสามารถ</th><th>ทิศการคำนวณ</th><th>ปกติทำยังไง (แพง)</th></tr>
+<tr><td>พยากรณ์</td><td>forward</td><td>รัน CTM ไปข้างหน้า</td></tr>
+<tr><td>ระบุแหล่ง (attribution)</td><td>forward (tagged)</td><td>tagged-tracer / brute-force</td></tr>
+<tr><td><b>ค้นหาแหล่งย้อนกลับ (inversion)</b></td><td><b>adjoint (ย้อน)</b></td><td><b>ต้องสร้าง CTM adjoint แยก (หลายปี/โมเดล)</b></td></tr>
+<tr><td>what-if (counterfactual)</td><td>forward (ลบ tracer)</td><td>source-off (วัน/สถานการณ์)</td></tr>
+</table>
+<p style="margin-bottom:0"><b>ทำไมเป็น hook ระดับ A*:</b> CTM ดั้งเดิม (WRF-Chem) ต้องพัฒนา adjoint แยกซึ่งแพงมหาศาล — เราได้มันฟรีจาก backpropagation พร้อมโครงสร้างฟิสิกส์ที่พิสูจน์ได้ = "neural forward + adjoint for air quality" ที่ยังไม่มีใครทำครบ</p>
+</div>
+
+<h2>3. 6 การยกระดับ (จัดอันดับตามลิฟต์เพดาน/แรงที่ใช้)</h2>
+
+<div class="up">
+<div class="head"><div><span class="rank">1</span><span class="t">ทฤษฎี: Attribution Error Bound</span></div><div><span class="badge b-now">ทำใน 2 เดือน</span><span class="lift"> · ลิฟต์สูงสุด / compute ต่ำ</span></div></div>
+<div class="b">
+<p>เปลี่ยน "ข้อจำกัดเชิงเส้น" เป็น <b>ทฤษฎีบท</b>: ให้ conditionally-linear เป็น exact anchor แล้วเพิ่มพจน์ nonlinear ที่ควบคุมได้</p>
+<div class="eq">
+‖ C − Σ<sub>s</sub> C⁽ˢ⁾ ‖ ≤ L · ‖ ℛ<sub>nonlinear</sub> ‖
+<span class="lbl">attribution error มี<u>ขอบเขตวัดได้</u>ตามขนาดพจน์ไม่เชิงเส้น → "มี expressivity ได้ + error bounded"</span>
+</div>
+<p style="margin-bottom:0"><b>แก้ช่องโหว่:</b> ตอบ reviewer ข้อ "เสีย expressivity" ด้วยคณิตศาสตร์ — นี่คือหัวใจเชิงทฤษฎีที่เปเปอร์ ML ต้องมี (proposition/theorem)</p>
+</div></div>
+
+<div class="up">
+<div class="head"><div><span class="rank">2</span><span class="t">Differentiable Source Inversion</span></div><div><span class="badge b-now">PoC ใน 2 เดือน</span><span class="lift"> · novelty + ความเท่สูงสุด</span></div></div>
+<div class="b">
+<p>เพราะ pipeline differentiable ทั้งหมด → ทำ <b>ปัญหาผกผัน</b>: ให้ฝุ่นปลายทางที่สังเกตได้ (Air4Thai/AOD) แก้ย้อนกลับหา "แหล่งปล่อยที่น่าจะเป็นต้นเหตุที่สุด"</p>
+<div class="eq">
+E* = argmin<sub>E</sub> ‖ Model(E) − C<sub>observed</sub> ‖² + λ·prior(E)
+<span class="lbl">= learned adjoint data assimilation (ปกติต้อง WRF-Chem adjoint ที่แพงมาก) — แก้ด้วย gradient descent ผ่าน autodiff</span>
+</div>
+<p style="margin-bottom:0"><b>ประโยชน์จริง:</b> ตรวจจับไฟที่ดาวเทียมพลาด (เมฆบัง) จากลายเซ็นฝุ่นปลายทาง · เป็น capability ที่ทั้งใหม่ เท่ และมีค่า</p>
+</div></div>
+
+<div class="up">
+<div class="head"><div><span class="rank">3</span><span class="t">Attribution Uncertainty</span></div><div><span class="badge b-now">ทำใน 2 เดือน</span><span class="lift"> · ถูก / ลิฟต์กลาง</span></div></div>
+<div class="b">
+<p>ไม่ใช่แค่ "เมียนมา 45%" แต่ <b>"45% ± 8% (90% CI)"</b> — <u>ความไม่แน่นอนของ attribution เอง</u> เป็นของใหม่ที่ยังไม่มีใครทำ</p>
+<p style="margin-bottom:0">ได้จาก input-perturbation ensemble (รบกวนลม/ไฟ) → กระจาย tracer · ประเมินด้วย <b>CRPS / rank histogram</b> (proper scoring) → ตอบช่องโหว่ "UQ ลอย"</p>
+</div></div>
+
+<div class="up">
+<div class="head"><div><span class="rank">4</span><span class="t">ปล่อย Benchmark (Datasets &amp; Benchmarks track)</span></div><div><span class="badge b-now">v0 ใน 2 เดือน</span><span class="lift"> · citability สูง / แรงต่ำ</span></div></div>
+<div class="b">
+<p>ปล่อยชุด <b>transboundary smoke forecasting + attribution benchmark</b> สำหรับเอเชียอาคเนย์ พร้อม ground-truth คู่ (WRF-Chem source-off + PMF) — เพราะเราสร้าง datacube อยู่แล้ว ต้นทุนหลักคือการแพ็กเกจ + เขียน data card</p>
+<p style="margin-bottom:0"><b>ทำไมคุ้ม:</b> benchmark ตีพิมพ์ได้<u>เอง</u>ใน NeurIPS D&amp;B track + citable สูง + เป็นมรดกถาวรของงาน</p>
+</div></div>
+
+<div class="up">
+<div class="head"><div><span class="rank">5</span><span class="t">Multi-region Generalization</span></div><div><span class="badge b-ext">ต่อยอด 4–6 เดือน</span><span class="lift"> · ลิฟต์ป้องกันสูงสุด / แรงสูงสุด</span></div></div>
+<div class="b">
+<p>ทดสอบเพิ่มภูมิภาค: อินโดนีเซีย→สิงคโปร์ (peat haze), ปัญจาบ→เดลี (stubble burning) → ฆ่าคำว่า "แคบ" ที่อันตรายสุด · ถ้าทำ zero-shot/few-shot transfer ได้ = เรื่องเล่า foundation-model</p>
+<p style="margin-bottom:0"><b>ทำไมเป็นส่วนต่อยอด:</b> กิน data + compute มากเกินกรอบ 2 เดือน/1 GPU → ใน 2 เดือนแค่<b>เฟรมเป็น "future work"</b> + ออกแบบให้ generalize ได้ตั้งแต่ต้น</p>
+</div></div>
+
+<div class="up">
+<div class="head"><div><span class="rank">6</span><span class="t">Causal Identifiability Framing</span></div><div><span class="badge b-now">เขียนใน 2 เดือน</span><span class="lift"> · ถูกมาก (แค่ formalism)</span></div></div>
+<div class="b">
+<p style="margin-bottom:0">formalize counterfactual เป็น <code>do(E⁽ˢ⁾=0)</code> + ระบุเงื่อนไข identifiability ภายใต้สมมติฐาน transport เชิงเส้น (อ้าง Pearl/causal ML) → ตอบ reviewer สาย causal ว่าเคลม intervention มีรากฐาน ไม่ใช่ correlation</p>
+</div></div>
+
+<h2>4. แผนแบ่ง: ทำตอนนี้ vs ต่อยอด A*</h2>
+<table>
+<tr><th>การยกระดับ</th><th>2 เดือน (แข่ง + เมล็ดพันธุ์)</th><th>ต่อยอด 4–6 เดือน (A* เต็ม)</th></tr>
+<tr><td>① ทฤษฎี bound</td><td class="lo">✅ พิสูจน์ + ทดลองยืนยัน 1 ชุด</td><td>ขยาย bound กรณีทั่วไป</td></tr>
+<tr><td>② Inversion</td><td class="lo">✅ proof-of-concept 1 เคส</td><td>benchmark inversion เต็ม</td></tr>
+<tr><td>③ Attribution UQ</td><td class="lo">✅ ทำเลย (ถูก)</td><td>calibration ละเอียด</td></tr>
+<tr><td>④ Benchmark</td><td class="lo">✅ ปล่อย v0</td><td>ขยาย + leaderboard</td></tr>
+<tr><td>⑤ Multi-region</td><td class="muted">❄️ เฟรมเป็น future</td><td class="lo">✅ 3–4 ภูมิภาค (แกนหลัก A*)</td></tr>
+<tr><td>⑥ Causal framing</td><td class="lo">✅ เขียนในรายงาน</td><td>ขยายเชิงทฤษฎี</td></tr>
+</table>
+<div class="lead">
+<b>คำแนะนำ:</b> ใน 2 เดือน ทำ <b>①②③④⑥</b> (ทั้งหมด compute ต่ำ — เป็นคณิต/ออกแบบ/แพ็กเกจ ไม่ใช่เทรนหนัก) → ได้ <b class="k">competition winner + arXiv preprint ที่มี ทฤษฎี + capability ใหม่ (inversion) + benchmark</b> = ~70% ของเปเปอร์ A* · เหลือ ⑤ (multi-region) เป็นงานต่อเพื่อปิดเล่ม
+</div>
+
+<h2>5. โครงเปเปอร์ A* (ร่าง)</h2>
+<div class="card">
+<b>Title (ร่าง):</b> "A Differentiable Physics-Structured Neural Transport Model for Joint Forecasting, Source Attribution, and Inversion of Transboundary Smoke"<br><br>
+<b>Contributions (สิ่งที่เคลม):</b>
+<ol style="margin:6px 0">
+<li>conditionally-linear neural operator ที่มี mass-conservation + non-negativity พิสูจน์ได้ (C1)</li>
+<li>differentiable inline attribution + <b>ทฤษฎีบท error bound</b> เชื่อม linear↔nonlinear (C2 + ①)</li>
+<li>autodiff adjoint → <b>source inversion</b> ฟรี (②) — ความสามารถใหม่ของ neural CTM</li>
+<li>counterfactual ที่ validate เทียบ WRF-Chem + กรอบ causal (⑥)</li>
+<li>open benchmark transboundary smoke (④) + dual-validation (WRF-Chem + PMF)</li>
+</ol>
+<b>Target venues:</b> KDD / NeurIPS (Datasets &amp; Benchmarks หรือ main) / ICLR · domain: npj Climate &amp; Atmos. Science, Nature Communications
+</div>
+
+<h2>6. คำตัดสินสุดท้าย</h2>
+<div class="lead">
+<b>final หรือยัง?</b> ❌ ยัง — แต่ใกล้กว่าที่คิด · design ปัจจุบันคือ <b>แกนที่ถูกต้อง</b> สิ่งที่เพิ่มไม่ใช่การรื้อ แต่เป็นการ<b>ยกระดับสิ่งที่มีอยู่</b>: เพิ่มทฤษฎี (①), เปิด capability ที่ซ่อนอยู่แล้ว (② inversion ได้ฟรีเพราะ differentiable), เก็บ rigor (③⑥), แพ็กเป็นมรดก (④)<br><br>
+<b class="k">เส้นแบ่งวินัย:</b> สิ่งที่เพิ่มทั้งหมด <u>ต่อยอดจากแกนเดียวเดิม ไม่ใช่ฟีเจอร์ใหม่แยกชิ้น</u> — ยังคงหลักการ "ลึกจุดเดียว" ไว้ แค่ขุดให้ลึกถึงระดับตีพิมพ์
+</div>
+
+<p class="center muted" style="margin-top:36px">HazeNet · Path to A* · ทำแกนเดียวให้ลึกถึงระดับ top-tier publication</p>
+
+</div>
+</body>
+</html>

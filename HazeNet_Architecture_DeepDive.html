@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HazeNet — Architecture Deep Dive: Input → Output ทุกขั้นตอน</title>
+<style>
+  :root{
+    --bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;
+    --red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ffa657;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:"Segoe UI",Tahoma,"Sarabun",sans-serif;line-height:1.78;font-size:16px;}
+  .wrap{max-width:1080px;margin:0 auto;padding:30px 20px 120px}
+  h1{font-size:32px;line-height:1.22;margin:0 0 6px}
+  .tagline{color:var(--cyan);font-size:17.5px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  h2{font-size:24px;margin:60px 0 14px;padding-bottom:10px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:32px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);
+    padding:18px 22px;border-radius:10px;margin:22px 0;font-size:16.5px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin:16px 0}
+  .analogy{background:linear-gradient(180deg,#1a2433,#141b26);border:1px solid #2d4358;
+    border-left:4px solid var(--cyan);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .analogy .h{color:var(--cyan);font-weight:bold;font-size:15px;margin-bottom:4px}
+  .analogy .h::before{content:"🧠 ";}
+  .warn{background:rgba(227,179,65,.07);border:1px solid var(--border);border-left:4px solid var(--amber);border-radius:10px;padding:14px 20px;margin:16px 0}
+  .danger{background:rgba(248,81,73,.07);border:1px solid var(--border);border-left:4px solid var(--red);border-radius:10px;padding:14px 20px;margin:16px 0}
+  .ok{background:rgba(63,185,80,.07);border:1px solid var(--border);border-left:4px solid var(--green);border-radius:10px;padding:14px 20px;margin:16px 0}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:13.5px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow-x:auto;font-size:13px;line-height:1.6}
+  pre code{background:none;border:none;padding:0;color:var(--text)}
+  .eq{background:#11161d;border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:8px;
+    padding:14px 18px;margin:14px 0;font-size:17px;overflow-x:auto;font-family:"Cambria Math",serif;line-height:2}
+  .eq .lbl{display:block;color:var(--muted);font-size:13px;font-family:"Segoe UI",sans-serif;margin-top:6px}
+  a{color:var(--blue)}
+  .muted{color:var(--muted)} b.k{color:var(--green)}
+  .center{text-align:center}
+  .pill{display:inline-block;font-size:12px;padding:2px 10px;border-radius:20px;margin:3px 4px 3px 0;border:1px solid var(--border);color:var(--muted)}
+  .pill.g{color:var(--green);border-color:var(--green);background:rgba(63,185,80,.1)}
+  .pill.p{color:var(--purple);border-color:var(--purple);background:rgba(188,140,255,.1)}
+  .pill.a{color:var(--amber);border-color:var(--amber);background:rgba(227,179,65,.1)}
+  .hero{background:linear-gradient(135deg,#161b22 0%,#1a2433 60%,#141b26 100%);
+    border:1px solid var(--border);border-radius:16px;padding:30px 30px 26px;margin:18px 0 10px}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 24px;margin:24px 0;columns:2;font-size:14.5px}
+  @media(max-width:720px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;display:block;padding:3px 0}
+  .toc a:hover{color:var(--cyan)}
+  .toc .sec{color:var(--green);font-weight:bold;margin-top:8px;display:block}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .flow text{font-family:"Segoe UI",Tahoma,sans-serif}
+  .shape{font-family:"Consolas",monospace;color:var(--amber);font-size:13.5px;background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 7px}
+  .step{display:grid;grid-template-columns:34px 1fr;gap:14px;margin:14px 0;align-items:start}
+  .step .n{background:var(--panel2);border:1px solid var(--cyan);color:var(--cyan);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:bold}
+  .tag-real{display:inline-block;font-size:11px;padding:1px 9px;border-radius:6px;background:rgba(63,185,80,.15);color:var(--green);border:1px solid var(--green);margin-left:8px}
+  .tag-plan{display:inline-block;font-size:11px;padding:1px 9px;border-radius:6px;background:rgba(188,140,255,.12);color:var(--purple);border:1px solid var(--purple);margin-left:8px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  .dimtable td:first-child{color:var(--cyan);font-family:monospace}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>HazeNet — Architecture Deep Dive 🔬</h1>
+  <p class="tagline">เจาะลึกทุกขั้นตอน ตั้งแต่ดึงข้อมูลดิบ → จนได้ผลลัพธ์ · ทุกทฤษฎี ทุกสมการ ทุก tensor shape</p>
+  <p class="sub">เอกสารชุดที่ 3 ต่อจาก <a href="HazeNet_Pipeline_Explained.html">Pipeline_Explained</a> และ <a href="HazeNet_vs_AFNO-StormCast_Analysis.html">vs_AFNO-StormCast</a> · <b>อิงโค้ดจริงใน <code>src/</code></b> ไม่ใช่แค่แผน · อ่านจบเข้าใจ input→output ได้ทั้งระบบ</p>
+  <p style="margin-top:14px">
+    <span class="pill g tag-real" style="margin:0 4px 0 0">ทำจริงแล้ว = สีเขียว</span>
+    <span class="pill p" style="margin:0">ส่วนขยายตามแผน = สีม่วง</span>
+  </p>
+</div>
+
+<div class="lead">
+<b>หัวใจที่ต้องจำก่อนเริ่ม:</b> โมเดลจริงของเราตอนนี้คือสมการเดียวนี้ →
+<div class="eq" style="margin:10px 0 4px">
+PM2.5<sub>s</sub> = <span style="color:#58a6ff">Σ<sub>g</sub> K<sub>sg</sub>(met) · E<sub>g</sub></span> + <span style="color:#e3b341">b<sub>s</sub>(met)</span>
+<span class="lbl"><span style="color:#58a6ff">K = transport kernel (เน็ตเดาจากลม/ภูมิประเทศ — บอกว่า "ไฟที่ช่อง g ส่งฝุ่นถึงสถานี s แค่ไหน")</span> · <span style="color:#e3b341">b = ฝุ่นพื้นหลัง (ไม่ใช่จากไฟ)</span></span>
+</div>
+ทุกอย่างในเอกสารนี้คือการอธิบายว่า <b>K, E, b มาจากไหน คำนวณยังไง</b> และทำไมรูปสมการแบบนี้ทำให้ได้ <b>พยากรณ์ + ระบุแหล่ง + inversion</b> มาจากการเทรนครั้งเดียว
+</div>
+
+<!-- TOC -->
+<div class="toc">
+<span class="sec">📦 PART A — ดึงข้อมูลดิบ (ลงลึกแต่ละแหล่ง)</span>
+<a href="#a1">A1. FIRMS — ไฟ/FRP</a>
+<a href="#a2">A2. Open-Meteo — ลม + อุตุนิยม</a>
+<a href="#a3">A3. DEM — ภูมิประเทศ</a>
+<a href="#a4">A4. OpenAQ — PM2.5 (เฉลย)</a>
+<span class="sec">🧱 PART B — Raw → Grid → Datacube</span>
+<a href="#b1">B1. แนวคิดกริด + พิกัด</a>
+<a href="#b2">B2. Rasterize ไฟ (จุด→กริด)</a>
+<a href="#b3">B3. Interpolation (หยาบ→ละเอียด)</a>
+<a href="#b4">B4. Datacube + Normalize + Split</a>
+<span class="sec">🧠 PART C — โมเดล (input→output)</span>
+<a href="#c1">C1. ภาพรวม forward pass</a>
+<a href="#c2">C2. Met Encoder (CNN)</a>
+<a href="#c3">C3. K_head — สร้าง kernel</a>
+<a href="#c4">C4. การคูณ K@E + b</a>
+<a href="#c5">C5. Attribution (ระบุแหล่ง)</a>
+<a href="#c6">C6. Inversion (แก้ย้อน)</a>
+<a href="#c7">C7. การเทรน</a>
+<span class="sec">📐 PART D — ทฤษฎีลงลึก</span>
+<a href="#d1">D1. Conditionally-linear + Superposition</a>
+<a href="#d2">D2. Softmax kernel</a>
+<a href="#d3">D3. Low-rank vs GlobalV</a>
+<a href="#d4">D4. Inverse problem + Tikhonov</a>
+<span class="sec">🚀 PART E — ส่วนขยายตามแผน</span>
+<a href="#e1">E1. Emission curve + BLH (แก้แกนปัญหา)</a>
+<a href="#e2">E2. Semi-Lagrangian advection + rollout</a>
+<a href="#e3">E3. สถาปัตยกรรม 2 หัว (ต่อโค้ดยังไง)</a>
+</div>
+
+<!-- ============================================================= -->
+<!-- PART A -->
+<!-- ============================================================= -->
+<h2>📦 PART A — ดึงข้อมูลดิบ ลงลึกแต่ละแหล่ง</h2>
+<p>ทุกแหล่งดึงด้วยสคริปต์ Python ใน <code>src/download_*_m2.py</code> หลักการร่วมคือ: <b>ขอผ่าน API → แบ่งคำขอเป็นก้อน (เลี่ยง limit) → เซฟไฟล์ดิบ → ข้ามไฟล์ที่มีแล้ว (resume ได้)</b></p>
+
+<!-- A1 FIRMS -->
+<h3 id="a1">A1. 🔥 FIRMS — จุดไฟและความแรงไฟ (FRP) <span class="tag-real">download_firms_m2.py</span></h3>
+<div class="card">
+<table class="dimtable">
+<tr><th>หัวข้อ</th><th>รายละเอียดจริง</th></tr>
+<tr><td>แหล่ง</td><td>NASA FIRMS — ดาวเทียม <b>VIIRS SNPP</b> (สินค้า <code>VIIRS_SNPP_SP</code>)</td></tr>
+<tr><td>API</td><td><code>firms.modaps.eosdis.nasa.gov/api/area/csv/{KEY}/{SOURCE}/{area}/{n_days}/{start}</code></td></tr>
+<tr><td>ค่าที่ได้</td><td>ตารางจุดไฟ: <code>latitude, longitude, acq_date, frp</code> (และอื่นๆ)</td></tr>
+<tr><td>ข้อจำกัด + วิธีแก้</td><td>1 คำขอ ≤ <b>5 วัน</b> และ ≤ <b>10°</b>/ด้าน → โค้ดแบ่งเป็น <b>ก้อนละ 5 วัน</b> + แบ่งพื้นที่เป็น <b>2 sub-box</b> (เหนือ/ใต้) แล้ว concat</td></tr>
+<tr><td>ผลลัพธ์</td><td>1 ไฟล์/ปี: <code>firms_VIIRS_SNPP_{year}.csv</code></td></tr>
+</table>
+</div>
+
+<h4>FRP คืออะไร (ทฤษฎี)</h4>
+<p><b>FRP = Fire Radiative Power</b> (เมกะวัตต์) = พลังงานความร้อนที่ไฟแผ่ออกมา ณ ขณะที่ดาวเทียมบินผ่าน ดาวเทียมวัด "ความสว่างอินฟราเรด" ของแต่ละพิกเซลแล้วแปลงเป็นกำลังความร้อน — <b>FRP สูง = ไฟแรง = ปล่อยควันเยอะ</b></p>
+<div class="analogy"><div class="h"></div>FRP เหมือน "ความสว่างของเตาไฟเมื่อมองจากบนเครื่องบิน" — เตาที่ลุกโชนสว่างกว่า = ร้อนกว่า = ควันเยอะกว่า แต่มันคือ "ภาพถ่าย ณ วินาทีที่บินผ่าน" เท่านั้น (วันละ ~2 ครั้ง) ไม่ใช่การวัดต่อเนื่อง</div>
+<div class="warn"><b>จุดที่ต้องระวัง (เป็นแกนปัญหาของทั้งโปรเจกต์):</b> FRP เป็นแค่ <b>proxy</b> ของปริมาณควัน — ความสัมพันธ์ "FRP → กิโลกรัมฝุ่นจริง" <u>ไม่ใช่เส้นตรงและไม่คงที่</u> (ขึ้นกับชนิดเชื้อเพลิง ความชื้น และที่สำคัญคือดาวเทียมมองไม่เห็นตอนเมฆบัง) → เราจะแก้ด้วย "emission curve" ใน Part E1</div>
+
+<!-- A2 Open-Meteo -->
+<h3 id="a2">A2. 💨 Open-Meteo — ลม + ฝน + ความชื้น + อุณหภูมิ <span class="tag-real">download_openmeteo_met_m2.py</span></h3>
+<div class="card">
+<table class="dimtable">
+<tr><th>หัวข้อ</th><th>รายละเอียดจริง</th></tr>
+<tr><td>แหล่ง</td><td>Open-Meteo ERA5 archive (<code>models=era5</code>) — <b>ฟรี ไม่ต้องมี key</b> (เลี่ยงคิว CDS ที่ช้า)</td></tr>
+<tr><td>วิธีดึง</td><td>ขอเป็น "จุด" บนกริดหยาบ <b>1°</b> = 12 (lat) × 11 (lon) = <b>132 จุด</b> ครอบ SEA</td></tr>
+<tr><td>ตัวแปรรายชั่วโมง</td><td><code>wind_speed_10m, wind_direction_10m, precipitation, relative_humidity_2m, temperature_2m</code></td></tr>
+<tr><td>ย่อเป็นรายวัน</td><td>ลม/rh/temp = <b>ค่าเฉลี่ยต่อวัน</b> · ฝน = <b>ผลรวมต่อวัน</b> (เพราะฝนสนใจปริมาณสะสม)</td></tr>
+<tr><td>ผลลัพธ์</td><td><code>openmeteo_met_2019_2023.nc</code> (รูป <span class="shape">T × 12 × 11</span> ต่อตัวแปร)</td></tr>
+</table>
+</div>
+<h4>ทฤษฎีสำคัญ: แปลง "ความเร็ว+ทิศลม" → "u, v" (เวกเตอร์)</h4>
+<p>API ให้ลมมาเป็น <b>ความเร็ว (speed)</b> + <b>ทิศ (direction เป็นองศา)</b> แต่โมเดลต้องใช้เป็น <b>องค์ประกอบ 2 แกน</b> (u = ตะวันออก-ตก, v = เหนือ-ใต้) จึงแปลงด้วยตรีโกณ:</p>
+<div class="eq">
+u = −speed · sin(θ) &nbsp;&nbsp;&nbsp; v = −speed · cos(θ)
+<span class="lbl">θ = ทิศที่ลม "พัดมาจาก" (meteorological convention) · เครื่องหมายลบแปลงเป็นทิศที่ลม "พัดไป" · u,v คือสิ่งที่ใช้พัดพาควัน</span>
+</div>
+<p>ทำไมต้องมี precip/rh/temp นอกจากลม? — เพราะการวิเคราะห์ LOYO (leave-one-year-out) พบว่าโมเดลจับ "ระดับฝุ่นต่อปี" ไม่ได้ เพราะ <b>ความสัมพันธ์ไฟ→ฝุ่นขึ้นกับสภาพอากาศที่ยังไม่ได้ใส่</b>: ฝนชะล้างฝุ่น, ความชื้นทำให้ละอองโต, อุณหภูมิคุมเสถียรภาพอากาศ</p>
+
+<!-- A3 DEM -->
+<h3 id="a3">A3. ⛰️ DEM — ความสูงภูมิประเทศ <span class="tag-real">download_dem_m2.py</span></h3>
+<div class="card">
+<table class="dimtable">
+<tr><th>หัวข้อ</th><th>รายละเอียดจริง</th></tr>
+<tr><td>แหล่ง</td><td>Copernicus <b>GLO-30</b> (ความละเอียด ~30 ม. / 1 arcsec)</td></tr>
+<tr><td>รูปแบบ</td><td>ไฟล์ <b>GeoTIFF</b> เป็น "tile" ตารางองศา (สูงสุด 110 tiles, ข้าม tile ทะเล 404)</td></tr>
+<tr><td>บทบาท</td><td>Static (ไม่เปลี่ยนตามเวลา) — แอ่งภูเขากักควัน เป็นบริบทให้ encoder</td></tr>
+</table>
+</div>
+<p>DEM เป็นข้อมูล "คงที่" ชั้นเดียว ใช้ซ้ำทุกวัน (ในโค้ด <code>build_datacube</code> ทำ <code>np.broadcast_to</code> ให้มีมิติเวลา)</p>
+
+<!-- A4 OpenAQ -->
+<h3 id="a4">A4. 😷 OpenAQ — PM2.5 จากสถานี (เฉลย/label) <span class="tag-real">download_pm25_m2.py</span></h3>
+<div class="card">
+<table class="dimtable">
+<tr><th>หัวข้อ</th><th>รายละเอียดจริง</th></tr>
+<tr><td>แหล่ง</td><td>OpenAQ v3 API — รวมสถานีตรวจวัดทั่ว SEA (ไทย + พม่า/ลาวบางส่วน)</td></tr>
+<tr><td>endpoint</td><td><code>GET /sensors/{id}/days?limit=1000&page=N&datetime_from=...&datetime_to=...</code></td></tr>
+<tr><td>ค่าที่ได้</td><td>PM2.5 รายวัน ต่อสถานี: <code>date, locationId, lat, lon, pm25</code></td></tr>
+<tr><td>บทบาท</td><td><b>เฉลย</b> — ใช้สอนโมเดล (target y) และใช้ตรวจข้อสอบ (ground-truth)</td></tr>
+</table>
+</div>
+<div class="warn"><b>ข้อจำกัดจริง:</b> สถานีพม่า/ลาวมีน้อยมาก (~4 สถานี) → inversion (แก้ย้อนหาแหล่ง) เป็นปัญหา <b>underdetermined</b> (สมการน้อยกว่าตัวแปร) นี่คือสาเหตุที่ inversion ยังให้ผลแย่ (Part C6/D4)</div>
+
+<!-- ============================================================= -->
+<!-- PART B -->
+<!-- ============================================================= -->
+<h2>🧱 PART B — จาก Raw → Grid → Datacube</h2>
+<p>ข้อมูลดิบ 4 แหล่งคนละความละเอียด/พิกัด/เวลา → ต้อง "จับมาวางบนตารางเดียวกัน" ก่อน 2 สคริปต์: <code>build_grid_m2.py</code> (regrid) → <code>build_datacube_m2.py</code> (stack + label)</p>
+
+<h3 id="b1">B1. แนวคิดกริด + ระบบพิกัด</h3>
+<p>เราสร้าง "ตารางมาตรฐาน" ครอบทั้งภูมิภาค:</p>
+<div class="eq">
+LAT = linspace(14.0, 25.0, <b>111</b>) &nbsp; LON = linspace(96.0, 106.0, <b>101</b>) &nbsp; step = 0.1°
+<span class="lbl">H=111 แถว × W=101 คอลัมน์ = G = <b>11,211 ช่อง</b> · 0.1° ≈ 11 กม. · ครอบ ไทยเหนือ+พม่า(ฉาน/คะฉิ่น)+ลาวเหนือ</span>
+</div>
+<p><b>การแปลงพิกัดจริง→ช่องกริด</b> (ใช้ทั้ง rasterize ไฟ และวางสถานี):</p>
+<div class="eq">
+ilat = round((lat − LAT[0]) / 0.1) &nbsp;&nbsp; ilon = round((lon − LON[0]) / 0.1)
+<span class="lbl">เช่น สถานีที่ lat=18.8 → ilat = round((18.8−14.0)/0.1) = แถวที่ 48 · นี่คือการ "หาว่าจุดนี้ตกช่องไหน"</span>
+</div>
+<div class="analogy"><div class="h"></div>เหมือนกระดาษกราฟทับแผนที่ — ทุกจุดบนโลก (ละติจูด/ลองจิจูด) ถูก "ปัดเศษ" เข้าช่องสี่เหลี่ยมที่ใกล้ที่สุด เพื่อให้ข้อมูลทุกชนิดพูดภาษาเดียวกัน (ช่องเดียวกัน)</div>
+
+<h3 id="b2">B2. Rasterize ไฟ — แปลงจุด → สนามบนกริด</h3>
+<p>ไฟเป็น "จุดกระจัดกระจาย" (lat,lon,frp) ต้องแปลงเป็น "สนาม" (grid) วิธีจริง: <b>หาช่องที่จุดไฟตก แล้วบวก FRP สะสมเข้าช่องนั้น</b></p>
+<pre><code>for แต่ละจุดไฟ:
+    di   = index ของวัน (acq_date)
+    ilat = round((lat − LAT[0]) / 0.1)
+    ilon = round((lon − LON[0]) / 0.1)
+    emis[di, ilat, ilon] += frp        # หลายจุดในช่องเดียว → บวกกัน</code></pre>
+<p>ผลลัพธ์: <code>emission</code> รูป <span class="shape">T × H × W</span> = ปริมาณการปล่อยต่อช่องต่อวัน</p>
+
+<h3 id="b3">B3. Interpolation — ขยายข้อมูลหยาบ → ละเอียด</h3>
+<p>ลม Open-Meteo เป็นกริดหยาบ 1° (12×11) แต่กริดเราละเอียด 0.1° (111×101) → ต้อง "เติมค่าระหว่างจุด" ด้วย <b>bilinear interpolation</b></p>
+<div class="eq">
+ค่า ณ จุดใหม่ = ถ่วงน้ำหนักเชิงเส้นจาก 4 จุดกริดหยาบรอบๆ (ตามระยะ)
+<span class="lbl">โค้ดใช้ <code>RegularGridInterpolator(method="linear")</code> · DEM ใช้คนละทาง: coarsen(30×30) ลงมาก่อน แล้วค่อย interp</span>
+</div>
+<div class="analogy"><div class="h"></div>เหมือนรู้อุณหภูมิแค่ 4 มุมห้อง แล้วเดาอุณหภูมิตรงกลางห้องด้วยการเฉลี่ยถ่วงน้ำหนักตามระยะ — ยิ่งใกล้มุมไหน ค่ายิ่งเหมือนมุมนั้น</div>
+
+<h3 id="b4">B4. ประกอบ Datacube + Normalize + แบ่ง Train/Test</h3>
+<h4>โครงสร้าง tensor สุดท้าย (สำคัญมาก — จำชุดนี้ไว้)</h4>
+<table class="dimtable">
+<tr><th>ตัวแปร</th><th>รูป (shape)</th><th>คืออะไร</th></tr>
+<tr><td>X</td><td><span class="shape">(T, C, H, W)</span></td><td>datacube หลัก · C = [u10, v10, dem, precip, rh, temp, emission] · <b>emission อยู่ช่องสุดท้ายเสมอ</b></td></tr>
+<tr><td>met</td><td><span class="shape">(T, 6, H, W)</span></td><td>= X[:, :−1] → input ของ encoder</td></tr>
+<tr><td>emission (E)</td><td><span class="shape">(T, H, W)</span></td><td>= X[:, −1] → ตัวที่ถูกคูณด้วย K</td></tr>
+<tr><td>y</td><td><span class="shape">(T, S)</span></td><td>PM2.5 จริงรายสถานี (NaN = วันที่สถานีไม่มีข้อมูล)</td></tr>
+</table>
+
+<h4>Normalization — และทำไม "เฉพาะ train" (ทฤษฎีกัน leakage)</h4>
+<pre><code>met_mu  = met[train].mean()      # คำนวณจาก train เท่านั้น
+met_std = met[train].std()
+met_norm = (met − met_mu) / met_std       # z-score
+e_max    = emission[train].max()
+emis_norm = emission / e_max              # scale 0..1
+y_norm    = y / pm25_max(train)</code></pre>
+<div class="danger"><b>ทฤษฎี data leakage:</b> ถ้าเราคำนวณค่าเฉลี่ย/max จาก<u>ทั้งชุด</u> (รวม test) เท่ากับ "โมเดลแอบเห็นสถิติของอนาคต" → คะแนนสอบจะดีเกินจริง · กฎเหล็ก: <b>สถิติทุกตัวคำนวณจาก train แล้วเอาไปใช้กับ test</b> เหมือนสอบจริงที่ห้ามเห็นข้อสอบล่วงหน้า</div>
+<h4>แบ่ง Train/Test ตามปี (ไม่ใช่สุ่ม)</h4>
+<p>train = 2019–2022 · test = <b>2023</b> (ปีวิกฤต ที่โมเดลไม่เคยเห็น) — แบ่งตามเวลาเพื่อเลียนแบบการใช้งานจริง (ทำนายอนาคต) ไม่ใช่สุ่มวันปนกัน</p>
+
+<!-- ============================================================= -->
+<!-- PART C -->
+<!-- ============================================================= -->
+<h2>🧠 PART C — โมเดล: เดินจาก input → output ทุกบรรทัด</h2>
+<p>ไฟล์ <code>model_operator.py</code> + variant ใน <code>train_operator_m2.py</code> · เราจะเดินตาม forward pass จริงทีละก้าว</p>
+
+<h3 id="c1">C1. ภาพรวม forward pass (1 วัน)</h3>
+<div class="center card">
+<svg class="flow" viewBox="0 0 960 360" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#58a6ff"/></marker></defs>
+
+  <!-- inputs -->
+  <rect x="20" y="40" width="150" height="64" rx="9" fill="#1c2330" stroke="#f778ba"/>
+  <text x="95" y="64" fill="#f778ba" font-size="12.5" font-weight="bold" text-anchor="middle">met</text>
+  <text x="95" y="84" fill="#9aa7b4" font-size="10.5" text-anchor="middle">(B, 6, H, W)</text>
+  <text x="95" y="98" fill="#9aa7b4" font-size="10" text-anchor="middle">ลม+dem+ฝน+rh+temp</text>
+
+  <rect x="20" y="230" width="150" height="64" rx="9" fill="#1c2330" stroke="#e3b341"/>
+  <text x="95" y="254" fill="#e3b341" font-size="12.5" font-weight="bold" text-anchor="middle">emission E</text>
+  <text x="95" y="274" fill="#9aa7b4" font-size="10.5" text-anchor="middle">(B, H, W) → (B, G)</text>
+  <text x="95" y="288" fill="#9aa7b4" font-size="10" text-anchor="middle">FRP ต่อช่อง</text>
+
+  <!-- encoder -->
+  <rect x="220" y="40" width="170" height="64" rx="9" fill="#0f141b" stroke="#bc8cff" stroke-width="2"/>
+  <text x="305" y="62" fill="#bc8cff" font-size="12.5" font-weight="bold" text-anchor="middle">CNN Encoder</text>
+  <text x="305" y="80" fill="#9aa7b4" font-size="10.5" text-anchor="middle">Conv→Pool→Linear</text>
+  <text x="305" y="95" fill="#9aa7b4" font-size="10" text-anchor="middle">→ context h (B, hidden)</text>
+
+  <!-- heads -->
+  <rect x="440" y="20" width="160" height="54" rx="9" fill="#161b22" stroke="#58a6ff"/>
+  <text x="520" y="42" fill="#58a6ff" font-size="12" font-weight="bold" text-anchor="middle">K_head</text>
+  <text x="520" y="60" fill="#9aa7b4" font-size="10" text-anchor="middle">→ K (B, S, G) softmax</text>
+
+  <rect x="440" y="90" width="160" height="48" rx="9" fill="#161b22" stroke="#e3b341"/>
+  <text x="520" y="110" fill="#e3b341" font-size="12" font-weight="bold" text-anchor="middle">b_head</text>
+  <text x="520" y="127" fill="#9aa7b4" font-size="10" text-anchor="middle">→ b (B, S) softplus</text>
+
+  <!-- multiply -->
+  <rect x="650" y="150" width="170" height="70" rx="9" fill="#0f141b" stroke="#3fb950" stroke-width="2"/>
+  <text x="735" y="178" fill="#3fb950" font-size="13" font-weight="bold" text-anchor="middle">K @ E + b</text>
+  <text x="735" y="198" fill="#9aa7b4" font-size="10.5" text-anchor="middle">bmm((B,S,G),(B,G,1))</text>
+  <text x="735" y="212" fill="#9aa7b4" font-size="10" text-anchor="middle">→ (B, S)</text>
+
+  <!-- output -->
+  <rect x="650" y="270" width="170" height="56" rx="9" fill="#1c2330" stroke="#3fb950"/>
+  <text x="735" y="294" fill="#3fb950" font-size="12.5" font-weight="bold" text-anchor="middle">PM2.5 (B, S)</text>
+  <text x="735" y="312" fill="#9aa7b4" font-size="10" text-anchor="middle">พยากรณ์รายสถานี</text>
+
+  <line x1="170" y1="72" x2="218" y2="72" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="390" y1="60" x2="438" y2="47" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="390" y1="84" x2="438" y2="110" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="600" y1="50" x2="700" y2="148" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="170" y1="262" x2="648" y2="195" stroke="#e3b341" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="600" y1="120" x2="700" y2="155" stroke="#e3b341" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="735" y1="220" x2="735" y2="268" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+
+  <text x="305" y="170" fill="#9aa7b4" font-size="11" text-anchor="middle">B = batch (จำนวนวันในชุดย่อย)</text>
+  <text x="305" y="188" fill="#9aa7b4" font-size="11" text-anchor="middle">S = สถานี · G = H×W ช่องกริด</text>
+</svg>
+</div>
+
+<h3 id="c2">C2. Met Encoder — บีบสภาพอากาศเป็น "เวกเตอร์บริบท"</h3>
+<p>หน้าที่: รับสนามอุตุนิยม <span class="shape">(B,6,H,W)</span> → บีบเป็นเวกเตอร์สั้นๆ <span class="shape">(B, hidden)</span> ที่สรุป "วันนี้อากาศเป็นยังไง"</p>
+<pre><code>encoder = Sequential(
+    Conv2d(in_ch=6, 16, kernel=3, padding=1), GELU(),   # จับลวดลายเชิงพื้นที่
+    Conv2d(16, 32, 3, padding=1), GELU(),
+    AdaptiveAvgPool2d((8,8)),    # ย่อทุกขนาดภาพ → 32×8×8 = 2048
+    Flatten(),
+    Linear(2048, hidden=64), GELU(),
+    Dropout(0.2),
+)   # output: h = (B, 64)</code></pre>
+<table>
+<tr><th>ชั้น</th><th>ทำอะไร (ทฤษฎี)</th></tr>
+<tr><td><b>Conv2d</b></td><td>เลื่อนตัวกรอง 3×3 ทั่วภาพ จับลวดลายท้องถิ่น (เช่น "ลมแรงปะทะภูเขา") — แชร์น้ำหนักทั้งภาพ จึงประหยัดพารามิเตอร์</td></tr>
+<tr><td><b>GELU</b></td><td>ฟังก์ชัน activation (ทำให้เน็ตเรียนความสัมพันธ์ไม่เชิงเส้นได้)</td></tr>
+<tr><td><b>AdaptiveAvgPool(8,8)</b></td><td>เฉลี่ยลงเหลือ 8×8 ไม่ว่าภาพเข้ามาขนาดไหน → ได้ขนาดคงที่</td></tr>
+<tr><td><b>Linear</b></td><td>ฉายลงเป็นเวกเตอร์ 64 มิติ = "สรุปอากาศวันนี้"</td></tr>
+</table>
+<div class="analogy"><div class="h"></div>encoder = "นักอุตุนิยมที่ดูแผนที่อากาศทั้งใบแล้วสรุปเป็นโน้ตสั้นๆ 64 คำ" — โน้ตนี้ (h) คือสิ่งที่หัวต่อไปใช้ตัดสินว่า "วันนี้ลมจะพาควันยังไง"</div>
+
+<h3 id="c3">C3. K_head — สร้าง Transport Kernel K</h3>
+<p>นี่คือหัวใจ: แปลงเวกเตอร์บริบท h → เมทริกซ์ K <span class="shape">(B, S, G)</span> ที่บอกว่า <b>"ไฟที่ช่อง g ส่งฝุ่นถึงสถานี s แรงแค่ไหน"</b></p>
+<p>มี 3 วิธีสร้าง K (จากแพงสุด → ประหยัดสุด):</p>
+<table>
+<tr><th>variant</th><th>วิธีสร้าง K</th><th>params (M2)</th><th>เหตุผล</th></tr>
+<tr><td><b>CLNO (full)</b></td><td><code>K = softmax(Linear(h) → S×G)</code></td><td>~28M</td><td>ตรงไปตรงมา แต่ K_head ใหญ่มาก</td></tr>
+<tr><td><b>CLNOLowRank</b></td><td>K = softmax(U @ Vᵀ), U:(S,r) V:(G,r), r=32</td><td>~23M</td><td>แตก K เป็นเมทริกซ์ผอม 2 ตัว ประหยัด memory</td></tr>
+<tr><td><b>CLNOGlobalV</b></td><td>V เป็น <b>พารามิเตอร์ global</b> (เรียนครั้งเดียว), เน็ตเดาแค่ U(met)</td><td><b>~0.56M</b></td><td>ลด 40 เท่า กัน overfitting — "โหมดการพัดพาเชิงพื้นที่เสถียร เปลี่ยนแค่น้ำหนักรายวัน"</td></tr>
+</table>
+<div class="eq">
+K_logit = U(h) @ Vᵀ &nbsp;&nbsp;→&nbsp;&nbsp; K = softmax<sub>over G</sub>(K_logit)
+<span class="lbl">U (B,S,r) = "สถานีนี้สนใจโหมดไหน" · V (G,r) = "แต่ละช่องกริดอยู่ในโหมดไหน" · softmax ทำให้ผลรวมน้ำหนักของแต่ละสถานี = 1</span>
+</div>
+<div class="analogy"><div class="h"></div>คิดถึง K เป็น "ตารางอิทธิพล" ขนาด สถานี×ช่องกริด — แถวของสถานีเชียงใหม่จะมีค่าสูงตรงช่องที่อยู่เหนือลมขึ้นไป (ไฟตรงนั้นลอยมาถึงง่าย) และต่ำตรงช่องใต้ลม · low-rank = แทนที่จะจำทุกช่องตรงๆ ก็อธิบายด้วย "ธีมร่วม r=32 ธีม" (เช่น ธีมลมเหนือ ธีมลมตะวันตก)</div>
+
+<h3 id="c4">C4. การคูณ K @ E + b → พยากรณ์</h3>
+<pre><code>h    = encoder(met)              # (B, 64)
+K    = build_K(h)                # (B, S, G)  softmax
+b    = softplus(b_head(h))       # (B, S)     ≥ 0 เสมอ
+E    = emission.view(B, G)       # (B, G)
+pm25 = bmm(K, E.unsqueeze(-1)).squeeze(-1) + b    # (B, S)</code></pre>
+<div class="eq">
+PM2.5<sub>s</sub> = Σ<sub>g=1</sub><sup>G</sup> K<sub>sg</sub> · E<sub>g</sub> + b<sub>s</sub>
+<span class="lbl">สำหรับแต่ละสถานี s: เอาน้ำหนัก K ของทุกช่องกริดมาคูณ FRP ของช่องนั้น แล้วบวกกัน + ฝุ่นพื้นหลัง</span>
+</div>
+<p><b>softplus</b> ที่ b รับประกัน b ≥ 0 (ฝุ่นพื้นหลังติดลบไม่ได้) · K จาก softmax ≥ 0 และ E ≥ 0 → <b>PM2.5 ≥ 0 โดยโครงสร้าง ไม่ต้อง clamp</b></p>
+<div class="ok"><b>นี่คือเหตุผลที่ "เชิงเส้นใน E":</b> ถ้าเพิ่มไฟที่ช่อง g เป็น 2 เท่า → ส่วนที่ g สมทบก็เป็น 2 เท่าพอดี (K คงที่เพราะ K ขึ้นกับ met ไม่ใช่ E) · คุณสมบัตินี้คือสิ่งที่ปลดล็อก attribution + inversion</div>
+
+<h3 id="c5">C5. Attribution — ระบุแหล่ง (ได้ฟรีจากรูปสมการ)</h3>
+<p>เพราะ PM2.5 เป็นผลบวกของส่วนสมทบจากแต่ละช่อง เราจึง "แกะ" ส่วนสมทบกลับมาได้ตรงๆ:</p>
+<pre><code>contrib  = K * E.unsqueeze(1)               # (B, S, G) = K_sg · E_g
+total    = contrib.sum(dim=-1)              # ผลรวมทุกช่อง = PM2.5 (ส่วนไฟ)
+fraction = contrib / total                  # สัดส่วน 0..1 ของแต่ละช่อง</code></pre>
+<div class="eq">
+สัดส่วนที่สถานี s มาจากช่อง g = (K<sub>sg</sub> · E<sub>g</sub>) / Σ<sub>g'</sub> (K<sub>sg'</sub> · E<sub>g'</sub>)
+<span class="lbl">รวมช่องตามประเทศ/อำเภอ → "เชียงใหม่วันนี้มาจากเมียนมา X% ลาว Y%" · นี่คือ Smoke Fingerprint</span>
+</div>
+<div class="analogy"><div class="h"></div>เหมือนสูตรค็อกเทลที่รู้ว่าใส่อะไรไปเท่าไร — รสรวม = เหล้า A + เหล้า B + น้ำผลไม้ C ในเมื่อเรารู้ปริมาณแต่ละอย่าง (K·E) ก็บอกได้ทันทีว่า "รสนี้ 40% มาจากเหล้า A"</div>
+
+<h3 id="c6">C6. Inversion — แก้ย้อนหาแหล่ง (ปัญหาผกผัน) <span class="tag-real">ทำแล้ว แต่ยังอ่อน</span></h3>
+<p>คำถามกลับด้าน: "รู้ PM2.5 ที่สถานี อยากรู้ว่าไฟ (E) อยู่ตรงไหน" = แก้สมการ <b>K·E ≈ y − b</b> หา E</p>
+<div class="eq">
+แก้: min<sub>E</sub> ‖K·E − (y−b)‖² + α‖E‖² &nbsp;&nbsp; (Tikhonov regularization)
+<span class="lbl">α = ตัวคุมความเรียบ (กันคำตอบระเบิด) · ใช้ dual-form: (KKᵀ+αI)λ = y, E = Kᵀλ → แก้ขนาด S×S แทน G×G (เร็วกว่ามากเมื่อ G≫S)</span>
+</div>
+<div class="danger"><b>ทำไมยังได้ผลแย่ (r≈0):</b> มีสถานีแค่ ~12–99 ตัว แต่ช่องกริด G=11,211 → <b>สมการน้อยกว่าตัวแปรมหาศาล (underdetermined)</b> เหมือนมีสมการ 12 ข้อแต่ตัวแปร 11,211 ตัว → คำตอบไม่ซ้ำ · นี่คือเหตุผลที่ inversion ควร<b>ลดเป็น proof-of-concept</b> (เคสไฟจุดเดียวที่รู้คำตอบ) ไม่ใช่ฟีเจอร์หลัก</div>
+
+<h3 id="c7">C7. การเทรน — สอนโมเดลยังไง</h3>
+<pre><code>loss   = masked_MSE(pred, y)     # ข้าม NaN (วันที่สถานีไม่มีข้อมูล)
+opt    = Adam(lr=1e-3, weight_decay=1e-4)
+sched  = CosineAnnealingLR(200 epochs)
+clip_grad_norm(1.0)              # กัน gradient ระเบิด
+batch  = 32 วัน/ก้อน             # full T ล้น GPU 6GB</code></pre>
+<table>
+<tr><th>องค์ประกอบ</th><th>ทฤษฎี/เหตุผล</th></tr>
+<tr><td><b>masked MSE</b></td><td>วัด error เฉพาะจุดที่มีเฉลย (สถานีว่าง = NaN ข้ามไป) ไม่งั้น NaN ทำลาย gradient</td></tr>
+<tr><td><b>Adam</b></td><td>optimizer ปรับ learning rate รายพารามิเตอร์อัตโนมัติ</td></tr>
+<tr><td><b>weight_decay</b></td><td>ลงโทษน้ำหนักใหญ่ → กัน overfitting</td></tr>
+<tr><td><b>Cosine schedule</b></td><td>ค่อยๆ ลด lr แบบโค้ง cosine → ลู่เข้านิ่งช่วงท้าย</td></tr>
+<tr><td><b>grad clip 1.0</b></td><td>จำกัดขนาด gradient ไม่ให้ก้าวกระโดดจนพัง</td></tr>
+</table>
+
+<!-- ============================================================= -->
+<!-- PART D -->
+<!-- ============================================================= -->
+<h2>📐 PART D — ทฤษฎีลงลึก (ทำไมออกแบบแบบนี้)</h2>
+
+<h3 id="d1">D1. Conditionally-Linear + Superposition</h3>
+<p>"Conditionally-linear" = เชิงเส้น<u>แบบมีเงื่อนไข</u>:</p>
+<div class="eq">
+PM2.5 = K(<span style="color:#bc8cff">met</span>) · E
+<span class="lbl"><span style="color:#bc8cff">met (ลม/ภูมิประเทศ)</span> เข้าผ่านฟังก์ชันไม่เชิงเส้น (เน็ต) → ได้ K · แต่เมื่อ "ตรึง K ไว้" ความสัมพันธ์ระหว่าง E กับ PM2.5 เป็นเส้นตรง</span>
+</div>
+<p><b>Superposition theorem:</b> เมื่อระบบเชิงเส้น input รวม → output รวม = ผลบวกของ output ย่อย แยกไฟเป็น tracer ตามแหล่ง E = E⁽พม่า⁾ + E⁽ลาว⁾ + … แล้ว:</p>
+<div class="eq">
+K·(E⁽พม่า⁾ + E⁽ลาว⁾) = K·E⁽พม่า⁾ + K·E⁽ลาว⁾
+<span class="lbl">→ ฝุ่นรวม = ฝุ่นจากพม่า + ฝุ่นจากลาว <b>เป๊ะ</b> (ไม่มี cross-term) → แยกแหล่งได้แม่น + "ดับไฟพม่า" = ลบ K·E⁽พม่า⁾</span>
+</div>
+
+<h3 id="d2">D2. ทำไม softmax over sources (ไม่ใช่ ReLU เฉยๆ)</h3>
+<p>K = softmax over G ทำให้ <b>Σ<sub>g</sub> K<sub>sg</sub> = 1</b> — ตีความว่า K เป็น "การกระจายน้ำหนัก" ว่าฝุ่นที่สถานีมาจากช่องไหนในสัดส่วนเท่าไร · ได้ K ≥ 0 อัตโนมัติ (จำเป็นต่อ non-negativity และ attribution ที่ตีความเป็น %)</p>
+
+<h3 id="d3">D3. Low-rank กับ Global-V (พีชคณิตเชิงเส้นเบื้องหลัง)</h3>
+<p><b>Low-rank factorization:</b> เมทริกซ์ใหญ่ K (S×G) ถูกประมาณด้วยผลคูณเมทริกซ์ผอม 2 ตัว U(S×r)·Vᵀ(r×G) เมื่อ r≪G</p>
+<div class="eq">
+params: S·G &nbsp;→&nbsp; r·(S+G) &nbsp;&nbsp; เช่น 99·11211 ≈ 1.1M → 32·(99+11211) ≈ 0.36M
+<span class="lbl">สมมติฐาน: "อิทธิพลการพัดพา" มีโครงสร้างซ้ำ (โหมดร่วม) ไม่ใช่ค่าสุ่มอิสระทุกช่อง → อธิบายด้วย r โหมดได้</span>
+</div>
+<p><b>GlobalV:</b> ค้นพบว่า "โหมดเชิงพื้นที่ (V) เสถียรทางฟิสิกส์" จึงทำให้ V เป็นพารามิเตอร์เรียนครั้งเดียว (ไม่ต้องเดาใหม่ทุกวัน) เน็ตเดาแค่ U(met) → ลด params 40 เท่า · <b>ผลทดลอง: ลด params 24M→0.4M test แทบไม่ขยับ → ยืนยันว่า "เน็ตไม่ใช่คอขวด"</b></p>
+
+<h3 id="d4">D4. Inverse problem + Tikhonov (ทำไมต้อง regularize)</h3>
+<p>ปัญหาผกผันที่ underdetermined มีคำตอบมากมายที่ fit ข้อมูลได้เท่ากัน Tikhonov เพิ่มพจน์ α‖E‖² = "เลือกคำตอบที่เล็ก/เรียบที่สุด" เพื่อให้คำตอบ <b>เสถียรและไม่ซ้ำซ้อน</b> · แต่ถ้าข้อมูล (สถานี) น้อยเกินไป regularize ก็ช่วยได้จำกัด → ต้องเพิ่มสถานี/ข้อมูลถึงจะดีขึ้นจริง</p>
+
+<!-- ============================================================= -->
+<!-- PART E -->
+<!-- ============================================================= -->
+<h2>🚀 PART E — ส่วนขยายตามแผน (input→output ของของที่จะเพิ่ม)</h2>
+<div class="warn"><b>หมายเหตุความซื่อสัตย์:</b> โมเดลจริงตอนนี้คือ "per-day linear-in-emission kernel" (Part C) · ส่วน semi-Lagrangian advection + autoregressive rollout + 2 หัว ที่อยู่ในแผนภาพรวม <b>ยังเป็นส่วนขยาย</b> — Part E อธิบายว่ามันจะต่อเข้ากับของเดิมยังไง</p>
+
+<h3 id="e1">E1. Emission Curve + BLH — แก้ "แกนปัญหาจริง" (สำคัญสุดของ 2 เดือน) <span class="tag-plan">งานหลัก</span></h3>
+<h4>(1) Emission curve — แปลง FRP แบบอิ่มตัว</h4>
+<p>ปัญหา: ตอนนี้ E = FRP ตรงๆ (เชิงเส้น) แต่จริงๆ ไฟแรงมากๆ ฝุ่นไม่ได้เพิ่มเป็นเส้นตรงตาม (อิ่มตัว) → โมเดล over-predict ตอนไฟหนัก</p>
+<div class="eq">
+E = f(FRP) = log(1 + FRP) &nbsp; หรือ &nbsp; FRP / (FRP + k)
+<span class="lbl">เปลี่ยนช่อง emission ใน datacube จาก FRP ดิบ → ผ่านเส้นโค้งอิ่มตัวก่อนป้อนโมเดล · <b>ยังคงเชิงเส้นใน E (ตัวใหม่) → attribution ไม่พัง</b></span>
+</div>
+<h4>(2) BLH (Boundary Layer Height) — ประตูระบายอากาศ</h4>
+<p>เพิ่ม BLH เป็น met channel ใหม่ — มันคือ "ความสูงของฝาชั้นบรรยากาศที่อากาศผสมกัน" ฝาต่ำ = ฝุ่นถูกอัดเข้มข้น, ฝาสูง = เจือจาง · นี่คือตัวแปรที่ทำให้ "ไฟเท่ากันคนละวันได้ฝุ่นต่างกัน" ที่ขาดหาย</p>
+<div class="eq">
+ความเข้มข้น ∝ การปล่อย / BLH &nbsp;&nbsp; (ฟิสิกส์ box model)
+<span class="lbl">ใส่ BLH เข้า encoder → ให้ K/b ปรับตามการระบายอากาศ → คาดว่าจะลด bias ปีต่ำจาก +45 → ≤+25 (gate ตัดสิน)</span>
+</div>
+
+<h3 id="e2">E2. Semi-Lagrangian Advection + Rollout <span class="tag-plan">ส่วนขยาย</span></h3>
+<p>ปัจจุบัน K เรียน "การพัดพา" จากข้อมูลโดยปริยาย · ส่วนขยายคือใส่การพัดพาเป็น <b>ฟิสิกส์ตรงๆ</b> ก่อน แล้วให้เน็ตแก้ส่วนที่เหลือ</p>
+<div class="eq">
+C<sub>t+1</sub>(x) = C<sub>t</sub>(x − <b>u</b>·Δt) + [แหล่ง − สูญเสีย]
+<span class="lbl">หา "ควันตรงนี้พรุ่งนี้มาจากไหนเมื่อวาน" = เดินถอยทวนลม (x − u·Δt) แล้วหยิบค่ามา · monotone interpolation กันค่าติดลบ/overshoot</span>
+</div>
+<p><b>Rollout:</b> ป้อน C<sub>t+1</sub> กลับเข้าโมเดลซ้ำ → ได้ t+2, t+3, … t+48 · เทรนแบบ multi-step ให้ทนต่อ error สะสม</p>
+
+<h3 id="e3">E3. สถาปัตยกรรม 2 หัว — ต่อบนโค้ดเดิมยังไง <span class="tag-plan">ก้าวข้าม SOTA</span></h3>
+<p>เก็บ CLNO (หัว 1 เชิงเส้น) ไว้ทำ attribution + เพิ่มหัว diffusion (หัว 2) มากู้จุดพีค — <b>โดยหัว 2 ทำงานกับ "ค่ารวม" เท่านั้น ไม่แตะ tracer</b></p>
+<div class="center card">
+<svg class="flow" viewBox="0 0 900 300" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="ar2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#58a6ff"/></marker></defs>
+  <rect x="20" y="120" width="150" height="60" rx="9" fill="#1c2330" stroke="#56d4dd"/>
+  <text x="95" y="146" fill="#56d4dd" font-size="12" font-weight="bold" text-anchor="middle">met + E</text>
+  <text x="95" y="165" fill="#9aa7b4" font-size="10.5" text-anchor="middle">(+BLH +curve)</text>
+
+  <rect x="220" y="40" width="220" height="90" rx="10" fill="#0f141b" stroke="#3fb950" stroke-width="2"/>
+  <text x="330" y="64" fill="#3fb950" font-size="13" font-weight="bold" text-anchor="middle">หัว 1 · CLNO เชิงเส้น</text>
+  <text x="330" y="84" fill="#e6edf3" font-size="11" text-anchor="middle">PM2.5 = K@E + b</text>
+  <text x="330" y="102" fill="#9aa7b4" font-size="10" text-anchor="middle">→ attribution + what-if</text>
+  <text x="330" y="118" fill="#9aa7b4" font-size="10" text-anchor="middle">(model_operator.py เดิม)</text>
+
+  <rect x="220" y="170" width="220" height="90" rx="10" fill="#0f141b" stroke="#bc8cff" stroke-width="2"/>
+  <text x="330" y="194" fill="#bc8cff" font-size="13" font-weight="bold" text-anchor="middle">หัว 2 · Diffusion (ใหม่)</text>
+  <text x="330" y="214" fill="#e6edf3" font-size="11" text-anchor="middle">รับผลหัว 1 มา refine</text>
+  <text x="330" y="232" fill="#9aa7b4" font-size="10" text-anchor="middle">U-Net + diffusion</text>
+  <text x="330" y="248" fill="#9aa7b4" font-size="10" text-anchor="middle">กู้จุดพีค + downscale</text>
+
+  <rect x="520" y="50" width="200" height="70" rx="10" fill="#1c2330" stroke="#3fb950"/>
+  <text x="620" y="78" fill="#3fb950" font-size="12" font-weight="bold" text-anchor="middle">Output A</text>
+  <text x="620" y="98" fill="#9aa7b4" font-size="10.5" text-anchor="middle">ระบุแหล่ง + what-if</text>
+
+  <rect x="520" y="180" width="200" height="70" rx="10" fill="#1c2330" stroke="#bc8cff"/>
+  <text x="620" y="208" fill="#bc8cff" font-size="12" font-weight="bold" text-anchor="middle">Output B</text>
+  <text x="620" y="228" fill="#9aa7b4" font-size="10.5" text-anchor="middle">พยากรณ์คม จับวันวิกฤต</text>
+
+  <line x1="170" y1="140" x2="218" y2="95" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar2)"/>
+  <line x1="170" y1="160" x2="218" y2="205" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar2)"/>
+  <line x1="330" y1="130" x2="330" y2="168" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar2)"/>
+  <text x="360" y="152" fill="#9aa7b4" font-size="9.5">ส่งค่ารวม</text>
+  <line x1="440" y1="85" x2="518" y2="85" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar2)"/>
+  <line x1="440" y1="215" x2="518" y2="215" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar2)"/>
+  <text x="800" y="150" fill="#e3b341" font-size="11.5" text-anchor="middle" font-weight="bold">attribution มาจาก</text>
+  <text x="800" y="168" fill="#e3b341" font-size="11.5" text-anchor="middle" font-weight="bold">หัว 1 เท่านั้น</text>
+  <text x="800" y="186" fill="#9aa7b4" font-size="10.5" text-anchor="middle">→ ไม่พัง</text>
+</svg>
+</div>
+<table>
+<tr><th>ความเสี่ยง</th><th>วิธีกัน (เชิงเทคนิค)</th></tr>
+<tr><td>diffusion ทำลาย superposition</td><td>หัว 2 รับเฉพาะ <b>PM2.5 รวม (total)</b> → refine เป็นแผนที่เดียว · tracer แยกสียังมาจากหัว 1 ที่เชิงเส้น 100%</td></tr>
+<tr><td>ช้า เสียเคลม "วินาที"</td><td>รัน diffusion เฉพาะ output สุดท้าย + few-step sampler (ไม่ใช่ทุก rollout step)</td></tr>
+<tr><td>พิสูจน์ว่าช่วยจริง</td><td>ablation <b>CLNO เปล่า vs CLNO+diffusion</b> บน CSI วันวิกฤต — เลียนแบบตาราง AFNO vs AFNO+StormCast เป๊ะ</td></tr>
+<tr><td>ทำไม่ทัน</td><td>หัว 2 ตัดได้ แกน attribution ไม่ตายตาม</td></tr>
+</table>
+
+<hr>
+<div class="lead center">
+<b>สรุป input → output ทั้งระบบ:</b> ข้อมูลดิบ 4 แหล่ง (ไฟ/ลม/ภูเขา/ฝุ่น) → regrid ลงกริด 111×101 → normalize (train เท่านั้น) → <b>met เข้า CNN encoder → ได้ context h → สร้าง kernel K + background b → PM2.5 = K@E + b</b> → จากรูปสมการเชิงเส้นนี้แตกออกเป็น <b>พยากรณ์ + attribution (K·E/total) + inversion (lstsq)</b> ฟรี · งาน 2 เดือนคือเพิ่ม <b>emission curve + BLH</b> แก้แกนปัญหา แล้วต่อ <b>หัว diffusion</b> กู้จุดพีคเพื่อก้าวข้าม SOTA
+</div>
+
+<p class="center muted" style="margin-top:34px">HazeNet · Architecture Deep Dive · อิงโค้ดจริงใน src/ · เอกสารชุดที่ 3<br>คู่กับ <a href="HazeNet_Pipeline_Explained.html">Pipeline_Explained</a> · <a href="HazeNet_vs_AFNO-StormCast_Analysis.html">vs_AFNO-StormCast</a></p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HazeNet — RunPod Master Plan: เวอร์ชันใหญ่ พร้อมเทรนจริง</title>
+<style>
+  :root{
+    --bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;
+    --red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ffa657;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:"Segoe UI",Tahoma,"Sarabun",sans-serif;line-height:1.78;font-size:16px;}
+  .wrap{max-width:1080px;margin:0 auto;padding:30px 20px 120px}
+  h1{font-size:32px;line-height:1.22;margin:0 0 6px}
+  .tagline{color:var(--cyan);font-size:17.5px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  h2{font-size:24px;margin:60px 0 14px;padding-bottom:10px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:32px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);
+    padding:18px 22px;border-radius:10px;margin:22px 0;font-size:16.5px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin:16px 0}
+  .analogy{background:linear-gradient(180deg,#1a2433,#141b26);border:1px solid #2d4358;
+    border-left:4px solid var(--cyan);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .analogy .h{color:var(--cyan);font-weight:bold;font-size:15px;margin-bottom:4px}
+  .analogy .h::before{content:"🧠 ";}
+  .warn{background:rgba(227,179,65,.07);border:1px solid var(--border);border-left:4px solid var(--amber);border-radius:10px;padding:14px 20px;margin:16px 0}
+  .danger{background:rgba(248,81,73,.07);border:1px solid var(--border);border-left:4px solid var(--red);border-radius:10px;padding:14px 20px;margin:16px 0}
+  .ok{background:rgba(63,185,80,.07);border:1px solid var(--border);border-left:4px solid var(--green);border-radius:10px;padding:14px 20px;margin:16px 0}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:13.5px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow-x:auto;font-size:13px;line-height:1.6}
+  pre code{background:none;border:none;padding:0;color:var(--text)}
+  .eq{background:#11161d;border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:8px;
+    padding:14px 18px;margin:14px 0;font-size:17px;overflow-x:auto;font-family:"Cambria Math",serif;line-height:2}
+  .eq .lbl{display:block;color:var(--muted);font-size:13px;font-family:"Segoe UI",sans-serif;margin-top:6px}
+  a{color:var(--blue)}
+  .muted{color:var(--muted)} b.k{color:var(--green)}
+  .center{text-align:center}
+  .pill{display:inline-block;font-size:12px;padding:2px 10px;border-radius:20px;margin:3px 4px 3px 0;border:1px solid var(--border);color:var(--muted)}
+  .pill.g{color:var(--green);border-color:var(--green);background:rgba(63,185,80,.1)}
+  .pill.p{color:var(--purple);border-color:var(--purple);background:rgba(188,140,255,.1)}
+  .pill.a{color:var(--amber);border-color:var(--amber);background:rgba(227,179,65,.1)}
+  .pill.b{color:var(--blue);border-color:var(--blue);background:rgba(88,166,255,.1)}
+  .hero{background:linear-gradient(135deg,#161b22 0%,#1a2433 60%,#141b26 100%);
+    border:1px solid var(--border);border-radius:16px;padding:30px 30px 26px;margin:18px 0 10px}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 24px;margin:24px 0;columns:2;font-size:14.5px}
+  @media(max-width:720px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;display:block;padding:3px 0}
+  .toc a:hover{color:var(--cyan)}
+  .toc .sec{color:var(--green);font-weight:bold;margin-top:8px;display:block}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .step{display:grid;grid-template-columns:34px 1fr;gap:14px;margin:14px 0;align-items:start}
+  .step .n{background:var(--panel2);border:1px solid var(--cyan);color:var(--cyan);border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:bold}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  .phase{border:1px solid var(--border);border-radius:14px;margin:22px 0;overflow:hidden}
+  .phase>.head{display:flex;align-items:center;gap:14px;padding:16px 22px;background:linear-gradient(90deg,#1a2433,#161b22)}
+  .phase>.head .pn{background:var(--cyan);color:#0d1117;font-weight:bold;border-radius:9px;padding:5px 13px;font-size:15px;white-space:nowrap}
+  .phase>.head .pt{font-size:18px;color:var(--text);font-weight:bold}
+  .phase>.head .pw{margin-left:auto;font-size:12px;color:var(--muted);text-align:right}
+  .phase>.body{padding:6px 22px 18px}
+  .io{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+  @media(max-width:680px){.io{grid-template-columns:1fr}}
+  .io .b{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:11px 15px;font-size:13.5px}
+  .io .b .t{font-size:12px;font-weight:bold;margin-bottom:4px}
+  .io .in .t{color:var(--blue)} .io .out .t{color:var(--green)}
+  .chk{list-style:none;padding-left:0;margin:10px 0}
+  .chk li{padding:4px 0 4px 28px;position:relative;font-size:14.5px}
+  .chk li::before{content:"☐";position:absolute;left:4px;color:var(--cyan);font-size:15px}
+  ul.tight li{margin:4px 0}
+  .big{font-size:21px;color:var(--amber);font-weight:bold}
+  .timeline{border-left:2px solid var(--border);margin:18px 0 18px 12px;padding-left:22px}
+  .timeline .ev{position:relative;margin:16px 0}
+  .timeline .ev::before{content:"";position:absolute;left:-29px;top:6px;width:11px;height:11px;border-radius:50%;background:var(--cyan);border:2px solid var(--bg)}
+  .timeline .ev .w{color:var(--cyan);font-weight:bold;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>HazeNet — RunPod Master Plan 🚀</h1>
+  <p class="tagline">เอา pipeline เวอร์ชันสมบูรณ์ + ข้อมูลใหญ่สุด → เทรนจริงบน RunPod → ปิดโปรเจกต์ให้ดีจริง</p>
+  <p class="sub">เอกสารชุดที่ 4 ต่อจาก <a href="HazeNet_Pipeline_Explained.html">Pipeline_Explained</a> · <a href="HazeNet_vs_AFNO-StormCast_Analysis.html">vs_AFNO-StormCast</a> · <a href="HazeNet_Architecture_DeepDive.html">Architecture_DeepDive</a></p>
+  <p style="margin-top:14px">
+    <span class="pill g">ข้อมูล: 2016–2024 ฤดูเผาเต็ม</span>
+    <span class="pill b">โมเดล: CLNO + physics + quantile</span>
+    <span class="pill p">diffusion = ทางเลือกถ้าจำเป็น</span>
+  </p>
+</div>
+
+<div class="lead">
+<b>เป้าหมายเอกสารนี้:</b> เปลี่ยน pipeline ที่ตอนนี้รันบนเครื่องบ้าน (446 วัน, 7 channels, CLNO เดี่ยว)
+ให้กลายเป็น <b>เวอร์ชันใหญ่ที่ reproducible + checkpoint ได้ + แพ็กเป็น Docker</b> แล้วยกขึ้นไปเทรนบน RunPod GPU จริง
+โดยจ่ายเงินเฉพาะตรงที่<b>คุ้ม</b> และมี <b>Gate ตัดสินชัดเจน</b>ว่าเมื่อไหร่เรียกว่า "เสร็จและดีจริง"
+</div>
+
+<!-- TOC -->
+<div class="toc">
+<span class="sec">0 · ก่อนเริ่ม</span>
+<a href="#reframe">0.1 เงิน RunPod ช่วยตรงไหน (อ่านก่อน)</a>
+<a href="#scope">0.2 ขอบเขตที่ล็อกแล้ว</a>
+<a href="#constraint">0.3 ตัวจำกัดจริง = ป้ายเฉลย</a>
+<span class="sec">🗺️ 6 เฟส สู่ความพร้อม</span>
+<a href="#p1">Phase 1 — เก็บข้อมูลใหญ่</a>
+<a href="#p2">Phase 2 — Feature engineering</a>
+<a href="#p3">Phase 3 — อัปเกรดโมเดล</a>
+<a href="#p4">Phase 4 — Hardening คลาวด์</a>
+<a href="#p5">Phase 5 — แพ็กลง RunPod</a>
+<a href="#p6">Phase 6 — เทรน + ปิดงาน</a>
+<span class="sec">💰 ปฏิบัติ</span>
+<a href="#cost">RunPod จริง + ค่าใช้จ่าย</a>
+<a href="#dod">Definition of Done (Gates)</a>
+<a href="#timeline">ไทม์ไลน์แนะนำ</a>
+<a href="#next">เริ่มอะไรก่อน</a>
+</div>
+
+<!-- ===================== SECTION 0 ===================== -->
+<h2 id="reframe">0.1 · เงิน RunPod ช่วยตรงไหน — อ่านก่อนจ่าย 💸</h2>
+<p>ความเข้าใจผิดที่แพงที่สุดคือ "เช่า GPU ใหญ่ = โมเดลดีขึ้น + เสร็จเร็วขึ้น" สำหรับโปรเจกต์นี้ <b>จริงแค่บางส่วน</b>:</p>
+
+<div class="grid2">
+  <div class="card" style="border-left:4px solid var(--red)">
+    <h4 style="color:var(--red);margin-top:0">❌ GPU แพง "ไม่" ช่วย ถ้า…</h4>
+    <ul class="tight">
+      <li>เทรน CLNO เดิม (0.4M params) บน 446 วัน — เราพิสูจน์แล้วว่า <b>ลด params 24M→0.4M ผล test แทบไม่ขยับ</b> → เน็ตไม่ใช่คอขวด</li>
+      <li>งานจริงคือ data engineering + ฟิสิกส์ ซึ่งรันบน CPU ก็ได้</li>
+    </ul>
+  </div>
+  <div class="card" style="border-left:4px solid var(--green)">
+    <h4 style="color:var(--green);margin-top:0">✅ GPU คุ้ม เมื่อ…</h4>
+    <ul class="tight">
+      <li>ข้อมูลใหญ่ขึ้นมาก (9 ปี × ฤดูเต็ม × ~15 channels)</li>
+      <li>เพิ่มหัวที่หนักจริง — <b>quantile</b> และ (ทีหลัง) <b>diffusion</b></li>
+      <li>รัน <b>ablation หลายสิบรอบ</b> ขนานกันเพื่อตัด feature ที่ไม่ช่วย</li>
+    </ul>
+  </div>
+</div>
+
+<div class="ok"><b>กลยุทธ์ประหยัด:</b> เก็บ/จัดข้อมูล + EDA บนเครื่องบ้าน → จ่าย GPU <b>เฉพาะตอนเทรนจริง</b> → ใช้ spot/community + checkpoint resume กันpod หลุดแล้วเสียเงินฟรี</div>
+
+<h2 id="scope">0.2 · ขอบเขตที่ล็อกแล้ว (จากการตัดสินใจ)</h2>
+<table>
+<tr><th>มิติ</th><th>ตอนนี้</th><th>เวอร์ชันใหญ่ (ล็อก)</th><th>หมายเหตุ</th></tr>
+<tr><td><b>ปี</b></td><td>2019–2023 (5)</td><td><b>2016–2024 (9 ปี)</b></td><td>เพดาน = ป้าย PM2.5 ก่อน ~2016 บางมาก</td></tr>
+<tr><td><b>ช่วงฤดู</b></td><td>ก.พ.–เม.ย.</td><td><b>พ.ย.–พ.ค. (ฤดูเผาเต็ม)</b></td><td>ได้ฟรีจาก ERA5/FIRMS</td></tr>
+<tr><td><b>Channels</b></td><td>7</td><td><b>~15 (เพิ่มฟิสิกส์)</b></td><td>BLH, ventilation, inversion, TPI, ENSO, ฝนสะสม…</td></tr>
+<tr><td><b>Resolution</b></td><td>0.1°</td><td>คง 0.1° (111×101)</td><td>downscale 0.05° ไว้ทีหลัง</td></tr>
+<tr><td><b>โมเดล</b></td><td>CLNO เดี่ยว</td><td><b>CLNO + emission curve + quantile head</b></td><td>diffusion = เก็บไว้ถ้า Gate ไม่ผ่าน</td></tr>
+</table>
+
+<h2 id="constraint">0.3 · ตัวจำกัดจริงของโปรเจกต์ = ป้ายเฉลย ไม่ใช่ compute 🏷️</h2>
+<div class="analogy"><div class="h">เปรียบเทียบ</div>
+Features (ลม/ไฟ/BLH) เหมือน "โจทย์" มีถึงปี 1940 (ERA5) · แต่ <b>PM2.5 ป้ายเฉลย</b> เหมือน "เฉลย" — ถ้าไม่มีเฉลย โมเดลก็เรียนไม่ได้ ต่อให้ GPU แรงแค่ไหน เพราะนี่คือ supervised learning
+</div>
+<ul class="tight">
+  <li><b>FIRMS VIIRS</b> (ไฟ) — ย้อนถึง 2012 · <b>ERA5</b> (อุตุ) — ย้อนถึง 1940 → ไม่ใช่ตัวจำกัด</li>
+  <li><b>PM2.5 ground truth</b> (OpenAQ + กรมควบคุมมลพิษไทย PCD) — หนาแน่นพอจริงราว ~2016+ → <b>นี่คือเพดาน</b></li>
+  <li>ทางยืดข้อมูล (ออปชันอนาคต): ใช้ <b>AOD ดาวเทียม</b> เป็น label เสริม/auxiliary target — แต่เพิ่ม noise; เลื่อนไว้ก่อน</li>
+</ul>
+<div class="warn"><b>สิ่งที่ต้องทำใน Phase 1:</b> รวบรวมสถานี PM2.5 ให้ได้มากสุด (OpenAQ + PCD + เพื่อนบ้านถ้ามี) เพราะ <b>จำนวนสถานี × จำนวนวันที่มีเฉลย = ขนาดข้อมูลเทรนจริง</b></div>
+
+<hr>
+
+<!-- ===================== PHASES ===================== -->
+<h2>🗺️ แผน 6 เฟส สู่ "พร้อมเทรนบน RunPod"</h2>
+<p class="muted">เฟส 1–2 ทำบนเครื่องบ้าน/CPU pod ถูกๆ (งานนานสุด) · เฟส 3–4 เขียนโค้ด · เฟส 5–6 จ่าย GPU</p>
+
+<!-- PHASE 1 -->
+<div class="phase" id="p1">
+  <div class="head"><span class="pn">Phase 1</span><span class="pt">เก็บข้อมูลใหญ่</span>
+    <span class="pw">🖥️ เครื่องบ้าน/CPU · งานนานสุด</span></div>
+  <div class="body">
+    <p>ขยายจาก 446 วัน → ~9 ปี × ฤดูเผาเต็ม ดึงจาก <b>แหล่งที่เชื่อถือได้เท่านั้น</b></p>
+    <table>
+    <tr><th>ข้อมูล</th><th>แหล่ง (เชื่อถือได้)</th><th>วิธีดึง</th></tr>
+    <tr><td>🔥 ไฟ / FRP</td><td>NASA <b>FIRMS VIIRS</b> (S-NPP + NOAA-20)</td><td>FIRMS API / archive download รายปี</td></tr>
+    <tr><td>🌬️ อุตุนิยม (BLH, temp หลายชั้น, ลม, dewpoint, ฝน)</td><td><b>ERA5</b> ผ่าน Copernicus <b>CDS API</b></td><td>cdsapi (ฟรี, ต้องสมัคร key) — ดึงเป็น netCDF รายปี</td></tr>
+    <tr><td>⛰️ ภูมิประเทศ</td><td>Copernicus <b>GLO-30 DEM</b></td><td>มีแล้ว (static ดึงครั้งเดียว)</td></tr>
+    <tr><td>😷 PM2.5 เฉลย</td><td><b>OpenAQ</b> + <b>กรมควบคุมมลพิษ (PCD)</b></td><td>OpenAQ API + รวบรวมสถานีให้มากสุด</td></tr>
+    <tr><td>🌊 ENSO / ONI</td><td><b>NOAA Climate Prediction Center</b></td><td>ตาราง ONI รายเดือน (ไฟล์เล็ก)</td></tr>
+    </table>
+    <div class="io">
+      <div class="b in"><div class="t">▶ เข้า</div>API keys (CDS, FIRMS, OpenAQ) + ช่วงปี/ฤดูที่ล็อก</div>
+      <div class="b out"><div class="t">■ ออก</div>ไฟล์ดิบครบทุกปีแยกประเภท ใน <code>data/raw_big/</code></div>
+    </div>
+    <ul class="chk">
+      <li>สมัคร CDS API key (ERA5) — ขั้นนี้บล็อกทุกอย่าง ทำก่อน</li>
+      <li>เขียน <code>fetch_*_big.py</code> วน loop รายปี + resume ได้ (ถ้าขาดกลางคันไม่ต้องเริ่มใหม่)</li>
+      <li>ตรวจ coverage ป้าย PM2.5 ต่อปี/ต่อสถานี → ยืนยันเพดานข้อมูลจริง</li>
+    </ul>
+  </div>
+</div>
+
+<!-- PHASE 2 -->
+<div class="phase" id="p2">
+  <div class="head"><span class="pn">Phase 2</span><span class="pt">Feature engineering (ฟิสิกส์/ภูมิศาสตร์)</span>
+    <span class="pw">🖥️ เครื่องบ้าน</span></div>
+  <div class="body">
+    <p>เติม channel ที่มีรากฐานฟิสิกส์จริง — ป้อนเชื้อให้ met-encoder คำนวณ K และ b ฉลาดขึ้น</p>
+    <table>
+    <tr><th>Feature</th><th>ฟิสิกส์ที่อยู่เบื้องหลัง</th><th>ที่มา</th></tr>
+    <tr><td><b>Emission curve</b> (FRP→E แบบ log/saturating)</td><td>ไฟหนักมากๆ ฝุ่นไม่ได้เพิ่มเชิงเส้น — แก้ over-predict</td><td>แปลงจาก FRP</td></tr>
+    <tr><td><b>BLH</b> (ความสูงชั้นผสม)</td><td>อากาศปิด = ฝุ่นสะสมในปริมาตรเล็ก</td><td>ERA5</td></tr>
+    <tr><td><b>Ventilation coef</b> = BLH × wind speed</td><td>ดัชนีระบายอากาศคลาสสิก — อธิบายปี 2023 โดยตรง</td><td>ERA5 (คำนวณ)</td></tr>
+    <tr><td><b>Inversion strength</b> = T₈₅₀ − T_sfc</td><td>ชั้นอุ่นทับเย็น = ฝาปิดกดควันก้นหุบเขา</td><td>ERA5 multi-level</td></tr>
+    <tr><td><b>TPI / valley index</b></td><td>ก้นหุบเขา (เชียงใหม่/เชียงราย) กักควัน</td><td>คำนวณจาก DEM</td></tr>
+    <tr><td><b>ENSO / ONI</b></td><td>เอลนีโญ→แล้ง→ไฟเยอะ — "ตัวแปรหาย" ที่อธิบายความต่างข้ามปี</td><td>NOAA ONI</td></tr>
+    <tr><td><b>ฝนสะสม N วัน</b></td><td>wet deposition ข้ามวัน + เชื้อเพลิงแห้ง</td><td>ERA5 (คำนวณ)</td></tr>
+    </table>
+    <div class="io">
+      <div class="b in"><div class="t">▶ เข้า</div>ไฟล์ดิบ Phase 1 + DEM</div>
+      <div class="b out"><div class="t">■ ออก</div><code>datacube_big.zarr</code> (~15 ch × ~9 ปี) + train/test split ตามปี</div>
+    </div>
+    <div class="warn"><b>กฎกันพัง:</b> มีแค่ ~9 ปี × ฤดู → <b>อย่าหว่าน 30 features</b> เสี่ยง overfit · เพิ่มทีละชุด → วัด Gate → ตัวไหนไม่ช่วยให้ทิ้ง (ablation) · ทุก feature ต้อง "รู้ได้ ณ วันทำนาย" เท่านั้น (กัน data leakage)</div>
+  </div>
+</div>
+
+<!-- PHASE 3 -->
+<div class="phase" id="p3">
+  <div class="head"><span class="pn">Phase 3</span><span class="pt">อัปเกรดโมเดล (ตรงนี้ GPU เริ่มคุ้ม)</span>
+    <span class="pw">⌨️ เขียนโค้ด</span></div>
+  <div class="body">
+    <p>คงแกน CLNO (conditionally-linear — ให้ attribution ฟรี) แต่เพิ่ม 2 อย่าง:</p>
+    <ul class="tight">
+      <li><b>Emission curve head</b> — แปลง FRP→E ด้วยฟังก์ชัน saturating ที่เรียนรู้ได้ แทนใช้ FRP ตรงๆ</li>
+      <li><b>Quantile head (P10 / P50 / P90)</b> — ทำนายช่วงความเชื่อมั่น แทน ensemble (ถูกกว่า) ทำให้บอก "วันนี้ฝุ่นน่าจะ 80–220" ได้</li>
+    </ul>
+    <div class="eq">
+      PM2.5<sub>s</sub> = Σ<sub>g</sub> K<sub>sg</sub>(met) · <b style="color:#ffa657">φ(FRP<sub>g</sub>)</b> + b<sub>s</sub>(met)
+      <span class="lbl"><b style="color:#ffa657">φ</b> = emission curve (saturating) · ทำนาย 3 quantile พร้อมกันด้วย pinball loss</span>
+    </div>
+    <div class="io">
+      <div class="b in"><div class="t">▶ เข้า</div>โค้ด <code>model_operator.py</code> เดิม</div>
+      <div class="b out"><div class="t">■ ออก</div>โมเดลเวอร์ชันใหญ่ + attribution ยังใช้ได้</div>
+    </div>
+    <p class="muted">diffusion head (จับพีค) <b>ไม่อยู่</b>ในรอบนี้ — รอดูว่า physics + curve จับพีคได้แค่ไหนก่อน ตามลำดับที่ตัดสินใจไว้</p>
+  </div>
+</div>
+
+<!-- PHASE 4 -->
+<div class="phase" id="p4">
+  <div class="head"><span class="pn">Phase 4</span><span class="pt">Hardening สำหรับคลาวด์ (คนลืมบ่อย แต่สำคัญ)</span>
+    <span class="pw">⌨️ เขียนโค้ด</span></div>
+  <div class="body">
+    <p>โค้ดที่รันบนเครื่องบ้านได้ ≠ พร้อมขึ้นคลาวด์ ต้องทำให้ <b>ตั้งค่าง่าย · หยุด-ต่อได้ · ทำซ้ำได้</b></p>
+    <table>
+    <tr><th>สิ่งที่ต้องมี</th><th>ทำไม</th></tr>
+    <tr><td><b>config เดียวคุมทุกอย่าง</b> (YAML/dataclass)</td><td>เปลี่ยน hyperparameter/feature โดยไม่แก้โค้ด → ablation ง่าย</td></tr>
+    <tr><td><b>Checkpoint + resume</b></td><td>pod community หลุดได้ — ถ้าไม่เซฟ = จ่ายเงินฟรี เริ่มใหม่หมด</td></tr>
+    <tr><td><b>Mixed precision (AMP)</b></td><td>เร็วขึ้น + ใช้ VRAM น้อยลง บน GPU</td></tr>
+    <tr><td><b>Seed + ตรึงเวอร์ชัน</b> (<code>requirements.txt</code> pin)</td><td>reproduce ผลได้ — สำคัญตอนเขียนรายงาน</td></tr>
+    <tr><td><b>Logging</b> → dashboard เรา หรือ <b>Weights &amp; Biases</b></td><td>ดู loss/Gate สดระหว่างเทรนบนคลาวด์ — เรามี <code>tracker.py</code> อยู่แล้ว</td></tr>
+    </table>
+    <div class="io">
+      <div class="b in"><div class="t">▶ เข้า</div>สคริปต์เทรนเดิม</div>
+      <div class="b out"><div class="t">■ ออก</div><code>train.py --config big.yaml</code> ที่หยุด-ต่อ + log ได้</div>
+    </div>
+  </div>
+</div>
+
+<!-- PHASE 5 -->
+<div class="phase" id="p5">
+  <div class="head"><span class="pn">Phase 5</span><span class="pt">แพ็กลง RunPod</span>
+    <span class="pw">📦 Docker + upload</span></div>
+  <div class="body">
+    <div class="step"><div class="n">1</div><div><b>Docker image</b> — base PyTorch + deps ตรึงเวอร์ชัน (zarr, xarray, cdsapi…) push ขึ้น registry</div></div>
+    <div class="step"><div class="n">2</div><div><b>Persistent network volume</b> — อัป <code>datacube_big.zarr</code> ขึ้น volume (ไม่ใช่ในตัว pod ที่หายเมื่อปิด) เมานต์เข้า pod</div></div>
+    <div class="step"><div class="n">3</div><div><b>Entrypoint</b> — อ่าน config → เทรน → เซฟ checkpoint + ผล ลง volume ตลอด</div></div>
+    <div class="step"><div class="n">4</div><div><b>ทดสอบ dry-run 1 epoch</b> บน GPU ถูกสุดก่อน เพื่อจับ bug ก่อนจ่าย A100 เต็มรอบ</div></div>
+    <div class="io">
+      <div class="b in"><div class="t">▶ เข้า</div>โค้ด Phase 4 + datacube_big</div>
+      <div class="b out"><div class="t">■ ออก</div>image + volume พร้อมกดรันบน RunPod</div>
+    </div>
+  </div>
+</div>
+
+<!-- PHASE 6 -->
+<div class="phase" id="p6">
+  <div class="head"><span class="pn">Phase 6</span><span class="pt">เทรนจริง + วัดผล + ปิดงาน</span>
+    <span class="pw">💰 จ่าย GPU</span></div>
+  <div class="body">
+    <div class="step"><div class="n">1</div><div>รันเทรนเต็มรอบ → monitor loss/Gate สด</div></div>
+    <div class="step"><div class="n">2</div><div>ดึง checkpoint + ผล กลับเครื่องบ้าน</div></div>
+    <div class="step"><div class="n">3</div><div><b>วัดผ่าน Gate</b> (ดูหัวข้อ Definition of Done)</div></div>
+    <div class="step"><div class="n">4</div><div><b>Ablation</b> — ปิด feature ทีละตัว ดูว่าตัวไหนช่วยจริง (รันขนานบนหลาย pod)</div></div>
+    <div class="step"><div class="n">5</div><div>ถ้า Gate ไม่ผ่าน/พีคยังต่ำ → ค่อยพิจารณา <b>diffusion head</b> (กลับไป Phase 3)</div></div>
+    <div class="io">
+      <div class="b in"><div class="t">▶ เข้า</div>image + volume + งบ</div>
+      <div class="b out"><div class="t">■ ออก</div>โมเดลสุดท้าย + ผล + ตาราง ablation + รายงานปิดโปรเจกต์</div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<!-- ===================== COST ===================== -->
+<h2 id="cost">💰 RunPod จริง + ค่าใช้จ่าย (ตัวเลขคร่าวๆ)</h2>
+<div class="grid2">
+  <div class="card">
+    <h4 style="margin-top:0">เลือก GPU</h4>
+    <ul class="tight">
+      <li>โมเดลขนาดนี้ + ข้อมูล GB-scale → <b>A100 80GB</b> (~$1.5–2/ชม. community) เหลือเฟือ</li>
+      <li><b>ไม่ต้อง H100</b> — จ่ายแพงโดยไม่ได้ประโยชน์</li>
+      <li>dry-run/debug → ใช้ GPU ถูกสุด (RTX 4090 ~$0.4/ชม.)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4 style="margin-top:0">งบประมาณรวม</h4>
+    <ul class="tight">
+      <li>เทรน CLNO+physics+quantile ต่อ run: <b>หลักชั่วโมงเดียว</b></li>
+      <li>หลายสิบ run + ablation → <b class="big">~$50–300</b> ทั้งโปรเจกต์</li>
+      <li>diffusion (ถ้าทำ) จะหนักกว่า — เผื่องบเพิ่ม</li>
+    </ul>
+  </div>
+</div>
+<div class="ok"><b>3 กฎประหยัด:</b> (1) data/EDA บนเครื่องบ้าน จ่าย GPU เฉพาะเทรน · (2) checkpoint resume + spot/community · (3) dry-run บน GPU ถูกก่อนเสมอ</div>
+
+<!-- ===================== DOD ===================== -->
+<h2 id="dod">✅ Definition of Done — ห้ามบอกว่าเสร็จถ้าไม่ผ่าน Gate</h2>
+<table>
+<tr><th>#</th><th>Gate</th><th>เกณฑ์ผ่าน</th></tr>
+<tr><td>1</td><td><b>Gate W2 — year-bias</b></td><td>bias ปีฝุ่นน้อย ลดจาก <b>+45 → ≤ +25</b> µg/m³</td></tr>
+<tr><td>2</td><td><b>จับพีควันวิกฤต</b></td><td>วันพีค (เช่น เชียงราย 7 เม.ย. 66 obs 228) ต้องไม่ทายต่ำเตี้ยแบบ 81</td></tr>
+<tr><td>3</td><td><b>ชนะ baseline ladder</b></td><td>ดีกว่า mean / XGB / MLP + ผ่าน cross-validation ข้ามปี (LOYO)</td></tr>
+<tr><td>4</td><td><b>attribution ยังใช้ได้</b></td><td>ของเด่นเรา — ระบุแหล่ง/ทิศทางได้สมเหตุผล</td></tr>
+</table>
+
+<!-- ===================== TIMELINE ===================== -->
+<h2 id="timeline">📅 ไทม์ไลน์แนะนำ (ปิดเร็วแต่ครบ)</h2>
+<div class="timeline">
+  <div class="ev"><div class="w">สัปดาห์ 1</div> Phase 1 — สมัคร CDS key, ดึง ERA5+FIRMS+PM2.5 ทั้ง 9 ปี (งานนานสุด เริ่มก่อน)</div>
+  <div class="ev"><div class="w">สัปดาห์ 1–2</div> Phase 2 — feature engineering + build <code>datacube_big.zarr</code></div>
+  <div class="ev"><div class="w">สัปดาห์ 2</div> Phase 3–4 — emission curve + quantile head + config/checkpoint/AMP</div>
+  <div class="ev"><div class="w">สัปดาห์ 2–3</div> Phase 5 — Docker + volume + dry-run บน GPU ถูก</div>
+  <div class="ev"><div class="w">สัปดาห์ 3</div> Phase 6 — เทรนเต็ม + ablation + วัด Gate → ปิดงาน (หรือเพิ่ม diffusion ถ้าจำเป็น)</div>
+</div>
+<p class="muted">ขนานงานได้: ระหว่าง Phase 1 ดึงข้อมูล (รันทิ้งไว้) เขียนโค้ด Phase 3–4 ไปพร้อมกัน</p>
+
+<!-- ===================== NEXT ===================== -->
+<h2 id="next">▶ เริ่มอะไรก่อน</h2>
+<div class="lead">
+ลำดับที่ฉลาดที่สุดเพื่อ "ปิดเร็ว": เริ่ม <b>Phase 1 (สมัคร CDS key + เขียนสคริปต์ดึงข้อมูลใหญ่)</b> เพราะเป็นงานที่นานสุดและบล็อกทุกอย่าง
+แล้วระหว่างที่สคริปต์ดึงข้อมูลรันอยู่ ค่อยลงมือ Phase 3–4 (โค้ดโมเดล + hardening) ขนานกันไป
+</div>
+<p class="muted center" style="margin-top:30px">HazeNet · RunPod Master Plan · เอกสารชุดที่ 4 — อัปเดตเมื่อ 2026-06-18</p>
+
+</div>
+</body>
+</html>

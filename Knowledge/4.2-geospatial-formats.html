@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.2 — รูปแบบ geospatial (NetCDF / Zarr / xarray / GeoTIFF)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .green-box b{color:var(--green)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.4px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--amber);color:var(--amber);margin-left:6px}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+  a.ext{color:var(--blue)}
+  .fmt{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0}
+  @media(max-width:680px){.fmt{grid-template-columns:1fr 1fr}}
+  .fmtbox{background:var(--panel2);border:1px solid var(--border);border-radius:9px;padding:11px;text-align:center}
+  .fmtbox .ic{font-size:22px}
+  .fmtbox .nm2{font-weight:bold;font-size:14px;margin-top:3px}
+  .fmtbox .ds{font-size:11.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>4.2 — รูปแบบไฟล์ geospatial <span class="pin">🟡 กลาง</span></h1>
+<p class="tagline">NetCDF · GeoTIFF · Zarr · xarray — ภาษากลางที่ทำให้ข้อมูล 5 แหล่งจาก 4.1 "คุยกันรู้เรื่อง"</p>
+<p class="sub">ต่อจาก 4.1 (ดึงข้อมูลดิบมาแล้ว) · ส่งต่อ → 4.3 (regrid ให้เป็นกริดเดียว) → 4.4 (ประกอบ datacube) · โยงกลับ 0.1 (tensor thinking)</p>
+
+<div class="lead">
+<b>โจทย์ของบทนี้:</b> 4.1 ดึงข้อมูลดิบมา 5 แหล่ง แต่มันมาคนละรูปแบบ — ERA5 เป็น <code>.nc</code>, DEM เป็น <code>.tif</code>, ไฟ/สถานีเป็น CSV/JSON · จะเอามารวมกันต้องรู้จัก "รูปแบบไฟล์เชิงพื้นที่" และ <b>เครื่องมือเดียวที่อ่านได้ทุกอัน</b><br><br>
+<b>พระเอกของบทนี้คือ <span style="color:var(--cyan)">xarray</span></b> — คิดง่าย ๆ ว่ามันคือ "numpy ที่มีป้ายชื่อแกน" (ต่อยอดจาก 0.1) · ส่วน NetCDF/GeoTIFF/Zarr คือ "กล่อง 3 แบบ" ที่ xarray เปิดได้หมด · จบบทนี้คุณจะเปิด/หั่น/บันทึกข้อมูลเชิงพื้นที่ได้คล่อง พร้อมไปประกอบ datacube ใน 4.4
+</div>
+
+<div class="fmt">
+  <div class="fmtbox"><div class="ic">🧊</div><div class="nm2" style="color:var(--cyan)">xarray</div><div class="ds">เครื่องมือ (ในแรม)</div></div>
+  <div class="fmtbox"><div class="ic">📦</div><div class="nm2" style="color:var(--blue)">NetCDF</div><div class="ds">กล่องวิทย์ (ERA5)</div></div>
+  <div class="fmtbox"><div class="ic">🗺️</div><div class="nm2" style="color:var(--purple)">GeoTIFF</div><div class="ds">กล่องแรสเตอร์ (DEM)</div></div>
+  <div class="fmtbox"><div class="ic">⚡</div><div class="nm2" style="color:var(--amber)">Zarr</div><div class="ds">กล่อง cloud (datacube)</div></div>
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. ทำไม CSV/numpy ธรรมดาไม่พอ</a><br>
+<a href="#p2">2. xarray — numpy ที่มีป้ายชื่อ ★</a><br>
+<a href="#p3">3. NetCDF — กล่องวิทยาศาสตร์</a><br>
+<a href="#p4">4. GeoTIFF / COG — กล่องแรสเตอร์</a><br>
+<a href="#p5">5. Zarr — กล่อง cloud-native ★</a><br>
+<a href="#p6">6. dask + lazy/chunk — ไม่ให้แรมแตก</a><br>
+<a href="#p7">7. ข้อมูลจุด (CSV/JSON) อยู่ตรงไหน</a><br>
+<a href="#p8">8. ตารางเทียบ + ใช้อันไหนเมื่อไร</a><br>
+<a href="#p9">9. workflow ของ HazeNet (โค้ดจริง)</a><br>
+<a href="#cheat">10. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. ทำไม CSV / numpy ธรรมดาไม่พอ</h2>
+<p>ข้อมูลของเราเป็น <b>ก้อนหลายมิติที่มีความหมายเชิงพื้นที่-เวลา</b> เช่น PM2.5 มี 3 แกน: <code>เวลา × ละติจูด × ลองจิจูด</code> · ถ้าเก็บเป็น numpy array เฉย ๆ จะเจอปัญหา 4 ข้อ:</p>
+<table>
+<tr><th>ปัญหาของ numpy/CSV ดิบ</th><th>ผลที่ตามมา</th></tr>
+<tr><td>แกนไม่มีชื่อ — <code>arr[3, 50, 80]</code> คืออะไร?</td><td>ต้องจำเองว่าแกน 0 คือเวลา จำสลับเมื่อไรพังเมื่อนั้น</td></tr>
+<tr><td>ไม่มี coordinate — index 50 ตรงกับละติจูดเท่าไร?</td><td>หาค่าที่ "ละติจูด 18.8°N" ไม่ได้โดยตรง ต้องคำนวณ index เอง</td></tr>
+<tr><td>ไม่มี metadata — หน่วยอะไร? CRS อะไร?</td><td>เผลอเอา μg/m³ ไปรวมกับ ppb · ไม่รู้ว่าพิกัดอยู่ระบบไหน</td></tr>
+<tr><td>ใหญ่เกินแรม — datacube หลาย GB</td><td>โหลดทั้งก้อนเข้าแรม → Colab แตก (OOM)</td></tr>
+</table>
+<div class="why"><b>ทางออก:</b> ใช้รูปแบบไฟล์ที่ "อธิบายตัวเองได้" (self-describing: มีชื่อแกน + พิกัด + หน่วย ติดมาในไฟล์) + เครื่องมือที่โหลด "เฉพาะส่วนที่ต้องใช้" ได้ · นั่นคือทั้งหมดที่บทนี้สอน</div>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. xarray — "numpy ที่มีป้ายชื่อแกน" <span class="pin">★ พระเอก</span></h2>
+<p>จาก 0.1 เราคิดข้อมูลเป็น tensor (ก้อนตัวเลขหลายมิติ) · <b>xarray = tensor นั้น + ป้ายชื่อ + พิกัด + metadata</b> · มี 2 ชนิด:</p>
+<ul>
+<li><b>DataArray</b> = ตัวแปรเดียว (เช่น PM2.5) พร้อมแกน/พิกัด</li>
+<li><b>Dataset</b> = หลายตัวแปรที่ใช้แกนร่วมกัน (เช่น u, v, PBL, PM2.5 บนกริดเดียวกัน) — <b>นี่คือรูปของ datacube เรา</b></li>
+</ul>
+
+<div class="center card">
+<svg class="svg" viewBox="0 0 620 270" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <text x="310" y="20" fill="#e6edf3" font-size="13" text-anchor="middle" font-weight="bold">กายวิภาคของ xarray.Dataset</text>
+  <!-- cube -->
+  <polygon points="70,90 180,90 220,60 110,60" fill="#1c2330" stroke="#56d4dd"/>
+  <polygon points="70,90 180,90 180,200 70,200" fill="#11271c" stroke="#56d4dd"/>
+  <polygon points="180,90 220,60 220,170 180,200" fill="#0f1f17" stroke="#56d4dd"/>
+  <text x="125" y="150" fill="#3fb950" font-size="12" text-anchor="middle">ค่าตัวเลข</text>
+  <text x="125" y="166" fill="#9aa7b4" font-size="10" text-anchor="middle">(numpy/dask)</text>
+  <!-- dim labels -->
+  <text x="125" y="218" fill="#58a6ff" font-size="11.5" text-anchor="middle">lon →</text>
+  <text x="48" y="150" fill="#58a6ff" font-size="11.5" text-anchor="middle" transform="rotate(-90 48 150)">lat →</text>
+  <text x="205" y="50" fill="#58a6ff" font-size="11.5" text-anchor="middle">time →</text>
+  <text x="125" y="245" fill="#9aa7b4" font-size="10" text-anchor="middle">dims = ชื่อแกน</text>
+
+  <!-- annotations right -->
+  <line x1="225" y1="75" x2="300" y2="62" stroke="#9aa7b4" stroke-width="1"/>
+  <rect x="300" y="48" width="300" height="34" rx="6" fill="#161b22" stroke="#bc8cff"/>
+  <text x="312" y="62" fill="#bc8cff" font-size="11">coords:</text><text x="312" y="76" fill="#9aa7b4" font-size="10.5">time=[...], lat=[5.0..25.0], lon=[92.0..110.0]</text>
+
+  <line x1="185" y1="140" x2="300" y2="125" stroke="#9aa7b4" stroke-width="1"/>
+  <rect x="300" y="105" width="300" height="48" rx="6" fill="#161b22" stroke="#3fb950"/>
+  <text x="312" y="120" fill="#3fb950" font-size="11">data_vars:</text>
+  <text x="312" y="135" fill="#9aa7b4" font-size="10.5">u, v, pblh, precip, aod, emission,</text>
+  <text x="312" y="149" fill="#9aa7b4" font-size="10.5">dem, pm25 ... (หลายตัวแปร แกนร่วมกัน)</text>
+
+  <line x1="150" y1="200" x2="300" y2="185" stroke="#9aa7b4" stroke-width="1"/>
+  <rect x="300" y="170" width="300" height="34" rx="6" fill="#161b22" stroke="#e3b341"/>
+  <text x="312" y="184" fill="#e3b341" font-size="11">attrs:</text><text x="312" y="197" fill="#9aa7b4" font-size="10.5">units="µg/m³", crs="EPSG:4326", source=...</text>
+</svg>
+</div>
+
+<h4>ความสามารถที่เปลี่ยนชีวิต: เลือกข้อมูลด้วย "ชื่อ" ไม่ใช่ตัวเลข index</h4>
+<pre><code><span class="kw">import</span> xarray <span class="kw">as</span> xr
+ds = xr.<span class="fn">open_dataset</span>(<span class="st">"era5_2024_03.nc"</span>)
+
+<span class="cm"># เลือกด้วย "ป้ายชื่อ" — อ่านรู้เรื่อง ไม่ต้องจำ index</span>
+chiangmai = ds[<span class="st">"u10"</span>].<span class="fn">sel</span>(latitude=<span class="nm">18.8</span>, longitude=<span class="nm">98.98</span>, method=<span class="st">"nearest"</span>)
+march15  = ds.<span class="fn">sel</span>(time=<span class="st">"2024-03-15"</span>)            <span class="cm"># เลือกทั้งวัน</span>
+domain   = ds.<span class="fn">sel</span>(latitude=<span class="fn">slice</span>(<span class="nm">25</span>,<span class="nm">5</span>), longitude=<span class="fn">slice</span>(<span class="nm">92</span>,<span class="nm">110</span>))
+
+<span class="cm"># แปลงความถี่เวลา/เฉลี่ย ได้ในบรรทัดเดียว (เข้าใจปฏิทินเอง)</span>
+three_hourly = ds.<span class="fn">resample</span>(time=<span class="st">"3H"</span>).<span class="fn">mean</span>()</code></pre>
+<div class="green-box"><b>ทำไม xarray คือหัวใจของ pipeline เรา:</b> ข้อมูลทุกแหล่งใน 4.1 จะถูกเปิดเป็น xarray → ใช้ <code>.sel/.isel/.resample/.interp</code> หั่น+จัดให้ตรงกัน → รวมเป็น <code>Dataset</code> เดียว = datacube (4.4) · <b>คุณจะใช้ xarray เกือบทุกบรรทัดของงานข้อมูล</b></div>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. NetCDF — กล่องมาตรฐานวิทยาศาสตร์</h2>
+<p><b>NetCDF</b> (<code>.nc</code>) คือฟอร์แมตมาตรฐานสำหรับเก็บอาเรย์หลายมิติ + พิกัด + metadata ในไฟล์เดียว · เป็นรูปแบบที่ <b>ERA5 ส่งมาให้</b> และเป็นภาษากลางของวงการอุตุ-ภูมิอากาศ</p>
+<ul>
+<li><b>self-describing:</b> เปิดมาเห็นชื่อแกน/หน่วย/พิกัดครบ ไม่ต้องเดา</li>
+<li><b>CF Conventions:</b> กติกาตั้งชื่อ/หน่วยมาตรฐาน (เช่น <code>standard_name</code>, <code>units</code>) ทำให้เครื่องมือต่าง ๆ เข้าใจตรงกัน</li>
+<li>สร้างบน <b>HDF5</b> (netCDF4) · xarray เปิดด้วย <code>xr.open_dataset()</code> ตรง ๆ</li>
+</ul>
+<div class="why"><b>ใช้เมื่อไร:</b> เป็นรูปแบบ "อินพุตขาเข้า" จาก ERA5 (และผลิตภัณฑ์ดาวเทียมหลายตัว) · เหมาะกับไฟล์ขนาดกลาง · แต่พอ datacube ใหญ่มากและต้องอ่านขนานบน cloud → เราจะแปลงไป Zarr (ข้อ 5)</div>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. GeoTIFF / COG — กล่องแรสเตอร์ (ภาพมีพิกัด)</h2>
+<p><b>GeoTIFF</b> (<code>.tif</code>) คือไฟล์ภาพแรสเตอร์ที่ "ฝังพิกัดโลก" ไว้ — รู้ว่าแต่ละพิกเซลอยู่ตรงไหนบนโลกผ่าน 2 อย่าง: <b>CRS</b> (ระบบพิกัด เช่น <code>EPSG:4326</code> = lat/lon) และ <b>geotransform</b> (พิกัดมุม + ขนาดพิกเซล) · เป็นรูปแบบของ <b>DEM</b> และภาพดาวเทียมจำนวนมาก</p>
+<p><b>COG (Cloud Optimized GeoTIFF)</b> = GeoTIFF ที่จัดเรียงภายในเป็น tile + overview → ดึง "เฉพาะหน้าต่างที่ต้องใช้" จาก cloud ได้โดยไม่ต้องโหลดทั้งไฟล์ (Copernicus DEM บน AWS เป็น COG)</p>
+<pre><code><span class="kw">import</span> rioxarray            <span class="cm"># ส่วนขยายของ xarray สำหรับ raster + CRS</span>
+dem = rioxarray.<span class="fn">open_rasterio</span>(<span class="st">"dem_chiangmai.tif"</span>)
+<span class="fn">print</span>(dem.rio.crs)         <span class="cm"># EPSG:4326</span>
+<span class="fn">print</span>(dem.rio.bounds())    <span class="cm"># (west, south, east, north)</span></code></pre>
+<div class="why"><b>เชื่อมกับงานเรา:</b> DEM (4.1) มาเป็น GeoTIFF/COG · เราเปิดด้วย <code>rioxarray</code> ซึ่งทำให้มันกลายเป็น xarray ที่ "รู้ CRS" → พร้อม reproject/regrid ให้เข้ากริด 0.1° ใน 4.3 · เรื่อง CRS/reprojection ลงลึกในบท 4.3</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. Zarr — กล่อง cloud-native สำหรับ datacube <span class="pin">★ ที่เก็บงานเรา</span></h2>
+<p><b>Zarr</b> คือรูปแบบเก็บอาเรย์ขนาดใหญ่แบบ "หั่นเป็นก้อน (chunk) + บีบอัด" · ต่างจาก NetCDF ที่เป็นไฟล์เดียว — Zarr เก็บแต่ละ chunk เป็นไฟล์/ออบเจ็กต์แยก → ทำให้:</p>
+<ul>
+<li><b>อ่านเฉพาะ chunk ที่ต้องใช้</b> ได้ ไม่ต้องโหลดทั้งก้อน → เหมาะกับ datacube หลาย GB บน Colab</li>
+<li><b>อ่าน/เขียนขนาน</b> และ <b>ต่อข้อมูล (append)</b> ได้ดี → สร้าง datacube ทีละเดือนแล้วต่อกันได้</li>
+<li>เป็นมิตรกับ cloud (S3/GCS) — แต่ละ chunk ดึงทีละชิ้น</li>
+</ul>
+
+<div class="center card">
+<svg class="svg" viewBox="0 0 600 180" width="92%" xmlns="http://www.w3.org/2000/svg">
+  <text x="150" y="18" fill="#f85149" font-size="11.5" text-anchor="middle">NetCDF: ไฟล์เดียว — อยากได้ส่วนเล็กก็ต้องเปิดทั้งก้อน</text>
+  <rect x="60" y="32" width="180" height="120" rx="6" fill="#161b22" stroke="#f85149"/>
+  <rect x="95" y="70" width="40" height="40" fill="rgba(248,81,73,.45)" stroke="#f85149"/>
+  <text x="150" y="170" fill="#9aa7b4" font-size="10" text-anchor="middle">ต้องโหลด 100% เพื่อ 1 ชิ้น</text>
+
+  <text x="450" y="18" fill="#3fb950" font-size="11.5" text-anchor="middle">Zarr: หั่น chunk — ดึงเฉพาะก้อนที่ใช้</text>
+  <g stroke="#30363d">
+  <rect x="360" y="32" width="180" height="120" fill="none"/>
+  <line x1="405" y1="32" x2="405" y2="152"/><line x1="450" y1="32" x2="450" y2="152"/><line x1="495" y1="32" x2="495" y2="152"/>
+  <line x1="360" y1="72" x2="540" y2="72"/><line x1="360" y1="112" x2="540" y2="112"/></g>
+  <rect x="405" y="72" width="45" height="40" fill="rgba(63,185,80,.55)" stroke="#3fb950"/>
+  <text x="450" y="170" fill="#9aa7b4" font-size="10" text-anchor="middle">โหลดแค่ 1 chunk ที่ต้องใช้</text>
+</svg>
+</div>
+
+<pre><code><span class="cm"># บันทึก datacube เป็น Zarr พร้อมหั่น chunk ตามรูปแบบการใช้งาน</span>
+cube.<span class="fn">chunk</span>({<span class="st">"time"</span>: <span class="nm">24</span>, <span class="st">"lat"</span>: <span class="nm">180</span>, <span class="st">"lon"</span>: <span class="nm">200</span>}).<span class="fn">to_zarr</span>(<span class="st">"hazenet_cube.zarr"</span>)
+<span class="cm"># เปิดแบบ lazy — ยังไม่โหลดเข้าแรมจนกว่าจะใช้จริง</span>
+cube = xr.<span class="fn">open_zarr</span>(<span class="st">"hazenet_cube.zarr"</span>)</code></pre>
+<div class="green-box"><b>การตัดสินใจของโปรเจกต์:</b> เก็บ <b>datacube สุดท้ายเป็น Zarr</b> · ตอนเทรน DataLoader ดึงเฉพาะ chunk/หน้าต่างเวลาที่ batch ต้องใช้ → ไม่ต้องยัดทั้ง 10GB เข้าแรม Colab (เชื่อม 4.5)</div>
+<div class="warn"><b>เคล็ดลับ chunk:</b> หั่น chunk ให้ตรงกับ "วิธีที่จะอ่าน" — ถ้าเทรนเป็นหน้าต่างเวลา ให้ chunk แกน time ขนาดเล็ก แต่เก็บ lat/lon ทั้งภาพในก้อนเดียว · chunk ผิดทาง = อ่านช้ากว่าเดิมหลายเท่า</div>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. dask + lazy / chunk — เครื่องมือไม่ให้แรมแตก</h2>
+<p><b>dask</b> คือเครื่องยนต์ที่ทำให้ xarray "ขี้เกียจ (lazy)" — เวลาเปิดไฟล์ใหญ่ มันยัง <b>ไม่โหลดข้อมูลจริง</b> แค่จำว่า "จะทำอะไรบ้าง" (สร้างแผนการคำนวณ) · ข้อมูลจะถูกโหลด+คำนวณ <b>ตอนที่เราสั่งเท่านั้น</b> และโหลดทีละ chunk:</p>
+<pre><code>ds = xr.<span class="fn">open_zarr</span>(<span class="st">"hazenet_cube.zarr"</span>)   <span class="cm"># เร็วมาก ยังไม่โหลดอะไร (lazy)</span>
+m  = ds[<span class="st">"pm25"</span>].<span class="fn">sel</span>(time=<span class="st">"2024-03"</span>).<span class="fn">mean</span>(<span class="st">"time"</span>)   <span class="cm"># ยังเป็นแค่ "แผน"</span>
+result = m.<span class="fn">compute</span>()   <span class="cm"># ← ตรงนี้แหละถึงโหลด+คำนวณจริง (ทีละ chunk)</span></code></pre>
+<div class="why"><b>ทำไมสำคัญกับ Colab:</b> A100 ใน Colab มีแรมจำกัด · lazy + chunk ทำให้เราทำงานกับ datacube ที่ "ใหญ่กว่าแรม" ได้ เพราะไม่เคยมีทั้งก้อนอยู่ในแรมพร้อมกัน · นี่คือกลไกหลักที่กันไม่ให้ OOM (4.5)</div>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. ข้อมูล "จุด" (CSV/JSON) อยู่ตรงไหนในภาพนี้</h2>
+<p>จำจาก 4.1: FIRMS (ไฟ) และ Air4Thai (สถานี) เป็น <b>ข้อมูลจุด</b> ไม่ใช่กริด → จึง <b>ยังไม่ใช่ NetCDF/Zarr</b> ตอนแรก · เราจัดการด้วยเครื่องมือคนละชุด แล้วค่อยแปลงเข้ากริด:</p>
+<table>
+<tr><th>ข้อมูล</th><th>เปิดด้วย</th><th>แปลงเข้ากริดยังไง</th></tr>
+<tr><td>FIRMS (CSV จุดไฟ)</td><td><code>pandas</code> / <code>geopandas</code></td><td>นับ/รวม FRP ลงช่อง 0.1° → กลายเป็น DataArray การปล่อย E (rasterize, 4.3)</td></tr>
+<tr><td>Air4Thai (JSON สถานี)</td><td><code>pandas</code></td><td>เก็บเป็นค่าที่ "พิกัดสถานี" → ใช้เป็น target แบบจุดตอนคำนวณ loss (ไม่ต้อง rasterize เต็มกริดก็ได้)</td></tr>
+</table>
+<div class="ex"><b>ประเด็นสำคัญ:</b> ปลายทางทุกอย่างคือ xarray · กริดมาก็เป็น DataArray อยู่แล้ว · จุดมาก็แปลงเป็น DataArray (สำหรับ E) หรือเก็บคู่พิกัดไว้เทียบ (สำหรับ target) · พอทุกอย่างเป็น xarray บนแกนเดียวกัน → ประกอบเป็น Dataset เดียวได้ใน 4.4</div>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. ตารางเทียบ + ใช้อันไหนเมื่อไร</h2>
+<table>
+<tr><th>สิ่งนี้</th><th>คืออะไร</th><th>โครงสร้าง</th><th>ใช้ในงานเราตอน</th></tr>
+<tr><td style="color:var(--cyan)"><b>xarray</b></td><td>ไลบรารี (ไม่ใช่ไฟล์) — tensor มีป้ายชื่อ</td><td>อยู่ในแรม</td><td>ทุกขั้นตอนของงานข้อมูล</td></tr>
+<tr><td style="color:var(--blue)"><b>NetCDF</b></td><td>ไฟล์อาเรย์หลายมิติ + metadata</td><td>ไฟล์เดียว</td><td>อินพุต ERA5/ดาวเทียม (ขาเข้า)</td></tr>
+<tr><td style="color:var(--purple)"><b>GeoTIFF/COG</b></td><td>ภาพแรสเตอร์ + CRS + geotransform</td><td>ไฟล์เดียว (COG=tile)</td><td>DEM/ภาพดาวเทียม (ขาเข้า)</td></tr>
+<tr><td style="color:var(--amber)"><b>Zarr</b></td><td>อาเรย์หั่น chunk + บีบอัด</td><td>โฟลเดอร์ของ chunk</td><td><b>เก็บ datacube สุดท้าย</b> (ขาออก/เทรน)</td></tr>
+<tr><td><b>pandas/geopandas</b></td><td>ตาราง/จุดเชิงพื้นที่</td><td>ตาราง (จุด)</td><td>FIRMS, Air4Thai (ก่อน rasterize)</td></tr>
+</table>
+<div class="why"><b>กฎจำง่าย:</b> <b>กริดเข้า → NetCDF/GeoTIFF</b> · <b>จุดเข้า → pandas</b> · <b>กลางทาง → xarray</b> · <b>เก็บผลลัพธ์ใหญ่ → Zarr</b></div>
+
+<!-- ============ 9 ============ -->
+<h2 id="p9">9. Workflow ของ HazeNet (ร้อยทุกอย่างเข้าด้วยกัน)</h2>
+<div class="center card">
+<svg class="svg" viewBox="0 0 720 130" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="aw2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker></defs>
+  <rect x="10" y="20" width="120" height="90" rx="8" fill="#161b22" stroke="#30363d"/>
+  <text x="70" y="40" fill="#e6edf3" font-size="11.5" text-anchor="middle" font-weight="bold">ดิบ (4.1)</text>
+  <text x="70" y="60" fill="#58a6ff" font-size="10" text-anchor="middle">.nc (ERA5)</text>
+  <text x="70" y="76" fill="#bc8cff" font-size="10" text-anchor="middle">.tif (DEM)</text>
+  <text x="70" y="92" fill="#ff9b54" font-size="10" text-anchor="middle">CSV/JSON</text>
+  <line x1="130" y1="65" x2="165" y2="65" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#aw2)"/>
+  <rect x="168" y="35" width="130" height="60" rx="8" fill="#11271c" stroke="#56d4dd"/>
+  <text x="233" y="60" fill="#56d4dd" font-size="12" text-anchor="middle" font-weight="bold">เปิดเป็น xarray</text>
+  <text x="233" y="78" fill="#9aa7b4" font-size="9.5" text-anchor="middle">open_dataset/rioxarray/pandas</text>
+  <line x1="298" y1="65" x2="333" y2="65" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#aw2)"/>
+  <rect x="336" y="35" width="130" height="60" rx="8" fill="#161b22" stroke="#30363d"/>
+  <text x="401" y="58" fill="#e6edf3" font-size="11.5" text-anchor="middle">หั่น+จัดให้ตรง</text>
+  <text x="401" y="76" fill="#9aa7b4" font-size="9.5" text-anchor="middle">sel/resample/regrid(4.3)</text>
+  <line x1="466" y1="65" x2="501" y2="65" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#aw2)"/>
+  <rect x="504" y="35" width="120" height="60" rx="8" fill="#161b22" stroke="#30363d"/>
+  <text x="564" y="58" fill="#e6edf3" font-size="11.5" text-anchor="middle">รวม Dataset</text>
+  <text x="564" y="76" fill="#9aa7b4" font-size="9.5" text-anchor="middle">datacube (4.4)</text>
+  <line x1="624" y1="65" x2="655" y2="65" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#aw2)"/>
+  <rect x="658" y="35" width="56" height="60" rx="8" fill="#0f1f17" stroke="#e3b341"/>
+  <text x="686" y="60" fill="#e3b341" font-size="11" text-anchor="middle">.zarr</text>
+  <text x="686" y="78" fill="#9aa7b4" font-size="9" text-anchor="middle">เทรน</text>
+</svg>
+</div>
+<pre><code><span class="kw">import</span> xarray <span class="kw">as</span> xr, rioxarray, pandas <span class="kw">as</span> pd
+
+<span class="cm"># 1) เปิดแต่ละแหล่งให้เป็น xarray</span>
+met = xr.<span class="fn">open_dataset</span>(<span class="st">"era5_2024_03.nc"</span>)            <span class="cm"># NetCDF → Dataset</span>
+dem = rioxarray.<span class="fn">open_rasterio</span>(<span class="st">"dem.tif"</span>).<span class="fn">squeeze</span>()    <span class="cm"># GeoTIFF → DataArray</span>
+fire = pd.<span class="fn">read_csv</span>(<span class="st">"firms.csv"</span>)                       <span class="cm"># CSV จุด (rasterize ใน 4.3)</span>
+
+<span class="cm"># 2) จัดให้อยู่กริด/เวลาเดียวกัน (รายละเอียด regrid อยู่ 4.3)</span>
+met3h = met.<span class="fn">resample</span>(time=<span class="st">"3H"</span>).<span class="fn">mean</span>()
+
+<span class="cm"># 3) รวมเป็น Dataset เดียว = datacube แล้วเก็บเป็น Zarr</span>
+cube = xr.<span class="fn">Dataset</span>({<span class="st">"u10"</span>: met3h.u10, <span class="st">"v10"</span>: met3h.v10, <span class="st">"dem"</span>: dem})
+cube.<span class="fn">chunk</span>({<span class="st">"time"</span>:<span class="nm">24</span>}).<span class="fn">to_zarr</span>(<span class="st">"hazenet_cube.zarr"</span>, mode=<span class="st">"w"</span>)</code></pre>
+
+<!-- ============ cheat ============ -->
+<h2 id="cheat">10. Cheat sheet + แบบฝึกหัด</h2>
+<div class="card">
+<h4>Cheat sheet</h4>
+<ul>
+<li>🧊 <b>xarray</b> = numpy + ป้ายชื่อ/พิกัด/หน่วย · <code>open_dataset</code> · <code>.sel/.isel/.resample/.interp</code> · <b>ใช้ตลอด</b></li>
+<li>📦 <b>NetCDF</b> (.nc) = กล่องวิทย์ self-describing · รูปของ ERA5 · เปิดด้วย <code>xr.open_dataset</code></li>
+<li>🗺️ <b>GeoTIFF/COG</b> (.tif) = แรสเตอร์ + CRS + geotransform · รูปของ DEM · เปิดด้วย <code>rioxarray</code></li>
+<li>⚡ <b>Zarr</b> = หั่น chunk + บีบอัด · <b>เก็บ datacube</b> · <code>to_zarr/open_zarr</code> · ดีต่อ Colab</li>
+<li>🐼 <b>pandas/geopandas</b> = ข้อมูลจุด (FIRMS/Air4Thai) ก่อน rasterize</li>
+<li>🦥 <b>dask</b> = lazy + ทีละ chunk → ทำงานก้อนใหญ่กว่าแรมได้ · โหลดจริงตอน <code>.compute()</code></li>
+</ul>
+</div>
+
+<div class="chk">
+<p class="q">❓ แบบฝึกหัด</p>
+<ol>
+<li>numpy array มีอะไรที่ xarray DataArray มีเพิ่ม 3 อย่าง?</li>
+<li>ERA5 มาเป็นฟอร์แมตอะไร? DEM ล่ะ?</li>
+<li>ทำไมเก็บ datacube เป็น Zarr ดีกว่า NetCDF ก้อนเดียวสำหรับการเทรนบน Colab?</li>
+<li><code>open_zarr()</code> ไม่โหลดข้อมูลทันที — ข้อมูลถูกโหลดจริงตอนไหน?</li>
+<li>FIRMS เป็น CSV จุด — เปิดด้วยอะไร และต้องทำอะไรก่อนเข้า datacube?</li>
+</ol>
+<details><summary>เฉลย</summary>
+<ol>
+<li>ชื่อแกน (dims), พิกัด (coords), และ metadata/หน่วย (attrs) — ทำให้เลือกด้วยชื่อ/ค่าได้ ไม่ต้องจำ index</li>
+<li>ERA5 = NetCDF (.nc) · DEM = GeoTIFF/COG (.tif)</li>
+<li>Zarr หั่น chunk → อ่านเฉพาะหน้าต่างที่ batch ต้องใช้ + อ่านขนาน + append ได้ → ไม่ต้องยัดทั้งก้อนเข้าแรม (กัน OOM)</li>
+<li>ตอนสั่งคำนวณจริง เช่น <code>.compute()</code> / <code>.load()</code> / ตอนเข้าถึงค่า — ก่อนหน้านั้นเป็นแค่ "แผน" (lazy)</li>
+<li>เปิดด้วย pandas/geopandas → rasterize (นับ/รวม FRP ลงกริด 0.1°) ให้เป็น DataArray การปล่อย E ก่อน (4.3)</li>
+</ol>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">✅ เช็กลิสต์ก่อนไป 4.3</p>
+<ul>
+<li>☐ อธิบายได้ว่า xarray ต่างจาก numpy ยังไง (ป้ายชื่อ/พิกัด/metadata)</li>
+<li>☐ จับคู่ฟอร์แมต↔แหล่งได้ (ERA5=NetCDF, DEM=GeoTIFF, จุด=CSV/JSON, datacube=Zarr)</li>
+<li>☐ ลองเปิด ERA5 ด้วย <code>xr.open_dataset</code> แล้ว <code>.sel</code> ดูค่าที่เชียงใหม่ได้</li>
+<li>☐ เข้าใจ lazy/chunk และทำไมจำเป็นบน Colab</li>
+</ul>
+</div>
+
+<hr>
+<p class="center muted">4.2 — รูปแบบ geospatial · โมดูล 4 · ต่อไป: <b style="color:var(--cyan)">4.3 Regridding / CRS / reprojection</b> (รวมข้อมูลคนละความละเอียดให้เป็นกริด 0.1° เดียว)</p>
+
+</div>
+</body>
+</html>

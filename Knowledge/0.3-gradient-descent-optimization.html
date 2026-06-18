@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>0.3 — Gradient Descent, Loss & Optimization (สอนละเอียด)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:30px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  pre{background:#0a0e14;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;margin:12px 0;font-size:14px;line-height:1.6}
+  code{font-family:"Consolas","Courier New",monospace}
+  pre code{color:#e6edf3}
+  .cm{color:#6e7a89}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#7ee787}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .eq{background:#11161d;border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:8px;padding:13px 17px;margin:13px 0;font-size:18px;text-align:center;font-family:"Cambria Math","Segoe UI",serif}
+  .eq .lbl{display:block;color:var(--muted);font-size:12.5px;font-family:"Segoe UI",sans-serif;margin-top:6px}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>0.3 — Gradient Descent, Loss &amp; Optimization</h1>
+<p class="tagline">"การเดินลงหุบเขา" ที่ทำให้โมเดลเรียนรู้ — และทำไมบางทีมันเทรนไม่ลง</p>
+<p class="sub">ต่อจาก 0.2 · เจาะลึกตัวที่พังบ่อยสุด (learning rate) + การอ่าน loss curve + เลือก loss ให้เหมาะกับฝุ่น · ผูกกับ HazeNet ตลอด</p>
+
+<div class="lead">
+<b>0.2 บอกว่า "เดินสวนทาง gradient" — 0.3 ตอบว่าเดินยังไงให้ลงจริง:</b> เดินก้าวใหญ่ไป<u>กระเด้งออก</u> เดินก้าวเล็กไป<u>ช้าจนไม่ทันเวลา</u> · เลือก loss ผิดโมเดล<u>มองข้ามวันวิกฤต</u> (ซึ่งคือสิ่งที่ HazeNet ต้องจับให้ได้) · บทนี้คือทักษะที่แยก "เทรนเป็น" กับ "เทรนแล้วพังไม่รู้ทำไม"
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. loss landscape (ภูมิประเทศของความผิด)</a><br>
+<a href="#p2">2. กฎอัปเดต gradient descent ★</a><br>
+<a href="#p3">3. Learning rate — ตัวสำคัญสุด ★</a><br>
+<a href="#p4">4. Batch / SGD / Epoch</a><br>
+<a href="#p5">5. Momentum &amp; Adam</a><br>
+<a href="#p6">6. เลือก Loss: MSE / MAE / Huber</a><br>
+<a href="#p7">7. อ่าน loss curve ★</a><br>
+<a href="#p8">8. หลุมพราง: local minima, plateau</a><br>
+<a href="#p9">9. เชื่อมกับ HazeNet (loss สำหรับฝุ่น)</a><br>
+<a href="#p10">10. Checklist: เทรนไม่ลงทำไง</a><br>
+<a href="#cheat">11. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. Loss Landscape — "ภูมิประเทศของความผิด"</h2>
+<p>นึกภาพว่าพารามิเตอร์ทุกตัวของโมเดลคือ "พิกัด" และ loss คือ "ความสูง" ของพื้นที่ตรงนั้น → เกิดเป็น <b>ภูมิประเทศ (landscape)</b> ที่มีหุบเขา เป้าหมายเราคือ <b>เดินไปจุดต่ำสุด</b> (loss น้อยสุด = โมเดลแม่นสุด)</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 580 230" width="92%" xmlns="http://www.w3.org/2000/svg">
+  <text x="290" y="20" fill="#e6edf3" font-size="13" text-anchor="middle">loss landscape (แบบ 1 พารามิเตอร์ เพื่อให้วาดได้)</text>
+  <!-- wavy landscape -->
+  <path d="M 40 70 C 130 200, 180 60, 290 150 S 430 60, 540 120" fill="none" stroke="#58a6ff" stroke-width="2.5"/>
+  <line x1="30" y1="200" x2="555" y2="200" stroke="#30363d"/>
+  <text x="535" y="218" fill="#9aa7b4" font-size="11">พารามิเตอร์ θ</text>
+  <text x="22" y="80" fill="#9aa7b4" font-size="11" transform="rotate(-90 22 120)">loss</text>
+  <!-- ball -->
+  <circle cx="95" cy="135" r="10" fill="#f778ba"/><text x="95" y="120" fill="#f778ba" font-size="10.5" text-anchor="middle">เริ่ม (สุ่ม)</text>
+  <!-- target valley -->
+  <circle cx="150" cy="168" r="6" fill="#56d4dd"/><text x="150" y="190" fill="#56d4dd" font-size="10.5" text-anchor="middle">หุบเขาใกล้</text>
+  <circle cx="345" cy="186" r="6" fill="#3fb950"/><text x="360" y="178" fill="#3fb950" font-size="10.5">หุบเขาลึกสุด</text>
+</svg>
+</div>
+<p class="muted">ของจริงมีพารามิเตอร์เป็นล้านมิติ วาดไม่ได้ — แต่หลักการเดียวกัน: gradient บอกทิศ "ลง" ที่ชันสุด ณ จุดที่ยืนอยู่</p>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. กฎอัปเดต — หัวใจของ gradient descent <span class="pin">★</span></h2>
+<p>ทุกก้าวของการเรียนรู้คือสมการเดียวนี้ (ทำซ้ำเรื่อย ๆ):</p>
+<div class="eq">
+θ<sub>ใหม่</sub> = θ<sub>เก่า</sub> − η · ∇<sub>θ</sub> L
+<span class="lbl">θ = พารามิเตอร์ · η (eta) = learning rate (ขนาดก้าว) · ∇L = gradient (ทิศชันขึ้น) · เครื่องหมายลบ = เดินสวนทาง (ลง)</span>
+</div>
+<p>อ่านเป็นภาษาคน: <i>"ยืนอยู่ตรงไหน ดูว่าทางขึ้นชันสุดไปทางไหน (∇L) แล้วเดินถอยหลังจากทางนั้นเป็นก้าวขนาด η"</i> — ทำซ้ำจนถึงก้นหุบเขา</p>
+<div class="why"><b>เชื่อมกับ 0.2:</b> ใน Hello World ส่วน 4 ของบท 0.2 คุณเขียน <code>x -= lr * x.grad</code> ด้วยมือ — <b>นั่นคือสมการนี้เป๊ะ</b> · <code>optimizer.step()</code> ก็ทำสมการนี้ให้ทุกพารามิเตอร์พร้อมกัน</div>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. Learning Rate (η) — ตัวที่พังบ่อยสุด <span class="pin">★</span></h2>
+<p>η คือ "ขนาดก้าว" และเป็น <b>hyperparameter สำคัญที่สุด</b> ที่คุณต้องจูน — ตั้งผิดเทรนพังทันที</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 720 220" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <!-- panel 1: too small -->
+  <text x="120" y="20" fill="#e3b341" font-size="13" text-anchor="middle" font-weight="bold">η เล็กไป → ช้า</text>
+  <path d="M 30 60 Q 120 200 210 60" fill="none" stroke="#30363d" stroke-width="2"/>
+  <g fill="#e3b341">
+    <circle cx="55" cy="95" r="5"/><circle cx="68" cy="115" r="5"/><circle cx="82" cy="132" r="5"/><circle cx="96" cy="146" r="5"/><circle cx="108" cy="157" r="5"/>
+  </g>
+  <text x="120" y="195" fill="#9aa7b4" font-size="10.5" text-anchor="middle">คืบทีละนิด เสียเวลา/งบ GPU</text>
+
+  <!-- panel 2: good -->
+  <text x="360" y="20" fill="#3fb950" font-size="13" text-anchor="middle" font-weight="bold">η พอดี → ลงเร็ว</text>
+  <path d="M 270 60 Q 360 200 450 60" fill="none" stroke="#30363d" stroke-width="2"/>
+  <g fill="#3fb950">
+    <circle cx="295" cy="100" r="5"/><circle cx="325" cy="150" r="5"/><circle cx="360" cy="178" r="6"/>
+  </g>
+  <text x="360" y="195" fill="#9aa7b4" font-size="10.5" text-anchor="middle">ถึงก้นหุบเขาไว ๆ</text>
+
+  <!-- panel 3: too big -->
+  <text x="600" y="20" fill="#f85149" font-size="13" text-anchor="middle" font-weight="bold">η ใหญ่ไป → กระเด้ง</text>
+  <path d="M 510 60 Q 600 200 690 60" fill="none" stroke="#30363d" stroke-width="2"/>
+  <g fill="#f85149">
+    <circle cx="540" cy="120" r="5"/><circle cx="660" cy="110" r="5"/><circle cx="525" cy="90" r="5"/><circle cx="675" cy="75" r="5"/>
+  </g>
+  <path d="M 540 120 L 660 110 L 525 90 L 675 75" fill="none" stroke="#f85149" stroke-width="1" stroke-dasharray="3 3"/>
+  <text x="600" y="195" fill="#9aa7b4" font-size="10.5" text-anchor="middle">กระโดดข้ามก้น → loss พุ่ง/NaN</text>
+</svg>
+</div>
+<table>
+<tr><th>อาการ</th><th>สาเหตุ</th><th>แก้</th></tr>
+<tr><td>loss ลงช้ามาก/เกือบนิ่ง</td><td>η เล็กไป</td><td>เพิ่ม η (×3 หรือ ×10)</td></tr>
+<tr><td>loss กระโดดขึ้น-ลง / กลายเป็น NaN</td><td>η ใหญ่ไป (exploding)</td><td>ลด η (÷3 หรือ ÷10)</td></tr>
+<tr><td>loss ลงดีแล้วค้างกลางคัน</td><td>η คงที่ใหญ่ตอนใกล้ก้น</td><td>ใช้ schedule ลด η (ส่วนล่าง)</td></tr>
+</table>
+<div class="warn"><b>วิธีหา η ในทางปฏิบัติ:</b> ลองเป็น "เลขยกกำลังสิบ" — <code>1e-2, 1e-3, 1e-4</code> · กับ Adam เริ่มที่ <code>1e-3</code> มักใช้ได้เลย · <b>เทรนสั้น ๆ ดู loss curve 2-3 นาทีก่อน</b> ว่าลงไหม อย่าปล่อยยาวแล้วค่อยรู้ว่า η พัง = เสียงบ GPU ฟรี (สำคัญมากกับ A100 จำกัด 15 ชม.)</div>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. Batch / SGD / Epoch — คำที่ต้องแยกให้ออก</h2>
+<p>เรามีข้อมูลเยอะมาก (เป็นล้านจุด) คำนวณ gradient จากทั้งหมดทุกก้าวจะช้า/แรมไม่พอ → แบ่งเป็นก้อนเล็ก</p>
+<table>
+<tr><th>คำ</th><th>ความหมาย</th></tr>
+<tr><td><b>Batch (mini-batch)</b></td><td>ข้อมูลก้อนเล็กที่ใช้คำนวณ gradient 1 ก้าว (เช่น 16 ตัวอย่าง)</td></tr>
+<tr><td><b>Iteration / step</b></td><td>การอัปเดต 1 ครั้ง (= 1 batch)</td></tr>
+<tr><td><b>Epoch</b></td><td>เห็นข้อมูล "ครบทั้งชุด" 1 รอบ (= หลาย iteration)</td></tr>
+<tr><td><b>SGD</b> (Stochastic GD)</td><td>gradient descent ที่ใช้ "ทีละ batch" แทนทั้งชุด — เร็วและทำงานได้ดีในทางปฏิบัติ</td></tr>
+</table>
+<p>ตัวอย่าง: ข้อมูล 1,600 ตัวอย่าง · batch size 16 → 1 epoch = <code>1600/16 = 100</code> iteration · เทรน 50 epoch = 5,000 ก้าวอัปเดต</p>
+<div class="why"><b>เชื่อมกับงานเรา + ข้อจำกัด GPU:</b> batch size ใหญ่ = gradient นิ่งกว่าแต่กินแรม GPU มาก · บน A100 ที่แรมจำกัด เราจะเลือก batch ใหญ่สุดที่ "ไม่ OOM" · ข้อมูล HazeNet เป็นแผนที่ <code>(channel, 85, 105)</code> ก้อนใหญ่ → batch อาจเล็ก (4-16) ต้องลองหา</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. Momentum &amp; Adam — gradient descent รุ่นฉลาด</h2>
+<p>GD ธรรมดามีปัญหา: ในหุบเขาแคบยาวมันจะ "ส่ายไปมา" ช้า · มีลูกเล่นช่วย:</p>
+
+<h4>Momentum — "ลูกบอลกลิ้งสะสมแรง"</h4>
+<p>แทนที่จะเดินตาม gradient ปัจจุบันล้วน ๆ ให้สะสม "ความเร็ว" จากก้าวก่อน ๆ ด้วย → ทะลุจุดสะดุดเล็ก ๆ และเร่งในทิศที่ไปทางเดิมซ้ำ ๆ</p>
+<div class="eq" style="font-size:16px">
+v ← β·v + ∇L &nbsp;&nbsp;;&nbsp;&nbsp; θ ← θ − η·v
+<span class="lbl">v = ความเร็วสะสม · β ≈ 0.9 = ความเฉื่อย</span>
+</div>
+
+<h4>Adam — รุ่นมาตรฐานที่ใช้จริง</h4>
+<p>Adam = <b>Momentum + ปรับ learning rate ให้แต่ละพารามิเตอร์อัตโนมัติ</b> (พารามิเตอร์ที่ gradient ใหญ่ก้าวสั้นลง, ที่เล็กก้าวยาวขึ้น) → ทนทาน จูนง่าย</p>
+<table>
+<tr><th>Optimizer</th><th>ลักษณะ</th><th>ใช้เมื่อ</th></tr>
+<tr><td><code>SGD</code></td><td>พื้นฐาน ต้องจูน η ดี</td><td>งานที่อยากได้ generalization สูงสุด (เช่น vision)</td></tr>
+<tr><td><code>SGD + momentum</code></td><td>เร็วขึ้น ทะลุสะดุด</td><td>ทางเลือกคลาสสิก</td></tr>
+<tr><td><b><code>Adam</code></b></td><td>ปรับ lr อัตโนมัติ จูนง่าย</td><td><b>ค่าเริ่มต้นที่แนะนำ (รวมถึง HazeNet)</b></td></tr>
+<tr><td><code>AdamW</code></td><td>Adam + weight decay ที่ถูกต้อง</td><td>โมเดลใหญ่ (transformer/AFNO) — น่าจะใช้ตัวนี้</td></tr>
+</table>
+<div class="why"><b>เชื่อมกับงานเรา:</b> AFNO/transformer มักเทรนด้วย <code>AdamW</code> + learning rate schedule (warmup แล้ว decay) — เราจะใช้สูตรนี้ · เริ่ม <code>AdamW(lr=1e-3, weight_decay=1e-4)</code> เป็นจุดตั้งต้น แล้วจูนจาก loss curve</div>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. เลือก Loss Function — MSE / MAE / Huber</h2>
+<p>loss คือ "นิยามของความผิด" ที่เราสั่งให้โมเดลลด — เลือกต่างกัน โมเดลให้ความสำคัญต่างกัน</p>
+<table>
+<tr><th>Loss</th><th>สูตร</th><th>นิสัย</th><th>ข้อเสีย</th></tr>
+<tr><td><b>MSE</b> (L2)</td><td>mean((pred−true)²)</td><td>ลงโทษ error ใหญ่<b>หนักมาก</b> → เน้นจับค่าพีค · gradient เรียบ</td><td>ไวต่อ outlier/noise มาก</td></tr>
+<tr><td><b>MAE</b> (L1)</td><td>mean(|pred−true|)</td><td><b>ทนทาน</b>ต่อ outlier · ทุก error น้ำหนักเท่ากัน</td><td>gradient ไม่เรียบที่ 0</td></tr>
+<tr><td><b>Huber</b> (SmoothL1)</td><td>MSE ใกล้ 0, L1 ไกล</td><td><b>ดีที่สุดของทั้งคู่</b> — เรียบ + ทนทาน</td><td>มี hyperparam δ ต้องตั้ง</td></tr>
+</table>
+<div class="center card">
+<svg class="svg" viewBox="0 0 480 200" width="78%" xmlns="http://www.w3.org/2000/svg">
+  <line x1="240" y1="30" x2="240" y2="180" stroke="#30363d"/><line x1="60" y1="170" x2="430" y2="170" stroke="#30363d"/>
+  <text x="430" y="188" fill="#9aa7b4" font-size="11">error (pred−true)</text>
+  <text x="250" y="42" fill="#9aa7b4" font-size="11">loss</text>
+  <!-- MSE parabola -->
+  <path d="M 90 60 Q 240 250 390 60" fill="none" stroke="#f85149" stroke-width="2.2"/>
+  <text x="110" y="62" fill="#f85149" font-size="12">MSE (โค้งชัน)</text>
+  <!-- MAE V -->
+  <path d="M 90 70 L 240 170 L 390 70" fill="none" stroke="#58a6ff" stroke-width="2.2"/>
+  <text x="350" y="86" fill="#58a6ff" font-size="12">MAE (ตรง)</text>
+  <!-- Huber -->
+  <path d="M 90 96 L 175 150 Q 240 178 305 150 L 390 96" fill="none" stroke="#3fb950" stroke-width="2.2" stroke-dasharray="5 3"/>
+  <text x="250" y="150" fill="#3fb950" font-size="12">Huber</text>
+</svg>
+</div>
+
+<div class="ex"><b>★ การตัดสินใจจริงสำหรับ HazeNet (สำคัญ):</b>
+<ul style="margin:6px 0">
+<li>ฝุ่น PM2.5 มี <b>ค่าพีคสุดขั้ว</b> ในวันวิกฤต — ซึ่งคือสิ่งที่เราต้องจับให้ได้ที่สุด (เชื่อมกับ metric CSI/POD วันวิกฤต หัวข้อ 5.1)</li>
+<li>MSE จะ "เพ่ง" ค่าใหญ่ → ดีต่อการจับพีค <b>แต่</b> ก็ไวต่อ noise ของสถานีที่ข้อมูลกระจาย</li>
+<li>ทางที่ดี: ลอง <b>Huber</b> (ทนทาน+เน้นพีคได้) หรือเทรนใน <b>log-space</b> (log PM2.5) เพื่อไม่ให้ค่าพีคกลบค่าปกติ · หรือ <b>weighted loss</b> ถ่วงน้ำหนักวันความเข้มข้นสูง</li>
+<li>นี่คือ "การออกแบบ loss" ที่จะเป็นหนึ่งใน ablation ของเรา (E ในแผน) — ไม่ใช่เลือกมั่ว ต้องทดลองเทียบ</li>
+</ul></div>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. อ่าน Loss Curve — ทักษะที่ใช้ทุกวัน <span class="pin">★</span></h2>
+<p>กราฟ loss ต่อ epoch บอกสุขภาพการเทรนได้แทบทุกอย่าง เราพล็อต <b>2 เส้น: train loss + validation loss</b></p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 720 210" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <!-- good -->
+  <text x="120" y="18" fill="#3fb950" font-size="12.5" text-anchor="middle" font-weight="bold">✓ ดี</text>
+  <line x1="40" y1="160" x2="220" y2="160" stroke="#30363d"/><line x1="40" y1="40" x2="40" y2="160" stroke="#30363d"/>
+  <path d="M 45 55 C 90 130, 150 150, 215 152" fill="none" stroke="#58a6ff" stroke-width="2"/>
+  <path d="M 45 60 C 90 135, 150 152, 215 154" fill="none" stroke="#e3b341" stroke-width="2"/>
+  <text x="130" y="195" fill="#9aa7b4" font-size="10">ทั้งคู่ลง แล้วแบนชิดกัน</text>
+
+  <!-- overfit -->
+  <text x="360" y="18" fill="#f85149" font-size="12.5" text-anchor="middle" font-weight="bold">✗ Overfitting</text>
+  <line x1="280" y1="160" x2="460" y2="160" stroke="#30363d"/><line x1="280" y1="40" x2="280" y2="160" stroke="#30363d"/>
+  <path d="M 285 55 C 330 130, 390 150, 455 154" fill="none" stroke="#58a6ff" stroke-width="2"/>
+  <path d="M 285 60 C 330 130, 380 120, 455 80" fill="none" stroke="#e3b341" stroke-width="2"/>
+  <text x="370" y="195" fill="#9aa7b4" font-size="10">train ลง แต่ val เด้งขึ้น</text>
+
+  <!-- diverge -->
+  <text x="600" y="18" fill="#f85149" font-size="12.5" text-anchor="middle" font-weight="bold">✗ η ใหญ่ไป</text>
+  <line x1="520" y1="160" x2="700" y2="160" stroke="#30363d"/><line x1="520" y1="40" x2="520" y2="160" stroke="#30363d"/>
+  <path d="M 525 120 L 545 90 L 565 130 L 585 70 L 605 110 L 625 50 L 700 45" fill="none" stroke="#58a6ff" stroke-width="2"/>
+  <text x="610" y="195" fill="#9aa7b4" font-size="10">loss เด้ง/พุ่ง ไม่ลง</text>
+  <!-- legend -->
+  <rect x="300" y="35" width="14" height="4" fill="#58a6ff"/><text x="320" y="40" fill="#9aa7b4" font-size="10">train</text>
+  <rect x="370" y="35" width="14" height="4" fill="#e3b341"/><text x="390" y="40" fill="#9aa7b4" font-size="10">val</text>
+</svg>
+</div>
+<table>
+<tr><th>คุณเห็น</th><th>แปลว่า</th><th>ทำอะไร</th></tr>
+<tr><td>train↓ + val↓ แล้วแบนชิดกัน</td><td>สุขภาพดี</td><td>ปล่อยจนนิ่ง / หยุด</td></tr>
+<tr><td>train↓ แต่ val↑</td><td><b>overfitting</b> (จำข้อมูลเทรน)</td><td>เพิ่มข้อมูล/regularization/dropout, early stopping</td></tr>
+<tr><td>ทั้งคู่นิ่งสูง</td><td><b>underfitting</b> / lr เล็ก / โมเดลอ่อน</td><td>เพิ่ม lr, เพิ่ม capacity, เทรนนานขึ้น</td></tr>
+<tr><td>loss เด้ง/พุ่ง/NaN</td><td>lr ใหญ่ไป / gradient ระเบิด</td><td>ลด lr, gradient clipping</td></tr>
+</table>
+<div class="why"><b>เชื่อมกับงานเรา:</b> "val loss" ของเราต้องวัดบน <b>ปี/สถานีที่กันไว้</b> (split กันรั่ว จากหัวข้อ 5.2) ไม่งั้นกราฟสวยหลอก ๆ · ช่องว่าง train-val ที่กว้าง = สัญญาณว่าโมเดล generalize ไม่ดี ซึ่งเป็นจุดที่ physics prior (ฟิสิกส์) ช่วยลดได้</div>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. หลุมพราง: local minima &amp; plateau (อย่ากลัวเกินไป)</h2>
+<ul>
+<li><b>Local minimum</b> = หุบเขาที่ไม่ใช่ลึกสุด — ในทางทฤษฎีน่ากลัว แต่ในมิติสูง (พารามิเตอร์ล้านตัว) <b>พบน้อยกว่าที่คิด</b> และมักให้ผลใกล้เคียงพอใช้</li>
+<li><b>Saddle point</b> (จุดอานม้า) = ราบในบางทิศ ชันในบางทิศ → momentum/Adam ช่วยหลุดได้</li>
+<li><b>Plateau</b> = ที่ราบยาว loss ลงช้ามาก → learning rate schedule หรือ warmup ช่วย</li>
+</ul>
+<div class="warn"><b>อย่าหมกมุ่นกับ "global minimum":</b> เป้าหมายจริงไม่ใช่ loss ต่ำสุดบนข้อมูลเทรน แต่คือ <b>generalize ดีบนข้อมูลใหม่</b> (val/test) — โมเดลที่ loss เทรนต่ำสุดอาจ overfit · ดู val เป็นหลักเสมอ</div>
+
+<h4>Learning rate schedule (โบนัส)</h4>
+<p>ในทางปฏิบัติเรามัก "ลด η ระหว่างทาง": เริ่มก้าวใหญ่ลงเร็ว แล้วก้าวเล็กลงตอนใกล้ก้นเพื่อไม่กระเด้ง · รูปแบบนิยม: <b>warmup</b> (ค่อย ๆ เพิ่ม η ช่วงแรกกัน NaN) แล้ว <b>cosine decay</b> (ค่อย ๆ ลด) — มาตรฐานของการเทรน transformer/AFNO</p>
+
+<!-- ============ 9 ============ -->
+<h2 id="p9">9. เชื่อมกับ HazeNet — loss ที่ "รู้ฟิสิกส์"</h2>
+<p>loss ของเราไม่ใช่แค่ MSE เปล่า ๆ แต่ออกแบบให้สะท้อนสิ่งที่เราแคร์:</p>
+<div class="eq" style="font-size:16px;text-align:left">
+L = L<sub>data</sub>(C<sub>pred</sub>, C<sub>true</sub>) &nbsp;+&nbsp; λ<sub>1</sub>·L<sub>rollout</sub> &nbsp;+&nbsp; λ<sub>2</sub>·L<sub>peak</sub>
+<span class="lbl">L_data = Huber/MSE บนฝุ่น · L_rollout = error สะสมหลาย step (จาก 3.4) · L_peak = ถ่วงน้ำหนักวันวิกฤต</span>
+</div>
+<ul>
+<li><b>ไม่ต้องมี loss บังคับ non-negativity / mass</b> เพราะเราทำเป็น<u>โครงสร้าง</u>แล้ว (หัวข้อ 2.4, 3.5) — เป็นจุดแข็งของ design เรา</li>
+<li><b>rollout loss</b> สำคัญ: ถ้าเทรน t+1 อย่างเดียว error จะสะสมตอนพยากรณ์ยาว → ต้องเทรน multi-step (เชื่อม curriculum 3.4)</li>
+<li>การเลือก optimizer/lr/loss ทั้งหมดนี้จะถูกบันทึกเป็น <b>systematic experiment</b> (แผน master) ไม่ใช่จูนมั่ว</li>
+</ul>
+
+<!-- ============ 10 ============ -->
+<h2 id="p10">10. Checklist — "เทรนไม่ลง" ทำไงดี (เก็บไว้ใช้จริง)</h2>
+<div class="card">
+<ol>
+<li><b>ลด/เพิ่ม learning rate</b> (ลองก่อนเสมอ — สาเหตุอันดับ 1) ลองเป็นเลข ×10/÷10</li>
+<li><b>ลืม <code>zero_grad()</code> ไหม?</b> (จาก 0.2 — gradient สะสมทำเทรนเพี้ยน)</li>
+<li><b>normalize ข้อมูลหรือยัง?</b> input/output ควรสเกลใกล้ ๆ กัน (เช่น mean 0 std 1) ไม่งั้น loss ระเบิด</li>
+<li><b>shape ตรงไหม?</b> broadcasting เงียบ ๆ (จาก 0.1) ทำ loss ผิดโดยไม่ error</li>
+<li><b>loss/ข้อมูลมี NaN ไหม?</b> ตรวจ input · ใส่ gradient clipping</li>
+<li><b>overfit (val↑)?</b> เพิ่มข้อมูล/regularization/early stopping</li>
+<li><b>underfit (นิ่งสูง)?</b> เพิ่ม capacity/เทรนนานขึ้น/เพิ่ม lr</li>
+<li><b>ทดสอบกับข้อมูลจิ๋ว:</b> ลองให้โมเดล "overfit ข้อมูล 1 batch" ให้ได้ก่อน — ถ้าทำไม่ได้แสดงว่ามี bug ในโค้ด ไม่ใช่เรื่อง hyperparameter</li>
+</ol>
+</div>
+
+<!-- ============ CHEAT ============ -->
+<h2 id="cheat">11. Cheat Sheet + แบบฝึกหัด</h2>
+<div class="card">
+<table>
+<tr><th>เรื่อง</th><th>จุดสำคัญ</th></tr>
+<tr><td>กฎอัปเดต</td><td><code>θ ← θ − η·∇L</code></td></tr>
+<tr><td>learning rate</td><td>เล็ก=ช้า · ใหญ่=กระเด้ง/NaN · เริ่ม Adam ที่ <code>1e-3</code></td></tr>
+<tr><td>optimizer แนะนำ</td><td><code>AdamW(lr=1e-3, weight_decay=1e-4)</code></td></tr>
+<tr><td>loss แนะนำ (ฝุ่น)</td><td>Huber หรือ log-space + weight วันพีค</td></tr>
+<tr><td>อ่าน curve</td><td>ดู val เป็นหลัก · train↓val↑ = overfit · เด้ง = lr ใหญ่</td></tr>
+<tr><td>debug อันดับ 1</td><td>ปรับ lr → เช็ก zero_grad → normalize → shape</td></tr>
+</table>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด</p>
+<ol>
+<li>loss กลายเป็น NaN หลังไม่กี่ก้าว — น่าจะเพราะอะไร แก้ยังไง?</li>
+<li>train loss = 0.01 แต่ val loss = 5.0 — เกิดอะไรขึ้น?</li>
+<li>ข้อมูล 3,200 ตัวอย่าง batch size 32 — 1 epoch มีกี่ iteration?</li>
+<li>ทำไมงาน HazeNet ถึง<b>ไม่</b>ต้องใส่ loss บังคับ "ค่าฝุ่นห้ามติดลบ"?</li>
+<li>อยากให้โมเดลเน้นจับ "วันฝุ่นวิกฤต" ควรปรับ loss ยังไง (2 วิธี)?</li>
+</ol>
+<details>
+<summary style="cursor:pointer;color:var(--cyan)">▶ เฉลย</summary>
+<ol style="margin-top:8px">
+<li>learning rate ใหญ่ไป (gradient ระเบิด) → ลด lr และ/หรือ gradient clipping; เช็ก input ว่ามี NaN ไหม</li>
+<li>Overfitting — โมเดลจำข้อมูลเทรนแต่ generalize ไม่ได้ → เพิ่มข้อมูล/regularization/early stopping</li>
+<li><code>3200/32 = 100</code> iteration</li>
+<li>เพราะ non-negativity ทำเป็น <b>โครงสร้าง</b>ของ operator แล้ว (semi-Lagrangian monotone + พจน์ ≥0 จาก 2.4/3.5) ไม่ต้องพึ่ง loss</li>
+<li>(ก) ใช้ weighted loss ถ่วงน้ำหนักช่วงความเข้มข้นสูง (ข) เทรนใน log-space หรือใช้ loss ที่เน้นค่าใหญ่ (เช่น MSE/threshold-weighted)</li>
+</ol>
+</details>
+</div>
+
+<hr>
+<div class="lead">
+<b>จบ 0.3 แล้วคุณควร:</b> เข้าใจว่า learning rate คุมทุกอย่าง · อ่าน loss curve ออก (overfit/underfit/diverge) · เลือก loss ให้เหมาะกับฝุ่น (Huber/log/weighted) · และ debug "เทรนไม่ลง" เป็นขั้นตอน<br><br>
+<b>จบโมดูล 0 (พื้นฐาน ML) แล้ว!</b> ขั้นต่อไปแนะนำ: <b>0.4 Train/Val/Test &amp; generalization</b> (ปิดท้ายโมดูล 0 — สำคัญมากเพื่อให้ผลเชื่อถือได้) หรือเริ่มสายโดเมน <b>1.1 PM2.5/AOD/FRP</b>
+</div>
+
+<p class="center muted">HazeNet · Knowledge · 0.3 Gradient Descent, Loss &amp; Optimization</p>
+
+</div>
+</body>
+</html>

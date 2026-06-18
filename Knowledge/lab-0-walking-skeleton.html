@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab 0 — Walking Skeleton (เริ่มจริง ทีละน้อย ครบวงจร)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:44px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:26px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .green-box b{color:var(--green)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.2px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--green);color:var(--green);margin-left:6px}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+  a.ext{color:var(--blue)}
+  .stage{border:1px solid var(--border);border-radius:11px;margin:18px 0;overflow:hidden;background:var(--panel)}
+  .stage-h{display:flex;align-items:center;gap:12px;padding:12px 18px;background:var(--panel2);border-bottom:1px solid var(--border)}
+  .stage-n{background:var(--green);color:#06210f;border-radius:9px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;flex-shrink:0}
+  .stage-t{font-size:17px;font-weight:bold}
+  .stage-meta{margin-left:auto;font-size:12px;color:var(--muted);text-align:right}
+  .stage-b{padding:8px 18px 16px}
+  .dod{border-left:4px solid var(--green);background:rgba(63,185,80,.08);padding:8px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:14.5px}
+  .dod b{color:var(--green)}
+  .tag{font-size:11.5px;padding:1px 8px;border-radius:11px;border:1px solid var(--border);color:var(--muted);margin-left:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Lab 0 — Walking Skeleton <span class="pin">🟢 ลงมือจริง</span></h1>
+<p class="tagline">ทำทุกอย่าง "เล็กจิ๋วแต่ครบวงจร" ให้ pipeline วิ่งทะลุต้นจนจบก่อน — แล้วค่อยขยาย</p>
+<p class="sub">ภาคปฏิบัติของโมดูล 4–5 · เป้าหมาย: พิสูจน์ว่า "ท่อทั้งเส้นไม่รั่ว" ไม่ใช่ได้ผลลัพธ์สวย · รันบน CPU/T4 ฟรีเป็นหลัก (แทบไม่แตะ A100)</p>
+
+<div class="lead">
+<b>ปรัชญาเดียวที่ต้องยึด:</b> <b class="k">"ให้มันวิ่งครบวงจรก่อน แล้วค่อยทำให้ใหญ่/ดี"</b><br><br>
+อย่าทำส่วนใดส่วนหนึ่งให้สมบูรณ์แบบก่อน · จงต่อ "ชิ้นบาง ๆ" ของทุกขั้นตอน (ดึงข้อมูล→datacube→โมเดล→loss→metric) เข้าด้วยกันให้รันไม่ error <b>ภายในวันเดียว</b> · บั๊กการเชื่อมต่อ (integration bug) คือสิ่งที่กินเวลามากที่สุดในโปรเจกต์จริง — skeleton นี้ทำให้เจอมันเร็วและถูก ก่อนเปลือง A100<br><br>
+<b>ขนาดของ "จิ๋ว" ใน Lab นี้:</b> โดเมนแค่รอบเชียงใหม่ · เวลาแค่ ~1 สัปดาห์ · channel แค่ไม่กี่ตัว · โมเดลจิ๋ว · rollout 1 step · เป้าคือ "เขียว" ทุกขั้น
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#why">0. ทำไมต้อง Walking Skeleton</a><br>
+<a href="#scope">1. นิยาม "จิ๋ว" ของ Lab 0</a><br>
+<a href="#s0">Stage 0 — Setup</a><br>
+<a href="#s1">Stage 1 — ดึงข้อมูลจิ๋ว (4.1)</a><br>
+<a href="#s2">Stage 2 — เปิดด้วย xarray (4.2)</a><br>
+<a href="#s3">Stage 3 — regrid เข้ากริดเดียว (4.3)</a><br>
+<a href="#s4">Stage 4 — mini-datacube (4.4)</a><br>
+<a href="#s5">Stage 5 — DataLoader</a><br>
+<a href="#s6">Stage 6 — โมเดลจิ๋ว + overfit test (4.5)</a><br>
+<a href="#s7">Stage 7 — train สั้น + metric + baseline (5.1/5.3)</a><br>
+<a href="#s8">Stage 8 — รU rigor 1 ชิ้น (5.4/5.6)</a><br>
+<a href="#scale">9. บันไดขยายหลัง skeleton เขียว</a><br>
+<a href="#caveat">10. กับดัก + caveat</a><br>
+</div>
+
+<!-- why -->
+<h2 id="why">0. ทำไมต้อง Walking Skeleton (ไม่ใช่ทำเป็นโมดูลทีละก้อนใหญ่)</h2>
+<div class="center card">
+<svg class="svg" viewBox="0 0 620 150" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <text x="155" y="16" fill="#f85149" font-size="11.5" text-anchor="middle">❌ ทำทีละก้อนจนสมบูรณ์</text>
+  <g font-size="10" text-anchor="middle">
+   <rect x="40" y="28" width="230" height="20" fill="rgba(248,81,73,.3)" stroke="#f85149"/><text x="155" y="42" fill="#fff">ข้อมูลครบสมบูรณ์ (2 สัปดาห์)</text>
+   <rect x="40" y="52" width="230" height="20" fill="rgba(248,81,73,.2)" stroke="#f85149"/><text x="155" y="66" fill="#fff">datacube ครบ (1 สัปดาห์)</text>
+   <rect x="40" y="76" width="230" height="20" fill="rgba(248,81,73,.15)" stroke="#f85149"/><text x="155" y="90" fill="#fff">โมเดล...</text></g>
+  <text x="155" y="118" fill="#9aa7b4" font-size="10" text-anchor="middle">เจอบั๊กเชื่อมต่อตอนท้าย = รื้อใหม่ เสียเวลามหาศาล</text>
+
+  <text x="460" y="16" fill="#3fb950" font-size="11.5" text-anchor="middle">✓ ชิ้นบางทะลุทุกชั้น</text>
+  <g font-size="9" text-anchor="middle">
+   <rect x="350" y="28" width="40" height="68" fill="rgba(63,185,80,.25)" stroke="#3fb950"/><text x="370" y="66" fill="#fff" transform="rotate(-90 370 66)">ข้อมูล</text>
+   <rect x="392" y="28" width="40" height="68" fill="rgba(63,185,80,.25)" stroke="#3fb950"/><text x="412" y="66" fill="#fff" transform="rotate(-90 412 66)">cube</text>
+   <rect x="434" y="28" width="40" height="68" fill="rgba(63,185,80,.25)" stroke="#3fb950"/><text x="454" y="66" fill="#fff" transform="rotate(-90 454 66)">โมเดล</text>
+   <rect x="476" y="28" width="40" height="68" fill="rgba(63,185,80,.25)" stroke="#3fb950"/><text x="496" y="66" fill="#fff" transform="rotate(-90 496 66)">metric</text>
+   <rect x="518" y="28" width="40" height="68" fill="rgba(63,185,80,.25)" stroke="#3fb950"/><text x="538" y="66" fill="#fff" transform="rotate(-90 538 66)">rigor</text></g>
+  <text x="455" y="118" fill="#9aa7b4" font-size="10" text-anchor="middle">วิ่งครบใน 1 วัน → เจอบั๊กเชื่อมต่อทันที</text>
+</svg>
+</div>
+<div class="why"><b>หลักวิศวกรรมซอฟต์แวร์:</b> ความเสี่ยงใหญ่สุดของโปรเจกต์ไม่ใช่ "แต่ละส่วนทำงานไหม" แต่คือ "ส่วนต่าง ๆ ต่อกันได้ไหม" · skeleton บังคับให้คุณแก้ปัญหารอยต่อทั้งหมด (รูปแบบไฟล์ ลำดับแกน หน่วย รูปร่าง tensor) ตั้งแต่ต้น ตอนที่ทุกอย่างยังเล็กและถูก</div>
+
+<!-- scope -->
+<h2 id="scope">1. นิยาม "จิ๋ว" ของ Lab 0 — ตั้งให้เล็กแบบจงใจ</h2>
+<table>
+<tr><th>มิติ</th><th>ค่าใน Lab 0 (จิ๋ว)</th><th>เป้าจริงทีหลัง</th></tr>
+<tr><td>พื้นที่</td><td>รอบเชียงใหม่ ~18–19.5°N, 98–100°E (กล่องเล็ก)</td><td>5–25°N, 92–110°E</td></tr>
+<tr><td>กริด</td><td>0.1° → ~15×20 ช่อง</td><td>~180×200 ช่อง</td></tr>
+<tr><td>เวลา</td><td>1 สัปดาห์ในฤดูเผา (เช่น 8–15 มี.ค. 2023)</td><td>~5 ฤดู</td></tr>
+<tr><td>ความถี่</td><td>ราย 3 ชม. → ~56 เฟรม</td><td>รายชม./3ชม.</td></tr>
+<tr><td>channel</td><td><b>เริ่มแค่ 4:</b> u10, v10 (ERA5) · dem · emission (FIRMS)</td><td>~12 channel</td></tr>
+<tr><td>target</td><td>PM2.5 จาก 1–3 สถานีเชียงใหม่ (Air4Thai/OpenAQ)</td><td>ทุกสถานี SEA</td></tr>
+<tr><td>โมเดล</td><td>CNN จิ๋ว 2–3 ชั้น (ยังไม่ต้องเป็น 3.5)</td><td>conditionally-linear (3.5)</td></tr>
+<tr><td>rollout</td><td>1 step (ทำนาย t+1)</td><td>curriculum 6ชม.→หลายวัน</td></tr>
+<tr><td>ฮาร์ดแวร์</td><td><b>CPU / T4 ฟรี</b></td><td>A100 (เฉพาะ run จริง)</td></tr>
+</table>
+<div class="danger"><b>กฎเหล็กของ Lab 0:</b> ทุกอย่างต้อง "วนจบใน &lt; 1 นาที" บนเครื่องฟรี · ถ้าขั้นไหนช้ากว่านั้น = คุณทำมันใหญ่เกินไปสำหรับ skeleton → หั่นให้เล็กลงอีก · <b>ความเร็วของวงรอบ (iterate เร็ว) สำคัญกว่าความถูกต้องของผลลัพธ์ในเฟสนี้</b></div>
+
+<!-- s0 -->
+<h2>ขั้นตอนทำจริง — 8 Stage</h2>
+
+<div class="stage" id="s0">
+<div class="stage-h"><div class="stage-n">0</div><div class="stage-t">Setup — สภาพแวดล้อม + บัญชี</div><div class="stage-meta">~1–2 ชม. · ครั้งเดียว</div></div>
+<div class="stage-b">
+<ul>
+<li>สร้างโครงโฟลเดอร์: <code>data/ src/ notebooks/ checkpoints/</code> + ไฟล์ <code>config.yaml</code> (โดเมน/วันที่/channel) ตาม 4.4</li>
+<li>ติดตั้ง: <code>xarray netCDF4 zarr rioxarray cdsapi s3fs pandas torch</code></li>
+<li>สมัครฟรี + เก็บ key: <b>FIRMS MAP_KEY</b>, <b>Copernicus CDS token</b> (<code>~/.cdsapirc</code>), <b>OpenAQ key</b> (สำรอง Air4Thai)</li>
+<li>เชื่อม Google Drive (ถ้าใช้ Colab) สำหรับเก็บ checkpoint</li>
+</ul>
+<div class="dod"><b>เสร็จเมื่อ:</b> <code>import xarray, torch</code> ผ่าน · มี key ครบ 3 ตัว · มี <code>config.yaml</code></div>
+</div>
+</div>
+
+<div class="stage" id="s1">
+<div class="stage-h"><div class="stage-n">1</div><div class="stage-t">ดึงข้อมูลจิ๋ว 1 สัปดาห์ <span class="tag">4.1</span></div><div class="stage-meta">~half day</div></div>
+<div class="stage-b">
+<p>ดึงแค่ "กล่องเชียงใหม่ 1 สัปดาห์" จากแต่ละแหล่ง · <b>อย่าเพิ่งดึงทั้งโดเมน/ทั้งปี</b></p>
+<ul>
+<li><b>ERA5:</b> <code>cdsapi</code> ขอแค่ u10,v10 · area=[19.5,98,18,100] · 8–15 มี.ค. 2023 → ไฟล์ .nc เล็ก</li>
+<li><b>FIRMS:</b> Area API <code>98,18,100,19.5</code> · 8 วัน → CSV จุดไฟ</li>
+<li><b>DEM:</b> ดึง 1–2 tile Copernicus DEM จาก AWS ที่ครอบเชียงใหม่</li>
+<li><b>Air4Thai/OpenAQ:</b> PM2.5 ราย ชม. ของสถานีเชียงใหม่ ช่วงเดียวกัน</li>
+</ul>
+<div class="dod"><b>เสร็จเมื่อ:</b> มีไฟล์ดิบครบ 4 แหล่งในโฟลเดอร์ <code>data/raw/</code> เปิดดูได้ ไม่ corrupt</div>
+</div>
+</div>
+
+<div class="stage" id="s2">
+<div class="stage-h"><div class="stage-n">2</div><div class="stage-t">เปิดทุกแหล่งด้วย xarray + ดูตา <span class="tag">4.2</span></div><div class="stage-meta">~2–3 ชม.</div></div>
+<div class="stage-b">
+<pre><code><span class="kw">import</span> xarray <span class="kw">as</span> xr, rioxarray, pandas <span class="kw">as</span> pd
+met = xr.<span class="fn">open_dataset</span>(<span class="st">"data/raw/era5.nc"</span>);  <span class="fn">print</span>(met)
+dem = rioxarray.<span class="fn">open_rasterio</span>(<span class="st">"data/raw/dem.tif"</span>)
+fire = pd.<span class="fn">read_csv</span>(<span class="st">"data/raw/firms.csv"</span>);     <span class="fn">print</span>(fire.shape)
+met.u10.<span class="fn">isel</span>(time=<span class="nm">0</span>).<span class="fn">plot</span>()   <span class="cm"># ← ดูภาพ! ลมดูสมเหตุผลไหม</span></code></pre>
+<div class="dod"><b>เสร็จเมื่อ:</b> plot ลม 1 เฟรม + DEM ออกมาดูสมจริง (เชียงใหม่เป็นแอ่ง) · รู้ dims/หน่วย/ลำดับ lat ของแต่ละไฟล์</div>
+</div>
+</div>
+
+<div class="stage" id="s3">
+<div class="stage-h"><div class="stage-n">3</div><div class="stage-t">regrid ทุกอย่างเข้ากริดจิ๋วเดียวกัน <span class="tag">4.3</span></div><div class="stage-meta">~half day</div></div>
+<div class="stage-b">
+<ul>
+<li>นิยาม master grid จิ๋ว (lat 19.5→18, lon 98→100, step 0.1)</li>
+<li>ERA5 → <code>.interp</code> (bilinear) เข้ากริด</li>
+<li>DEM → <code>reproject_match</code> หรือ coarsen (mean)</li>
+<li>FIRMS → rasterize (<code>np.add.at</code> sum FRP ต่อช่อง) → emission</li>
+<li>Air4Thai → map ค่าเข้าช่องสถานี (เก็บคู่ index ไว้)</li>
+</ul>
+<div class="warn"><b>จุดที่ต้องเช็ก:</b> ลำดับ lat ตรงกันทุกแหล่ง (กันภาพกลับหัว) · emission ใช้ sum (อนุรักษ์) ไม่ใช่ bilinear</div>
+<div class="dod"><b>เสร็จเมื่อ:</b> ทุก DataArray มี <code>lat/lon</code> เท่ากันเป๊ะ · plot ซ้อนกันแล้วตรงตำแหน่ง</div>
+</div>
+</div>
+
+<div class="stage" id="s4">
+<div class="stage-h"><div class="stage-n">4</div><div class="stage-t">ประกอบ mini-datacube → Zarr <span class="tag">4.4</span></div><div class="stage-meta">~half day</div></div>
+<div class="stage-b">
+<pre><code>cube = xr.<span class="fn">merge</span>([u10, v10, dem, emission, pm25])
+<span class="cm"># แบ่งเวลา: 5 วันแรก=train, 1 วัน=val, 2 วันสุดท้าย=test</span>
+train = cube.<span class="fn">sel</span>(time=<span class="fn">slice</span>(<span class="st">"2023-03-08"</span>,<span class="st">"2023-03-12"</span>))
+<span class="cm"># normalize ด้วยสถิติ train เท่านั้น → เซฟ norm_stats.json</span>
+cube.<span class="fn">to_zarr</span>(<span class="st">"data/mini_cube.zarr"</span>, mode=<span class="st">"w"</span>)</code></pre>
+<p>รัน sanity check 5 ข้อ (4.4 §9): plot เฟรม, ช่วงค่า, สัดส่วน NaN, แกนตรงกัน, train/test ไม่ทับ</p>
+<div class="dod"><b>เสร็จเมื่อ:</b> เปิด <code>mini_cube.zarr</code> ได้ · sanity ผ่าน 5/5 · normalize ใช้สถิติ train เท่านั้น</div>
+</div>
+</div>
+
+<div class="stage" id="s5">
+<div class="stage-h"><div class="stage-n">5</div><div class="stage-t">DataLoader คืน (X, y) <span class="tag">4.4/4.5</span></div><div class="stage-meta">~2–3 ชม.</div></div>
+<div class="stage-b">
+<p>เขียน <code>Dataset</code> ที่ดึง window จาก Zarr (k=2 → ทำนาย t+1) แล้วเช็ครูปร่าง:</p>
+<pre><code>X, y = <span class="fn">next</span>(<span class="fn">iter</span>(loader))
+<span class="fn">print</span>(X.shape, y.shape)   <span class="cm"># ต้องเป็น (batch, ch, lat, lon) ที่คาดไว้</span></code></pre>
+<div class="dod"><b>เสร็จเมื่อ:</b> loader คืน tensor รูปร่างถูก ไม่มี NaN · วน 1 epoch จบใน &lt; 10 วินาที</div>
+</div>
+</div>
+
+<div class="stage" id="s6">
+<div class="stage-h"><div class="stage-n">6</div><div class="stage-t">โมเดลจิ๋ว + Overfit Test <span class="tag">4.5/0.2/0.3</span></div><div class="stage-meta">~half day · จุดพิสูจน์ใหญ่</div></div>
+<div class="stage-b">
+<p>โมเดล CNN จิ๋ว 2–3 ชั้น (ยังไม่ต้องเป็น 3.5) → <b>เทรนให้ overfit 1 batch</b> ให้ loss ลงเข้าใกล้ 0</p>
+<div class="green-box"><b>ทำไม overfit test สำคัญที่สุด:</b> ถ้าโมเดลจำ 1 batch ไม่ได้ (loss ไม่ลง) = มีบั๊กแน่ (gradient ไม่ไหล / target ผิด / loss ผิด) · นี่คือเทสต์ที่ถูกและเร็วที่สุดที่บอกว่า "วงจรเทรนทำงาน" · <b>ผ่านอันนี้ก่อน ค่อยคิดเรื่องอื่น</b></div>
+<div class="dod"><b>เสร็จเมื่อ:</b> เทรน 1 batch ซ้ำ ๆ แล้ว loss ลงเข้าใกล้ 0 · <code>loss.backward()</code> + <code>opt.step()</code> ทำงาน · เปิด bf16 ได้ (ถ้าใช้ GPU)</div>
+</div>
+</div>
+
+<div class="stage" id="s7">
+<div class="stage-h"><div class="stage-n">7</div><div class="stage-t">train สั้น + metric + 1 baseline <span class="tag">5.1/5.3</span></div><div class="stage-meta">~half day</div></div>
+<div class="stage-b">
+<ul>
+<li>เทรนจริงสั้น ๆ (5–10 epoch) บน train จิ๋ว → ทำนาย test</li>
+<li>คำนวณ <b>MAE/RMSE</b> (masked เฉพาะจุดสถานี, 5.1)</li>
+<li>เทียบ <b>persistence</b> (ฟรี): <code>pred = ค่าล่าสุด</code> → คิด skill score</li>
+</ul>
+<div class="dod"><b>เสร็จเมื่อ:</b> มีตัวเลข RMSE ของโมเดล vs persistence ออกมา (ผลจะยังไม่สวย — ไม่เป็นไร! เป้าคือ "ตัวเลขออกได้ครบวงจร")</div>
+</div>
+</div>
+
+<div class="stage" id="s8">
+<div class="stage-h"><div class="stage-n">8</div><div class="stage-t">ลองเครื่องมือ rigor 1 ชิ้น <span class="tag">5.4/5.6</span></div><div class="stage-meta">~2–3 ชม.</div></div>
+<div class="stage-b">
+<p>พิสูจน์ว่า "ท่อประเมิน" ก็ทำงาน — ทำอย่างใดอย่างหนึ่ง:</p>
+<ul>
+<li><b>bootstrap CI</b> ของ RMSE (ฟรี, ไม่เทรนใหม่) — รายงาน "RMSE [95% CI]"</li>
+<li>หรือ <b>ablation จิ๋ว</b>: ตัด emission channel ออก → เทรนซ้ำ → ดู delta</li>
+</ul>
+<div class="dod"><b>เสร็จเมื่อ:</b> ได้ CI หรือ delta ออกมา 1 ตัว = ครบทั้ง "ท่อทำ + ท่อพิสูจน์"</div>
+</div>
+</div>
+
+<div class="green-box center" style="font-size:16px"><b>🎉 skeleton เขียวครบ 8 stage = pipeline ทั้งเส้นวิ่งได้จริง</b><br><span class="muted">ตอนนี้คุณมั่นใจได้ว่า "ทุกชิ้นต่อกันได้" — ที่เหลือคือการขยาย ไม่ใช่การลุ้นว่ามันจะต่อกันไหม</span></div>
+
+<!-- scale -->
+<h2 id="scale">9. บันไดขยาย — หลัง skeleton เขียวแล้ว ขยายทีละแกน</h2>
+<p>หัวใจ: <b>ขยายทีละแกนเดียว แล้วเช็คว่ายังเขียวอยู่</b> ก่อนขยายแกนถัดไป · ถ้าพังจะรู้ทันทีว่าเพราะแกนไหน</p>
+<table>
+<tr><th>ลำดับ</th><th>ขยายอะไร</th><th>จาก → เป็น</th><th>เริ่มแตะ A100?</th></tr>
+<tr><td>1</td><td>เวลา</td><td>1 สัปดาห์ → 1 ฤดูเต็ม</td><td>ยัง (T4)</td></tr>
+<tr><td>2</td><td>channel</td><td>4 → +AOD +PBL +precip +RH</td><td>ยัง</td></tr>
+<tr><td>3</td><td>พื้นที่</td><td>กล่องเชียงใหม่ → ทั้งโดเมน SEA</td><td>เริ่ม</td></tr>
+<tr><td>4</td><td>โมเดล</td><td>CNN จิ๋ว → conditionally-linear (3.5)</td><td>ใช่</td></tr>
+<tr><td>5</td><td>rollout</td><td>1 step → curriculum (3.4)</td><td>ใช่ (+ checkpointing)</td></tr>
+<tr><td>6</td><td>ปี + CV</td><td>1 ฤดู → 5 ฤดู + leave-stations-out (5.2)</td><td>ใช่ (run จริง)</td></tr>
+<tr><td>7</td><td>ความสามารถ</td><td>+ tagged-tracer (3.6) + uncertainty (3.9)</td><td>ใช่</td></tr>
+</table>
+<div class="why"><b>โยง 4.5:</b> สังเกตว่า A100 เริ่มแตะแค่ช่วงปลายบันได · ทั้ง Lab 0 + ขยาย 2 ขั้นแรกทำบนของฟรีได้หมด → ประหยัดงบ A100 ไว้ให้ run จริงตอนทุกอย่างนิ่งแล้ว (ตรงตามแผนงบ 15 ชม.)</div>
+
+<!-- caveat -->
+<h2 id="caveat">10. กับดัก + caveat ของเฟสนี้</h2>
+<div class="danger"><b>อย่าหลงทาง:</b>
+<ul>
+<li><b>อย่าตัดสินวิทยาศาสตร์จาก skeleton</b> — โมเดลจิ๋ว/ข้อมูล 1 สัปดาห์ จะให้ผลห่วย นั่นปกติ · เป้าคือ "ท่อไม่รั่ว" ไม่ใช่ "แม่น"</li>
+<li><b>อย่าทำ stage ใด stage หนึ่งให้สมบูรณ์แบบ</b> — เช่น เสีย 3 วันจูน regrid ให้เป๊ะ ทั้งที่ยังไม่รู้ว่าปลายท่อต่อได้ไหม · "พอใช้ได้" แล้วไปต่อ</li>
+<li><b>อย่าเพิ่งแตะ A100</b> — ทั้ง Lab 0 อยู่บนของฟรี (โยง 4.5: เดบั๊กบนของถูก)</li>
+<li><b>commit/เซฟทุก stage</b> — skeleton ที่เขียวแล้วคือสมบัติล้ำค่า อย่าทำหาย</li>
+</ul></div>
+<div class="warn"><b>ถ้าติดขัด:</b> stage ไหนพัง ให้แยกทดสอบเฉพาะ stage นั้นด้วยข้อมูลปลอม (เช่น <code>np.random</code> แทน datacube จริง) เพื่อแยกว่าเป็นบั๊กของ "ข้อมูล" หรือ "โค้ด" — เทคนิคเดียวกับ oracle/ablation แต่ใช้ debug</div>
+
+<div class="chk">
+<p class="q">✅ Definition of Done — Lab 0 ทั้งหมด</p>
+<ul>
+<li>☐ Stage 0–8 เขียวครบ · รันสคริปต์เดียวจบ end-to-end</li>
+<li>☐ overfit test ผ่าน (loss → ~0 บน 1 batch)</li>
+<li>☐ มีตัวเลข RMSE โมเดล vs persistence</li>
+<li>☐ มี CI หรือ ablation delta อย่างน้อย 1 ตัว</li>
+<li>☐ ทำทั้งหมดบน CPU/T4 (ยังไม่แตะ A100)</li>
+<li>☐ เก็บ config + commit โค้ดที่เขียวแล้ว</li>
+</ul>
+</div>
+
+<hr>
+<p class="center muted">Lab 0 — Walking Skeleton · ภาคปฏิบัติโมดูล 4–5 · เมื่อเขียวครบ → ไต่ "บันไดขยาย" ทีละแกน จนถึง run จริงบน A100</p>
+
+</div>
+</body>
+</html>

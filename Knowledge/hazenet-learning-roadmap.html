@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HazeNet — Learning Roadmap (สิ่งที่ต้องรู้ทั้งหมด)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.7;font-size:16px;}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:21px;margin:38px 0 8px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  p{margin:9px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:14px 18px;border-radius:8px;margin:18px 0}
+  .legend{font-size:13.5px;color:var(--muted);margin:10px 0}
+  .item{display:grid;grid-template-columns:54px 1fr;gap:0;border:1px solid var(--border);border-radius:9px;margin:9px 0;overflow:hidden;background:var(--panel)}
+  .item .id{background:var(--panel2);display:flex;align-items:center;justify-content:center;font-weight:bold;color:var(--cyan);font-size:15px;border-right:1px solid var(--border)}
+  .item .bd{padding:9px 15px}
+  .item .ti{font-size:16px;font-weight:bold}
+  .item .wh{color:var(--muted);font-size:13.7px;margin-top:2px}
+  .badges{float:right;margin-left:10px}
+  .b{font-size:11.5px;padding:1px 8px;border-radius:20px;border:1px solid var(--border);margin-left:3px;white-space:nowrap}
+  .easy{color:var(--green);border-color:var(--green)}
+  .med{color:var(--amber);border-color:var(--amber)}
+  .hard{color:var(--red);border-color:var(--red)}
+  .core{background:rgba(86,212,221,.13);color:var(--cyan);border-color:var(--cyan)}
+  .item.iscore{border-color:var(--cyan)}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left}
+  th{background:var(--panel2);color:var(--green)}
+  code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:13.5px}
+  b.k{color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>HazeNet — สิ่งที่ต้องรู้ทั้งหมด (Learning Roadmap)</h1>
+<p class="tagline">เช็กลิสต์ความเข้าใจ ก่อนลงมือเขียนโค้ด · เลือกหัวข้อไปให้อธิบายลึกทีละอัน</p>
+<p class="legend">🟢 ง่าย · 🟡 กลาง · 🔴 ยาก · <span style="color:var(--cyan)">⭐ CORE = หัวใจของงานเรา</span></p>
+
+<div class="lead">
+<b>วิธีใช้:</b> ไล่อ่านชื่อหัวข้อ → เห็นอันไหนยังไม่เข้าใจ บอกเลขมา (เช่น "อธิบาย 2.5") ผมจะอธิบายลึกจนเข้าใจ · <b>ชุดขั้นต่ำเริ่มโค้ด:</b> 0.1→0.2→1.1→1.2→2.1→2.2→2.5→3.5→4.1→4.4 · <b class="k">3 หัวใจ:</b> 1.2 → 2.5 → 3.5 (ต่อกันคือจิตวิญญาณทั้งโปรเจกต์)
+</div>
+
+<h2>โมดูล 0 — พื้นฐานที่ขาดไม่ได้</h2>
+<div class="item"><div class="id">0.1</div><div class="bd"><div class="ti">NumPy / tensor thinking<span class="badges"><span class="b easy">🟢</span></span></div><div class="wh">คิดข้อมูลเป็นก้อนหลายมิติ — ทุกอย่างในงานเราคือ tensor</div></div></div>
+<div class="item"><div class="id">0.2</div><div class="bd"><div class="ti">PyTorch + autograd<span class="badges"><span class="b med">🟡</span></span></div><div class="wh">สร้าง+เทรนโมเดล+หา gradient อัตโนมัติ — เครื่องมือหลักเขียนทุกอย่าง</div></div></div>
+<div class="item"><div class="id">0.3</div><div class="bd"><div class="ti">Gradient descent / loss / optimization<span class="badges"><span class="b easy">🟢</span></span></div><div class="wh">โมเดลเรียนรู้ยังไง — หัวใจการเทรน</div></div></div>
+<div class="item"><div class="id">0.4</div><div class="bd"><div class="ti">Train/Val/Test · overfitting · generalization<span class="badges"><span class="b easy">🟢</span></span></div><div class="wh">แบ่งข้อมูลกันโกง — พลาดตรงนี้ผลเชื่อไม่ได้</div></div></div>
+<div class="item"><div class="id">0.5</div><div class="bd"><div class="ti">CNN พื้นฐาน (convolution, receptive field)<span class="badges"><span class="b easy">🟢</span></span></div><div class="wh">เน็ตเห็นภาพเชิงพื้นที่ — ฐานของ U-Net</div></div></div>
+
+<h2>โมดูล 1 — โดเมนปัญหา (วิทยาศาสตร์บรรยากาศ)</h2>
+<div class="item"><div class="id">1.1</div><div class="bd"><div class="ti">PM2.5 / AOD / FRP คืออะไร<span class="badges"><span class="b easy">🟢</span></span></div><div class="wh">ฝุ่น/ความหนาควันดาวเทียม/ความแรงไฟ — input/output ของเรา</div></div></div>
+<div class="item iscore"><div class="id">1.2</div><div class="bd"><div class="ti">สมการ Advection-Diffusion-Reaction (ADR)<span class="badges"><span class="b core">⭐</span><span class="b hard">🔴</span></span></div><div class="wh">สมการการเคลื่อนที่ของมลพิษ — แกนฟิสิกส์ของทั้งโปรเจกต์</div></div></div>
+<div class="item"><div class="id">1.3</div><div class="bd"><div class="ti">ตัวแปรอุตุนิยม (ลม/PBL/ความชื้น) จาก ERA5<span class="badges"><span class="b med">🟡</span></span></div><div class="wh">สภาพอากาศที่ขับการเคลื่อนของควัน — อินพุตหลัก</div></div></div>
+<div class="item"><div class="id">1.4</div><div class="bd"><div class="ti">Transboundary smoke + source apportionment<span class="badges"><span class="b med">🟡</span></span></div><div class="wh">ควันข้ามแดน + การระบุแหล่ง — pain point + จุดขาย</div></div></div>
+<div class="item"><div class="id">1.5</div><div class="bd"><div class="ti">WRF-Chem / PMF คืออะไร<span class="badges"><span class="b med">🟡</span></span></div><div class="wh">แบบจำลองฟิสิกส์/รับสาร — "ground-truth" ที่ใช้ validate</div></div></div>
+
+<h2>โมดูล 2 — คณิต/ฟิสิกส์เชิงตัวเลข</h2>
+<div class="item"><div class="id">2.1</div><div class="bd"><div class="ti">Discretization + timestep (กริด+เวลา)<span class="badges"><span class="b med">🟡</span></span></div><div class="wh">แปลงสมการต่อเนื่องเป็นช่องตาราง — พื้นฐานก่อนเขียนโมเดลเชิงตัวเลข</div></div></div>
+<div class="item iscore"><div class="id">2.2</div><div class="bd"><div class="ti">Semi-Lagrangian advection<span class="badges"><span class="b core">⭐</span><span class="b hard">🔴</span></span></div><div class="wh">วิธีเลื่อนควันตามลม — คือส่วน 𝒜 (ฟิสิกส์) ในโมเดล</div></div></div>
+<div class="item"><div class="id">2.3</div><div class="bd"><div class="ti">Operator splitting (Strang)<span class="badges"><span class="b med">🟡</span></span></div><div class="wh">แยกสมการเป็นส่วนแล้วแก้ทีละส่วน — วิธีรวมฟิสิกส์+เรียนรู้</div></div></div>
+<div class="item iscore"><div class="id">2.4</div><div class="bd"><div class="ti">Mass conservation · non-negativity · monotone scheme<span class="badges"><span class="b core">⭐</span><span class="b med">🟡</span></span></div><div class="wh">มวลไม่รั่ว/ควันไม่ติดลบ — คุณสมบัติที่เคลมว่า "พิสูจน์ได้"</div></div></div>
+<div class="item iscore"><div class="id">2.5</div><div class="bd"><div class="ti">Superposition (หลักการบวกซ้อน)<span class="badges"><span class="b core">⭐</span><span class="b hard">🔴</span></span></div><div class="wh">ทำไม C = Σ C⁽ˢ⁾ ได้ — กุญแจที่ทำให้ attribution + counterfactual เป็นจริง</div></div></div>
+
+<h2>โมดูล 3 — เทคนิค ML / SOTA ที่เราใช้</h2>
+<div class="item"><div class="id">3.1</div><div class="bd"><div class="ti">Fourier transform / FFT<span class="badges"><span class="b hard">🔴</span></span></div><div class="wh">แปลงสัญญาณเป็นคลื่นความถี่ — ฐานของ AFNO (มีไฟล์แล้ว)</div></div></div>
+<div class="item"><div class="id">3.2</div><div class="bd"><div class="ti">Neural Operator + AFNO/FourCastNet<span class="badges"><span class="b hard">🔴</span></span></div><div class="wh">เน็ตเรียน "ตัวดำเนินการ" ในโดเมนความถี่ — backbone ของ ℱθ</div></div></div>
+<div class="item"><div class="id">3.3</div><div class="bd"><div class="ti">U-Net<span class="badges"><span class="b med">🟡</span></span></div><div class="wh">สถาปัตยกรรม encoder-decoder — ทางเลือก/ส่วนผสมของ backbone</div></div></div>
+<div class="item"><div class="id">3.4</div><div class="bd"><div class="ti">Autoregressive rollout + curriculum training<span class="badges"><span class="b med">🟡</span></span></div><div class="wh">พยากรณ์ต่อเนื่องหลาย step — วิธีไปถึง t+48</div></div></div>
+<div class="item iscore"><div class="id">3.5</div><div class="bd"><div class="ti">Conditionally-Linear Operator (อัลกอริทึมใหม่ของเรา)<span class="badges"><span class="b core">⭐</span><span class="b hard">🔴</span></span></div><div class="wh">เชิงเส้นใน C แต่สัมประสิทธิ์ไม่เชิงเส้น — "สิ่งที่เราประดิษฐ์" สำคัญสุด</div></div></div>
+<div class="item iscore"><div class="id">3.6</div><div class="bd"><div class="ti">Tagged-tracer (Smoke Fingerprint)<span class="badges"><span class="b core">⭐</span><span class="b med">🟡</span></span></div><div class="wh">ติดป้ายแหล่งแล้วตามแยก — กลไก attribution</div></div></div>
+<div class="item"><div class="id">3.7</div><div class="bd"><div class="ti">Differentiable programming → adjoint → source inversion<span class="badges"><span class="b hard">🔴</span></span></div><div class="wh">ใช้ autodiff แก้ย้อนหาแหล่ง — capability เท่ (stretch/A*)</div></div></div>
+<div class="item"><div class="id">3.8</div><div class="bd"><div class="ti">Diffusion models (พอเข้าใจว่าทำไมไม่ใช้)<span class="badges"><span class="b med">🟡</span></span></div><div class="wh">โมเดลสร้างภาพ — เพื่อตอบกรรมการว่าทำไมไม่ทำ (มีไฟล์แล้ว)</div></div></div>
+<div class="item"><div class="id">3.9</div><div class="bd"><div class="ti">Uncertainty: ensemble / quantile / CRPS<span class="badges"><span class="b med">🟡</span></span></div><div class="wh">บอกความไม่แน่นอน — แทน diffusion ในการให้ uncertainty</div></div></div>
+
+<h2>โมดูล 4 — ข้อมูล + วิศวกรรม</h2>
+<div class="item"><div class="id">4.1</div><div class="bd"><div class="ti">แหล่งข้อมูล + วิธีดึง (FIRMS/ERA5/Himawari/Air4Thai/DEM)<span class="badges"><span class="b med">🟡</span></span></div><div class="wh">วัตถุดิบทั้งหมดของงาน</div></div></div>
+<div class="item"><div class="id">4.2</div><div class="bd"><div class="ti">รูปแบบ geospatial: NetCDF / Zarr / xarray / GeoTIFF<span class="badges"><span class="b med">🟡</span></span></div><div class="wh">ไฟล์ข้อมูลเชิงพื้นที่ — เครื่องมืออ่าน/เขียน datacube</div></div></div>
+<div class="item"><div class="id">4.3</div><div class="bd"><div class="ti">Regridding / CRS / reprojection<span class="badges"><span class="b med">🟡</span></span></div><div class="wh">รวมข้อมูลคนละความละเอียดให้กริดเดียว — ขั้นสร้าง datacube</div></div></div>
+<div class="item"><div class="id">4.4</div><div class="bd"><div class="ti">สร้าง Datacube (pipeline)<span class="badges"><span class="b med">🟡</span></span></div><div class="wh">รวมทุกอย่างเป็นก้อนเดียวพร้อมเทรน — งานสัปดาห์ที่ 1</div></div></div>
+<div class="item"><div class="id">4.5</div><div class="bd"><div class="ti">Colab/A100 workflow (memory, mixed precision)<span class="badges"><span class="b easy">🟢</span></span></div><div class="wh">รันบน GPU จำกัด — ไม่ให้ OOM/งบหมด</div></div></div>
+
+<h2>โมดูล 5 — การประเมิน + การทดลอง (rigor)</h2>
+<div class="item iscore"><div class="id">5.1</div><div class="bd"><div class="ti">Metrics: RMSE/MAE/ACC + CSI/POD/FAR + onset-lead<span class="badges"><span class="b core">⭐</span><span class="b med">🟡</span></span></div><div class="wh">วัดความแม่น/การจับวันวิกฤต — ตัวเลขที่เราเคลม</div></div></div>
+<div class="item iscore"><div class="id">5.2</div><div class="bd"><div class="ti">Cross-validation: temporal + spatial blocking + leave-stations-out<span class="badges"><span class="b core">⭐</span><span class="b med">🟡</span></span></div><div class="wh">ประเมินกันรั่ว — ทำให้ผลเชื่อถือได้</div></div></div>
+<div class="item"><div class="id">5.3</div><div class="bd"><div class="ti">Baselines (Persistence/ConvLSTM/PM2.5-GNN/AirPhyNet)<span class="badges"><span class="b med">🟡</span></span></div><div class="wh">สิ่งที่ต้องเอาชนะ — เข้าใจเพื่อเทียบ</div></div></div>
+<div class="item"><div class="id">5.4</div><div class="bd"><div class="ti">Ablation study<span class="badges"><span class="b med">🟡</span></span></div><div class="wh">ตัดทีละชิ้นดูผล — พิสูจน์ว่าแต่ละส่วนจำเป็น</div></div></div>
+<div class="item iscore"><div class="id">5.5</div><div class="bd"><div class="ti">Error decomposition / Oracle substitution<span class="badges"><span class="b core">⭐</span><span class="b hard">🔴</span></span></div><div class="wh">แยก error รวมว่ามาจากส่วนไหน — เสาหลักของ rigor</div></div></div>
+<div class="item"><div class="id">5.6</div><div class="bd"><div class="ti">Statistical significance (bootstrap CI, paired test)<span class="badges"><span class="b med">🟡</span></span></div><div class="wh">เคลม "ดีกว่า" อย่างมีหลักฐาน — กันโดนยำ</div></div></div>
+
+<h2>โมดูล 6 — ทฤษฎีเชิงลึก (สำหรับ A* — ทำทีหลังได้)</h2>
+<div class="item"><div class="id">6.1</div><div class="bd"><div class="ti">Attribution Error Bound (ทฤษฎีบท)<span class="badges"><span class="b hard">🔴</span></span></div><div class="wh">พิสูจน์ว่า error ของ attribution มีขอบเขต — ยกระดับเป็นงานวิจัย</div></div></div>
+<div class="item"><div class="id">6.2</div><div class="bd"><div class="ti">Causal framing (do-operator, identifiability)<span class="badges"><span class="b hard">🔴</span></span></div><div class="wh">ทำให้เคลม "ดับไฟ→ลดฝุ่น" มีรากฐาน — ตอบ reviewer สาย causal</div></div></div>
+<div class="item"><div class="id">6.3</div><div class="bd"><div class="ti">Inverse problem (ill-posed, regularization)<span class="badges"><span class="b hard">🔴</span></span></div><div class="wh">ทำไม inversion ยากและแก้ยังไง — ฐานของ 3.7</div></div></div>
+
+<h2>ลำดับการเรียนที่แนะนำ</h2>
+<table>
+<tr><th>เป้าหมาย</th><th>ลำดับ</th></tr>
+<tr><td><b>เริ่มเขียนโค้ดเร็วสุด</b></td><td>0.1 → 0.2 → 1.1 → 1.2 → 2.1 → 2.2 → 2.5 → 3.5 → 4.1 → 4.4</td></tr>
+<tr><td><b>เข้าใจ "ทำไมงานใหม่"</b></td><td>1.2 → 2.5 → 3.5 (3 หัวใจ)</td></tr>
+<tr><td><b>เข้าใจลึกทั้งหมด</b></td><td>ไล่โมดูล 0→1→2→3→4→5→6 ตามเลข</td></tr>
+</table>
+
+<p style="text-align:center;color:var(--muted);margin-top:34px">เลือกหัวข้อที่อยากเข้าใจ แล้วบอกเลขมา — ผมอธิบายลึกทีละอันจนเข้าใจ</p>
+
+</div>
+</body>
+</html>

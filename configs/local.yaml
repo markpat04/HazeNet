@@ -1,0 +1,50 @@
+# HazeNet — LOCAL experiment config
+# Reuses the existing 446-day grid (Feb–Apr 2019–2023) on data/processed_m2,
+# adds derived physics channels, and trains the upgraded CLNO.
+# Iterate here, then scale up with configs/runpod.yaml.
+name: local
+
+domain:
+  lat: [14.0, 25.0, 111]      # start, stop, n  -> 111 cells @ 0.1°
+  lon: [96.0, 106.0, 101]
+  step: 0.1
+
+time:
+  years: [2019, 2020, 2021, 2022, 2023]
+  test_year: 2023
+  season_months: [2, 3, 4]    # Feb–Apr (matches the existing local grid)
+
+features:
+  # encoder channels (emission is appended automatically as the last channel).
+  # Only channels derivable from the EXISTING grid are enabled here; blh/t850/
+  # ventilation/inversion/enso turn on once CDS ERA5 is fetched (runpod.yaml).
+  channels: [u10, v10, dem, precip, rh, temp, wind_speed, tpi, precip_accum]
+  precip_accum_window: 3
+  tpi_radius: 5
+  enso_csv: null
+
+model:
+  kind: lowrank               # full | lowrank | globalv
+  hidden: 64
+  rank: 32
+  dropout: 0.1
+  emission_curve: true        # learnable saturating FRP→emission
+  quantiles: [0.1, 0.5, 0.9]  # null -> plain MSE on the median
+
+train:
+  epochs: 200
+  batch_size: 32
+  lr: 0.001
+  weight_decay: 0.0001
+  grad_clip: 1.0
+  amp: false                  # CPU local
+  seed: 42
+  num_workers: 0
+
+paths:
+  grid_nc: data/processed_m2/grid_m2.nc
+  pm25_glob: data/raw_m2/pm25/pm25_*.csv
+  raw_dir: data/raw_m2
+  out_dir: data/processed_hn
+  models_dir: models
+  figures_dir: figures

@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4.1 — แหล่งข้อมูล + วิธีดึง (FIRMS / ERA5 / Himawari / Air4Thai / DEM)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .green-box b{color:var(--green)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.4px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--amber);color:var(--amber);margin-left:6px}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+  a.ext{color:var(--blue)}
+
+  /* source card */
+  .src{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:0;margin:20px 0;overflow:hidden}
+  .src-head{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--border);background:var(--panel2)}
+  .src-ic{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+  .src-name{font-size:19px;font-weight:bold}
+  .src-sub{font-size:13px;color:var(--muted)}
+  .src-body{padding:6px 18px 16px}
+  .rtag{font-size:11.5px;padding:2px 9px;border-radius:12px;margin-left:auto;white-space:nowrap;font-weight:bold}
+  .r-in{background:rgba(88,166,255,.18);border:1px solid var(--blue);color:var(--blue)}
+  .r-tg{background:rgba(63,185,80,.18);border:1px solid var(--green);color:var(--green)}
+  .r-st{background:rgba(188,140,255,.18);border:1px solid var(--purple);color:var(--purple)}
+  .specs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+  @media(max-width:680px){.specs{grid-template-columns:1fr 1fr}}
+  .spec{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+  .spec .l{font-size:11px;color:var(--muted)}
+  .spec .v{font-size:13.5px;font-weight:bold;color:var(--text)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>4.1 — แหล่งข้อมูล + วิธีดึง <span class="pin">🟡 กลาง</span></h1>
+<p class="tagline">FIRMS · ERA5 · Himawari · Air4Thai · DEM — "วัตถุดิบ" ทั้งหมดของ HazeNet และวิธีเอามาจริง ๆ</p>
+<p class="sub">เริ่มโมดูล 4 (ข้อมูล+วิศวกรรม) · ต่อจาก 1.1 (PM2.5/AOD/FRP คืออะไร) และ 1.3 (อุตุนิยม/ERA5) ที่ "เลื่อนวิธีดึงมาบทนี้" · ส่งต่อ → 4.2 (รูปแบบไฟล์) → 4.3 (regrid) → 4.4 (สร้าง datacube)</p>
+
+<div class="lead">
+<b>บทนี้ตอบคำถามเดียว:</b> "ข้อมูลที่ใช้เทรน HazeNet มาจากไหน และเราดึงมายังไงด้วยมือเราเอง?"<br><br>
+1.1 บอกแล้วว่า <b style="color:var(--orange)">FRP</b>/<b style="color:var(--blue)">AOD</b>/<b style="color:var(--green)">PM2.5</b> <em>คืออะไร</em> · 1.3 บอกแล้วว่าตัวแปร <b>อุตุนิยม</b> ขับฟิสิกส์ยังไง · <b>บทนี้คือภาคปฏิบัติ:</b> ชื่อชุดข้อมูลจริง, ความละเอียด, ลิขสิทธิ์, และ <b class="k">โค้ดดึงจริง</b> ของแต่ละแหล่ง<br><br>
+<b>ภาพที่ต้องจำ — 5 แหล่ง = 3 บทบาท:</b><br>
+<span class="rtag r-in" style="margin:0">INPUT (ขับโมเดล)</span> ERA5 (อากาศ) · Himawari (AOD) · FIRMS (ไฟ) &nbsp;|&nbsp;
+<span class="rtag r-st" style="margin:0">STATIC (ฉากหลัง)</span> DEM (ภูมิประเทศ) &nbsp;|&nbsp;
+<span class="rtag r-tg" style="margin:0">TARGET (เฉลย)</span> Air4Thai (PM2.5 พื้นดิน)
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. ภาพรวม: 5 แหล่ง = 3 บทบาท (data flow)</a><br>
+<a href="#p2">2. 4 เรื่องต้องเข้าใจก่อนดึงข้อมูล</a><br>
+<a href="#p3">3. FIRMS — ไฟ / FRP (ต้นทางการปล่อย) 🔥</a><br>
+<a href="#p4">4. ERA5 — อุตุนิยม (ตัวขับ) 🌬️</a><br>
+<a href="#p5">5. Himawari — AOD (ควันจากอวกาศ) 🛰️</a><br>
+<a href="#p6">6. Air4Thai — PM2.5 พื้นดิน (เฉลย) 📍</a><br>
+<a href="#p7">7. DEM — ภูมิประเทศ (static) ⛰️</a><br>
+<a href="#p8">8. แหล่งเสริม (FINN / TROPOMI / MAIAC / land cover)</a><br>
+<a href="#p9">9. ตารางสรุปใหญ่ (master table)</a><br>
+<a href="#p10">10. ชุดข้อมูลขั้นต่ำสำหรับโปรเจกต์ 2 เดือน ★</a><br>
+<a href="#p11">11. เชื่อม HazeNet + pipeline ข้างหน้า + caveat</a><br>
+<a href="#cheat">12. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. ภาพรวม — 5 แหล่ง รวมเป็นก้อนเดียว แล้วป้อนโมเดล</h2>
+
+<p>ก่อนลงรายละเอียดทีละแหล่ง ต้องเห็นภาพใหญ่ก่อนว่าแต่ละอัน "ไหลไปไหน" ในระบบ · ทุกแหล่งจะถูกแปลงให้อยู่บน <b>กริดเดียวกัน</b> (0.1° ทั่วโดเมนไทย/SEA) แล้วซ้อนเป็น <b>datacube</b> ก้อนเดียว (เรื่องวิธีรวมอยู่ใน 4.3–4.4):</p>
+
+<div class="center card">
+<svg class="svg" viewBox="0 0 770 330" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#9aa7b4"/></marker>
+    <marker id="arg" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#3fb950"/></marker>
+  </defs>
+  <text x="95" y="22" fill="#e6edf3" font-size="13" text-anchor="middle" font-weight="bold">แหล่งข้อมูลดิบ</text>
+  <!-- inputs -->
+  <rect x="20" y="34" width="150" height="34" rx="7" fill="#1c2330" stroke="#ff9b54"/><text x="95" y="55" fill="#ff9b54" font-size="12.5" text-anchor="middle">🔥 FIRMS (ไฟ/FRP)</text>
+  <rect x="20" y="74" width="150" height="34" rx="7" fill="#1c2330" stroke="#58a6ff"/><text x="95" y="95" fill="#58a6ff" font-size="12.5" text-anchor="middle">🌬️ ERA5 (อากาศ)</text>
+  <rect x="20" y="114" width="150" height="34" rx="7" fill="#1c2330" stroke="#56d4dd"/><text x="95" y="135" fill="#56d4dd" font-size="12.5" text-anchor="middle">🛰️ Himawari (AOD)</text>
+  <rect x="20" y="154" width="150" height="34" rx="7" fill="#1c2330" stroke="#bc8cff"/><text x="95" y="175" fill="#bc8cff" font-size="12.5" text-anchor="middle">⛰️ DEM (static)</text>
+  <!-- arrows to cube -->
+  <line x1="170" y1="51"  x2="300" y2="100" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="170" y1="91"  x2="300" y2="105" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="170" y1="131" x2="300" y2="110" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="170" y1="171" x2="300" y2="118" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#ar)"/>
+  <text x="232" y="70" fill="#9aa7b4" font-size="10" text-anchor="middle">regrid 4.3</text>
+
+  <!-- datacube -->
+  <ellipse cx="350" cy="92" rx="50" ry="14" fill="#11271c" stroke="#3fb950"/>
+  <rect x="300" y="92" width="100" height="56" fill="#11271c" stroke="#3fb950"/>
+  <ellipse cx="350" cy="148" rx="50" ry="14" fill="#0f1f17" stroke="#3fb950"/>
+  <text x="350" y="120" fill="#3fb950" font-size="12.5" text-anchor="middle" font-weight="bold">Datacube</text>
+  <text x="350" y="136" fill="#9aa7b4" font-size="10" text-anchor="middle">0.1° · 4.4</text>
+
+  <!-- model -->
+  <line x1="400" y1="120" x2="475" y2="120" stroke="#9aa7b4" stroke-width="1.8" marker-end="url(#ar)"/>
+  <rect x="478" y="92" width="120" height="56" rx="9" fill="#1c2330" stroke="#e3b341" stroke-width="2"/>
+  <text x="538" y="116" fill="#e3b341" font-size="14" text-anchor="middle" font-weight="bold">HazeNet</text>
+  <text x="538" y="134" fill="#9aa7b4" font-size="10" text-anchor="middle">model</text>
+
+  <!-- output -->
+  <line x1="598" y1="120" x2="660" y2="120" stroke="#9aa7b4" stroke-width="1.8" marker-end="url(#ar)"/>
+  <rect x="662" y="92" width="90" height="56" rx="9" fill="#0f1f17" stroke="#3fb950" stroke-width="2"/>
+  <text x="707" y="114" fill="#3fb950" font-size="12" text-anchor="middle" font-weight="bold">PM2.5</text>
+  <text x="707" y="132" fill="#9aa7b4" font-size="10" text-anchor="middle">พยากรณ์</text>
+
+  <!-- target / loss -->
+  <rect x="478" y="250" width="150" height="40" rx="7" fill="#1c2330" stroke="#3fb950"/><text x="553" y="266" fill="#3fb950" font-size="12.5" text-anchor="middle">📍 Air4Thai</text><text x="553" y="282" fill="#9aa7b4" font-size="10" text-anchor="middle">PM2.5 จริง (เฉลย)</text>
+  <line x1="628" y1="270" x2="700" y2="270" stroke="#3fb950" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#arg)"/>
+  <line x1="707" y1="148" x2="707" y2="258" stroke="#3fb950" stroke-width="1.6" stroke-dasharray="5 3"/>
+  <rect x="678" y="258" width="58" height="26" rx="6" fill="#0f1f17" stroke="#3fb950"/><text x="707" y="275" fill="#3fb950" font-size="11" text-anchor="middle">เทียบ=Loss</text>
+  <text x="553" y="312" fill="#9aa7b4" font-size="10.5" text-anchor="middle">Target ไม่เข้าโมเดล — ใช้ตอนเทรน/วัดผล (5.1, 5.2)</text>
+</svg>
+</div>
+
+<div class="why"><b>จุดที่คนพลาดบ่อย:</b> <b>Air4Thai (target) ไม่ใช่ input</b> — มันคือ "เฉลย" ที่เอาไว้เทียบกับสิ่งที่โมเดลทำนายเพื่อคำนวณ loss · ถ้าเผลอเอา PM2.5 จริงไปใส่เป็น input โมเดลจะ "โกง" (data leakage) แล้วผลที่ได้จะดีปลอม ๆ (ดู 0.4)</div>
+
+<h3>1.1 ทำไมต้องหลายแหล่ง — ไม่มีแหล่งเดียวที่ครบ</h3>
+<p>คำถามที่ดี: "ทำไมไม่ใช้ PM2.5 จากสถานีอย่างเดียว?" คำตอบคือ <b>ไม่มีแหล่งไหนสมบูรณ์ในตัวเอง</b> — แต่ละอันเก่งคนละด้าน เราต้องเอามา "เติมจุดอ่อนกันและกัน":</p>
+<table>
+<tr><th>แหล่ง</th><th>เก่งเรื่อง</th><th>จุดอ่อน</th><th>ใครมาเติม</th></tr>
+<tr><td>Air4Thai</td><td>วัด PM2.5 จริงที่พื้น แม่นที่สุด</td><td>เป็น "จุด" ห่าง ๆ ครอบคลุมพื้นที่ไม่ทั่ว</td><td>Himawari/แบบจำลองเติมช่องว่างเชิงพื้นที่</td></tr>
+<tr><td>Himawari AOD</td><td>เห็นควันทั่วทั้งภาพ ทุก 10 นาที</td><td>เป็นค่าทั้งคอลัมน์อากาศ ไม่ใช่ที่พื้น + กลางคืน/เมฆใช้ไม่ได้</td><td>Air4Thai สอนให้แปลงเป็นค่าพื้น</td></tr>
+<tr><td>ERA5</td><td>อากาศครบทุกจุดทุก ชม. (ตัวขับ)</td><td>ไม่ได้บอกฝุ่นโดยตรง</td><td>เป็นเชื้อเพลิงให้ฟิสิกส์เคลื่อนฝุ่น</td></tr>
+<tr><td>FIRMS</td><td>บอกว่าไฟอยู่ตรงไหน แรงแค่ไหน</td><td>เป็นจุด + เมฆบัง + เห็นแค่ตอนดาวเทียมผ่าน</td><td>FINN/กระจายเชิงเวลามาเติม</td></tr>
+<tr><td>DEM</td><td>รูปร่างภูมิประเทศละเอียดมาก</td><td>นิ่ง ไม่เปลี่ยนตามเวลา</td><td>ให้ "ฉากหลัง" ที่อากาศไหลผ่าน</td></tr>
+</table>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. 4 เรื่องที่ต้องเข้าใจก่อนดึงข้อมูลทุกแหล่ง</h2>
+<p>ก่อนแตะ API ใด ๆ ต้องเข้าใจ 4 คำนี้ก่อน เพราะมันโผล่ในทุกแหล่ง:</p>
+
+<h3>2.1 ความละเอียด 2 แกน: เชิงพื้นที่ vs เชิงเวลา</h3>
+<p>ข้อมูลภูมิสารสนเทศมี "ความละเอียด" 2 ทิศ และมัก <b>ได้อย่างเสียอย่าง</b>:</p>
+<ul>
+<li><b>เชิงพื้นที่ (spatial):</b> 1 พิกเซลแทนพื้นที่กว้างเท่าไร — ERA5 ~31 กม. (หยาบ), VIIRS 375 ม. (ละเอียด)</li>
+<li><b>เชิงเวลา (temporal):</b> ได้ข้อมูลใหม่บ่อยแค่ไหน — Himawari ทุก 10 นาที (ถี่), MODIS วันละ ~2 ครั้ง (ห่าง)</li>
+</ul>
+<div class="center card">
+<svg class="svg" viewBox="0 0 600 320" width="92%" xmlns="http://www.w3.org/2000/svg">
+  <text x="300" y="18" fill="#e6edf3" font-size="13" text-anchor="middle" font-weight="bold">ไม่มีแหล่งไหนอยู่มุมขวาบน (ละเอียดทั้งคู่ + คลุมทั่ว) → ต้องผสม</text>
+  <!-- axes -->
+  <line x1="70" y1="280" x2="560" y2="280" stroke="#30363d" stroke-width="1.5"/>
+  <line x1="70" y1="280" x2="70" y2="40" stroke="#30363d" stroke-width="1.5"/>
+  <text x="315" y="308" fill="#9aa7b4" font-size="12" text-anchor="middle">เชิงเวลา: ถี่ขึ้น →</text>
+  <text x="20" y="160" fill="#9aa7b4" font-size="12" text-anchor="middle" transform="rotate(-90 20 160)">เชิงพื้นที่: ละเอียดขึ้น →</text>
+  <text x="95" y="296" fill="#6e7681" font-size="9.5">static/นานๆครั้ง</text>
+  <text x="470" y="296" fill="#6e7681" font-size="9.5">ทุก 10 นาที</text>
+  <!-- dots -->
+  <circle cx="100" cy="70" r="7" fill="#bc8cff"/><text x="112" y="68" fill="#bc8cff" font-size="11.5">DEM (30 ม., static)</text>
+  <circle cx="190" cy="95" r="7" fill="#f778ba"/><text x="202" y="93" fill="#f778ba" font-size="11.5">VIIRS 375 ม. (~4/วัน)</text>
+  <circle cx="190" cy="130" r="7" fill="#ff9b54"/><text x="202" y="128" fill="#ff9b54" font-size="11.5">MODIS 1 กม. (~4/วัน)</text>
+  <circle cx="430" cy="170" r="7" fill="#56d4dd"/><text x="320" y="160" fill="#56d4dd" font-size="11.5">Himawari AOD ~5 กม. (10 นาที)</text>
+  <circle cx="470" cy="245" r="7" fill="#58a6ff"/><text x="350" y="240" fill="#58a6ff" font-size="11.5">ERA5 ~31 กม. (รายชม.)</text>
+  <circle cx="450" cy="60" r="7" fill="#3fb950"/><text x="300" y="56" fill="#3fb950" font-size="11.5">Air4Thai: จุดเป๊ะ รายชม.</text>
+  <text x="300" y="74" fill="#6e7681" font-size="9.5">(แต่ครอบคลุมพื้นที่ "บางมาก")</text>
+</svg>
+</div>
+<div class="why"><b>นี่คือเหตุผลเชิงลึกว่าทำไม HazeNet ต้องเป็น GeoAI:</b> เราต้องหลอมข้อมูลที่ความละเอียดต่างกันมากให้อยู่บนกริดเดียว แล้วให้โมเดล "เติมช่องว่าง" ทั้งเชิงพื้นที่ (ระหว่างสถานี) และเชิงเวลา (ระหว่างที่ดาวเทียมผ่าน) — งานนี้ทำด้วยสถิติธรรมดาไม่ได้ ต้องใช้ฟิสิกส์+AI</div>
+
+<h3>2.2 ข้อมูลจุด (point) vs ข้อมูลกริด (gridded)</h3>
+<p>แหล่งข้อมูลมา 2 รูปทรง — และต้องแปลงให้เป็นกริดเหมือนกันหมดก่อนเทรน:</p>
+<ul>
+<li><b>กริด (raster):</b> ค่ากระจายเต็มทุกช่องตาราง → ERA5, Himawari, DEM · ใช้ได้เกือบทันที (แค่ regrid ความละเอียด)</li>
+<li><b>จุด (point/vector):</b> ค่าอยู่เฉพาะพิกัด → FIRMS (จุดไฟ), Air4Thai (จุดสถานี) · ต้อง "วางลงกริด" (rasterize) ก่อน</li>
+</ul>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 170" width="88%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="ap" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#e3b341"/></marker></defs>
+  <text x="110" y="20" fill="#ff9b54" font-size="12" text-anchor="middle">จุดไฟดิบ (FIRMS)</text>
+  <rect x="30" y="32" width="160" height="120" rx="6" fill="#161b22" stroke="#30363d"/>
+  <circle cx="70" cy="70" r="3.5" fill="#ff9b54"/><circle cx="85" cy="80" r="3.5" fill="#ff9b54"/><circle cx="78" cy="62" r="3.5" fill="#ff9b54"/>
+  <circle cx="140" cy="120" r="3.5" fill="#ff9b54"/><circle cx="150" cy="110" r="3.5" fill="#ff9b54"/>
+  <circle cx="120" cy="50" r="3.5" fill="#ff9b54"/>
+  <line x1="200" y1="92" x2="270" y2="92" stroke="#e3b341" stroke-width="2" marker-end="url(#ap)"/>
+  <text x="235" y="84" fill="#e3b341" font-size="10" text-anchor="middle">นับ/รวม</text>
+  <text x="235" y="104" fill="#e3b341" font-size="10" text-anchor="middle">ลงช่อง</text>
+  <text x="400" y="20" fill="#3fb950" font-size="12" text-anchor="middle">กริดการปล่อย E (พร้อมใช้)</text>
+  <g stroke="#30363d">
+  <rect x="320" y="32" width="160" height="120" fill="none"/>
+  <line x1="360" y1="32" x2="360" y2="152"/><line x1="400" y1="32" x2="400" y2="152"/><line x1="440" y1="32" x2="440" y2="152"/>
+  <line x1="320" y1="72" x2="480" y2="72"/><line x1="320" y1="112" x2="480" y2="112"/></g>
+  <rect x="320" y="32" width="40" height="40" fill="rgba(255,155,84,.55)"/>
+  <rect x="360" y="32" width="40" height="40" fill="rgba(255,155,84,.30)"/>
+  <rect x="440" y="112" width="40" height="40" fill="rgba(255,155,84,.45)"/>
+  <text x="400" y="168" fill="#6e7681" font-size="9.5" text-anchor="middle">ช่องสีเข้ม = ไฟแรง/หลายจุด → ค่า E สูง</text>
+</svg>
+</div>
+
+<h3>2.3 ลิขสิทธิ์ + บัญชี (license &amp; auth)</h3>
+<p>ทุกแหล่งในบทนี้ <b class="k">ฟรีและเปิด</b> (เงื่อนไขโครงการเรา) แต่เกือบทุกอันต้อง "สมัครบัญชีฟรี + ขอ key" ก่อน:</p>
+<table>
+<tr><th>แหล่ง</th><th>ต้องสมัคร?</th><th>ลิขสิทธิ์</th></tr>
+<tr><td>FIRMS</td><td>ขอ <code>MAP_KEY</code> ฟรี (อีเมล)</td><td>NASA — เปิด, อ้างอิงแหล่ง</td></tr>
+<tr><td>ERA5</td><td>บัญชี Copernicus CDS + token</td><td>Copernicus — เปิด, ต้องกดยอมรับ licence</td></tr>
+<tr><td>Himawari</td><td>JAXA P-Tree (ฟรี) หรือดึงจาก AWS (ไม่ต้อง)</td><td>JAXA/JMA — เปิดเพื่อการวิจัย</td></tr>
+<tr><td>Air4Thai</td><td>ไม่ต้อง (endpoint สาธารณะ)</td><td>กรมควบคุมมลพิษ — ควรอ้างอิง</td></tr>
+<tr><td>DEM (Copernicus)</td><td>ดึงจาก AWS ได้เลย ไม่ต้อง</td><td>Copernicus/ESA — เปิด</td></tr>
+</table>
+<div class="warn"><b>ข้อควรระวังด้านความซื่อสัตย์ทางวิชาการ:</b> เก็บ "ที่มา + เวอร์ชัน + วันที่ดึง" ของทุกชุดข้อมูลไว้ในไฟล์ <code>data_sources.md</code> ตั้งแต่วันแรก · ตอนเขียนรายงาน/ตอบกรรมการ ต้องอ้างอิงได้ว่า PM2.5 มาจาก Air4Thai, อากาศจาก ERA5 ฯลฯ — ไม่งั้นงานจะ reproduce ไม่ได้</div>
+
+<h3>2.4 Latency — ข้อมูลมาช้าแค่ไหน (NRT vs archive)</h3>
+<p>มี 2 โหมด: <b>NRT (near-real-time)</b> มาเร็ว (ชั่วโมง) แต่ยังไม่ผ่านการตรวจสอบเต็ม · <b>archive/reanalysis</b> มาช้า (วัน–สัปดาห์) แต่ผ่านการตรวจคุณภาพแล้ว · <b>โปรเจกต์เราเทรนกับอดีต → ใช้ archive เป็นหลัก</b> (คุณภาพสำคัญกว่าความเร็ว) · NRT จะสำคัญตอนทำ "เดโมพยากรณ์สด" ทีหลังเท่านั้น</p>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. FIRMS — ไฟและความแรงไฟ (FRP) <span class="rtag r-in" style="margin-left:6px">INPUT (ต้นทาง)</span></h2>
+
+<div class="src">
+<div class="src-head">
+  <div class="src-ic" style="background:rgba(255,155,84,.18)">🔥</div>
+  <div><div class="src-name" style="color:var(--orange)">FIRMS</div><div class="src-sub">Fire Information for Resource Management System · NASA Earthdata</div></div>
+</div>
+<div class="src-body">
+<div class="specs">
+  <div class="spec"><div class="l">ให้อะไร</div><div class="v">จุดไฟ + FRP (MW)</div></div>
+  <div class="spec"><div class="l">เซนเซอร์</div><div class="v">MODIS 1กม. · VIIRS 375ม.</div></div>
+  <div class="spec"><div class="l">ความถี่</div><div class="v">~2–4 ครั้ง/วัน (ตอนดาวเทียมผ่าน)</div></div>
+  <div class="spec"><div class="l">รูปแบบ</div><div class="v">CSV (จุด)</div></div>
+</div>
+
+<p><b>FIRMS ให้อะไร:</b> รายการ "จุดความร้อนผิดปกติ" (active fire / hotspot) แต่ละจุดมี ละติจูด/ลองจิจูด, เวลา, ดาวเทียม, <b>FRP</b> (Fire Radiative Power, หน่วย MW = ความแรงของไฟ), ความสว่าง, ระดับความเชื่อมั่น · FRP คือตัวเดียวกับที่อธิบายใน 1.1 — มันคือ <b>พร็อกซีของอัตราการปล่อยควัน</b></p>
+
+<h4>เซนเซอร์ 2 ตระกูล (ต่างกันที่ความละเอียด)</h4>
+<table>
+<tr><th>เซนเซอร์</th><th>ดาวเทียม</th><th>ความละเอียด</th><th>จุดเด่น</th></tr>
+<tr><td>MODIS</td><td>Terra + Aqua</td><td>1 กม.</td><td>ย้อนหลังไกล (ตั้งแต่ ~2000)</td></tr>
+<tr><td>VIIRS</td><td>S-NPP, NOAA-20/21</td><td>375 ม.</td><td>เห็นไฟเล็ก/เผาแปลงนาได้ดีกว่า → แนะนำสำหรับ SEA</td></tr>
+</table>
+
+<h4>วิธีดึง — FIRMS Area API (ฟรี, ง่ายสุด)</h4>
+<p>ขอ <code>MAP_KEY</code> ฟรีที่ <a class="ext" href="https://firms.modaps.eosdis.nasa.gov/api/area/">firms.modaps.eosdis.nasa.gov/api/area</a> แล้วเรียกเป็น URL ได้เลย คืนค่าเป็น CSV:</p>
+<pre><code><span class="kw">import</span> pandas <span class="kw">as</span> pd
+
+MAP_KEY = <span class="st">"&lt;ใส่ MAP_KEY ของคุณ&gt;"</span>
+SOURCE  = <span class="st">"VIIRS_SNPP_SP"</span>      <span class="cm"># SP = archive · NRT = near-real-time</span>
+AREA    = <span class="st">"92,5,110,25"</span>        <span class="cm"># west,south,east,north = โดเมนไทย/SEA ตอนบน</span>
+DATE    = <span class="st">"2024-03-15"</span>          <span class="cm"># วันเริ่ม</span>
+DAYS    = <span class="nm">10</span>                    <span class="cm"># สูงสุด 10 วัน/คำขอ</span>
+
+url = (<span class="st">f"https://firms.modaps.eosdis.nasa.gov/api/area/csv/"</span>
+       <span class="st">f"{MAP_KEY}/{SOURCE}/{AREA}/{DAYS}/{DATE}"</span>)
+fires = pd.read_csv(url)
+<span class="fn">print</span>(fires[[<span class="st">"latitude"</span>,<span class="st">"longitude"</span>,<span class="st">"acq_date"</span>,<span class="st">"acq_time"</span>,<span class="st">"frp"</span>]].head())</code></pre>
+<p class="muted">→ ไล่ลูปทีละ 10 วันครอบฤดูเผา แล้วต่อกัน · สำหรับย้อนหลังหลายปีใช้ <b>FIRMS Archive Download Tool</b> (ขอเป็นไฟล์ก้อนใหญ่ทางอีเมลได้)</p>
+
+<div class="green-box"><b>บทบาทใน HazeNet:</b> FIRMS คือ <b>ต้นทางของพจน์ E (emission)</b> ในสมการ ADR (1.2) และในโมดูล Emission ของ FastCTM · แต่มันเป็น <b>จุด</b> → ต้อง rasterize ลงกริด 0.1° (2.2) ก่อน · และเพราะ "tagged-tracer" (3.6) ติดป้ายแหล่งจาก<b>ตำแหน่งไฟ</b> → FIRMS คือข้อมูลที่ทำให้ source attribution เป็นจริงได้</div>
+<div class="danger"><b>caveat ต้องบอกกรรมการ:</b> (1) <b>เมฆบังไฟ</b> — วันที่เมฆเยอะจะ "เห็นไฟน้อยกว่าจริง" · (2) เห็นแค่ <b>ตอนดาวเทียมผ่าน</b> (~2–4 ภาพ/วัน) ไฟกลางคืน/ช่วงไม่มีดาวเทียมหาย · (3) FRP เป็น "ความแรง ณ ขณะถ่าย" ไม่ใช่มวลควันโดยตรง — การแปลง FRP→มวลต่อสารต้องใช้ FINN (ดูข้อ 8)</div>
+</div>
+</div>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. ERA5 — อุตุนิยม (ตัวขับฟิสิกส์) <span class="rtag r-in" style="margin-left:6px">INPUT (ตัวขับ)</span></h2>
+
+<div class="src">
+<div class="src-head">
+  <div class="src-ic" style="background:rgba(88,166,255,.18)">🌬️</div>
+  <div><div class="src-name" style="color:var(--blue)">ERA5</div><div class="src-sub">ECMWF Reanalysis v5 · แจกผ่าน Copernicus Climate Data Store (CDS)</div></div>
+</div>
+<div class="src-body">
+<div class="specs">
+  <div class="spec"><div class="l">ให้อะไร</div><div class="v">ลม, PBL, ฝน, อุณหภูมิ, ความชื้น</div></div>
+  <div class="spec"><div class="l">ความละเอียด</div><div class="v">0.25° (~31 กม.)</div></div>
+  <div class="spec"><div class="l">ความถี่</div><div class="v">รายชั่วโมง · 1940–ปัจจุบัน</div></div>
+  <div class="spec"><div class="l">รูปแบบ</div><div class="v">NetCDF / GRIB (กริด)</div></div>
+</div>
+
+<p>1.3 อธิบาย "ทำไม" ครบแล้ว (อากาศ = ตัวขับทุกพจน์ ADR) · ตรงนี้คือ "ทำยังไง" · ERA5 เป็น <b>reanalysis</b> = ค่าประมาณอากาศอดีตที่ดีที่สุด เต็มทุกจุดทุกชั่วโมง · มี 2 กลุ่มผลิตภัณฑ์:</p>
+<ul>
+<li><b>single levels</b> (ผิวพื้น): <code>10m_u/v_wind</code> (ลม→advection), <code>boundary_layer_height</code> (PBL→กักควัน), <code>total_precipitation</code> (ฝน→ชะล้าง), <code>2m_temperature</code>, <code>2m_dewpoint</code> (→ความชื้น/เคมี), <code>surface_pressure</code></li>
+<li><b>pressure levels</b> (แนวตั้ง): ลม/อุณหภูมิ/ความชื้นที่ระดับ 1000/925/850 hPa — ใช้ดูลมชั้นบนที่หอบควันข้ามแดน</li>
+</ul>
+
+<h4>วิธีดึง — cdsapi (Python)</h4>
+<p>1) สมัครบัญชี <a class="ext" href="https://cds.climate.copernicus.eu">cds.climate.copernicus.eu</a> · 2) เอา token ใส่ไฟล์ <code>~/.cdsapirc</code> · 3) <b>กดยอมรับ licence ของชุดข้อมูลบนเว็บก่อน</b> (ไม่งั้น error) · 4) รัน:</p>
+<pre><code><span class="kw">import</span> cdsapi
+c = cdsapi.<span class="fn">Client</span>()
+
+c.<span class="fn">retrieve</span>(<span class="st">"reanalysis-era5-single-levels"</span>, {
+    <span class="st">"product_type"</span>: <span class="st">"reanalysis"</span>,
+    <span class="st">"variable"</span>: [<span class="st">"10m_u_component_of_wind"</span>, <span class="st">"10m_v_component_of_wind"</span>,
+                 <span class="st">"boundary_layer_height"</span>, <span class="st">"total_precipitation"</span>,
+                 <span class="st">"2m_temperature"</span>, <span class="st">"2m_dewpoint_temperature"</span>],
+    <span class="st">"year"</span>: <span class="st">"2024"</span>, <span class="st">"month"</span>: <span class="st">"03"</span>,
+    <span class="st">"day"</span>:  [<span class="st">f"{d:02d}"</span> <span class="kw">for</span> d <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">1</span>,<span class="nm">32</span>)],
+    <span class="st">"time"</span>: [<span class="st">f"{h:02d}:00"</span> <span class="kw">for</span> h <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">24</span>)],
+    <span class="st">"area"</span>: [<span class="nm">25</span>, <span class="nm">92</span>, <span class="nm">5</span>, <span class="nm">110</span>],   <span class="cm"># N, W, S, E (ระวังลำดับ! ต่างจาก FIRMS)</span>
+    <span class="st">"format"</span>: <span class="st">"netcdf"</span>,
+}, <span class="st">"era5_2024_03.nc"</span>)</code></pre>
+
+<div class="warn"><b>เรื่องล่าสุดที่ทำคนติดบ่อย (2024+):</b> CDS ย้ายไประบบใหม่และ <b>ปิด API เก่า</b> แล้ว · ต้องใช้ <code>cdsapi</code> เวอร์ชันใหม่, endpoint <code>https://cds.climate.copernicus.eu/api</code>, และ key รูปแบบใหม่ (เป็น token เดี่ยว ไม่มี <code>UID:</code> นำหน้าแบบเก่า) · ชื่อชุดข้อมูลบางตัวก็เปลี่ยน — ถ้า error ให้ก๊อปโค้ดจากปุ่ม "Show API request" บนหน้าเว็บชุดข้อมูลนั้นโดยตรง</div>
+<div class="green-box"><b>บทบาทใน HazeNet:</b> ERA5 คือ <b>อินพุตหลักที่ป้อนเข้าตัวฟิสิกส์</b> — ลม u,v เข้าตัว advection (2.2), PBL/อุณหภูมิ→สัมประสิทธิ์การกระจาย K, ฝน/ความชื้น→การสูญเสีย · ในภาษา 3.5 (conditionally-linear) อากาศพวกนี้คือ "condition" ที่ใช้คำนวณสัมประสิทธิ์ของตัวดำเนินการเชิงเส้น · ต้อง regrid 0.25°→0.1° (4.3)</div>
+</div>
+</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. Himawari — AOD (ควันมองจากอวกาศ) <span class="rtag r-in" style="margin-left:6px">INPUT (สังเกตการณ์)</span></h2>
+
+<div class="src">
+<div class="src-head">
+  <div class="src-ic" style="background:rgba(86,212,221,.18)">🛰️</div>
+  <div><div class="src-name" style="color:var(--cyan)">Himawari-8/9</div><div class="src-sub">ดาวเทียมค้างฟ้า (geostationary) · JMA ญี่ปุ่น · เซนเซอร์ AHI</div></div>
+</div>
+<div class="src-body">
+<div class="specs">
+  <div class="spec"><div class="l">ให้อะไร</div><div class="v">AOD (ความหนาควัน)</div></div>
+  <div class="spec"><div class="l">ความละเอียด</div><div class="v">AOD ~5 กม.</div></div>
+  <div class="spec"><div class="l">ความถี่</div><div class="v">ทุก 10 นาที! (full disk)</div></div>
+  <div class="spec"><div class="l">รูปแบบ</div><div class="v">NetCDF/HDF (กริด)</div></div>
+</div>
+
+<p><b>จุดขายที่ทำให้ Himawari พิเศษ:</b> เป็นดาวเทียม <b>ค้างฟ้า</b> — ลอยอยู่ที่เดิม (140.7°E) เห็นเอเชียตะวันออก/อาคเนย์/ออสเตรเลียทั้งภาพ <b>ทุก 10 นาที</b> · ต่างจาก MODIS/VIIRS ที่เป็นดาวเทียมวนรอบโลก เห็นจุดเดิมแค่วันละ ~2 ครั้ง · นี่คือข้อได้เปรียบมหาศาลในการจับ "ควันที่เปลี่ยนทั้งวัน"</p>
+
+<div class="center card">
+<svg class="svg" viewBox="0 0 520 150" width="80%" xmlns="http://www.w3.org/2000/svg">
+  <text x="130" y="18" fill="#56d4dd" font-size="11.5" text-anchor="middle">ค้างฟ้า: เห็นจุดเดิมตลอด</text>
+  <circle cx="130" cy="90" r="34" fill="#0f1f17" stroke="#3fb950"/><text x="130" y="94" fill="#3fb950" font-size="10" text-anchor="middle">โลก</text>
+  <circle cx="130" cy="18" r="5" fill="#56d4dd"/><text x="148" y="22" fill="#56d4dd" font-size="9">Himawari</text>
+  <line x1="130" y1="23" x2="130" y2="56" stroke="#56d4dd" stroke-width="1" stroke-dasharray="3 2"/>
+  <text x="390" y="18" fill="#f778ba" font-size="11.5" text-anchor="middle">วนรอบ: ผ่านจุดเดิมวันละ ~2 ครั้ง</text>
+  <circle cx="390" cy="90" r="34" fill="#0f1f17" stroke="#3fb950"/><text x="390" y="94" fill="#3fb950" font-size="10" text-anchor="middle">โลก</text>
+  <circle cx="390" cy="40" r="44" fill="none" stroke="#f778ba" stroke-width="1" stroke-dasharray="4 3"/>
+  <circle cx="346" cy="58" r="4" fill="#f778ba"/><text x="300" y="56" fill="#f778ba" font-size="9">MODIS/VIIRS</text>
+</svg>
+</div>
+
+<h4>วิธีดึง</h4>
+<ul>
+<li><b>JAXA P-Tree:</b> สมัครฟรีที่ <a class="ext" href="https://www.eorc.jaxa.jp/ptree/">eorc.jaxa.jp/ptree</a> → ดาวน์โหลดผลิตภัณฑ์ <b>L2 Aerosol (AOD)</b> ทาง SFTP/FTP</li>
+<li><b>AWS Open Data (ไม่ต้องสมัคร):</b> bucket <code>noaa-himawari9</code> (และ <code>noaa-himawari8</code> สำหรับอดีต) — ดึง L1b/L2 ได้เลยด้วย <code>s3fs</code></li>
+</ul>
+<pre><code><span class="kw">import</span> s3fs
+fs = s3fs.<span class="fn">S3FileSystem</span>(anon=<span class="kw">True</span>)            <span class="cm"># open data ไม่ต้องล็อกอิน</span>
+<span class="cm"># สำรวจโครงสร้างโฟลเดอร์ (ปี/เดือน/วัน/ชั่วโมง)</span>
+<span class="fn">print</span>(fs.<span class="fn">ls</span>(<span class="st">"noaa-himawari9/AHI-L2-FLDK-Clouds/2024/03/15/"</span>)[:<span class="nm">5</span>])</code></pre>
+<p class="muted">→ ชื่อ path/ผลิตภัณฑ์ AOD เปลี่ยนได้ตามช่วงเวลา ให้เช็คสารบัญ bucket ปัจจุบันก่อน · เปิดไฟล์ด้วย <code>xarray</code> (4.2)</p>
+
+<div class="green-box"><b>บทบาทใน HazeNet:</b> AOD = <b>อินพุตสังเกตการณ์ "ควันที่เห็นจากบน"</b> (1.1) · ความถี่ 10 นาทีช่วยให้โมเดลเห็นพลวัตรายชั่วโมงที่ MODIS จับไม่ได้ · ใช้เป็น input channel และ/หรือเป็นตัว "ดึงโมเดลให้ตรงความจริง" (คล้าย data assimilation)</div>
+<div class="danger"><b>caveat:</b> (1) <b>กลางคืนใช้ไม่ได้</b> — การ retrieve AOD ต้องใช้แสงอาทิตย์ · (2) <b>เมฆบัง</b> → ค่าหาย · (3) AOD เป็นค่า "ทั้งคอลัมน์อากาศ" ไม่ใช่ที่พื้น → ความสัมพันธ์ AOD↔PM2.5 ไม่คงที่ (ขึ้นกับความชื้น/ความสูงควัน — อธิบายใน 1.1) · (4) ไทยอยู่ค่อนข้างเฉียงจากจุดใต้ดาวเทียม → มุมมองเอียง</div>
+</div>
+</div>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. Air4Thai — PM2.5 พื้นดิน (เฉลย) <span class="rtag r-tg" style="margin-left:6px">TARGET (เฉลย)</span></h2>
+
+<div class="src">
+<div class="src-head">
+  <div class="src-ic" style="background:rgba(63,185,80,.18)">📍</div>
+  <div><div class="src-name" style="color:var(--green)">Air4Thai</div><div class="src-sub">เครือข่ายสถานีตรวจวัดคุณภาพอากาศ · กรมควบคุมมลพิษ (คพ.)</div></div>
+</div>
+<div class="src-body">
+<div class="specs">
+  <div class="spec"><div class="l">ให้อะไร</div><div class="v">PM2.5/PM10/O3... ที่พื้น</div></div>
+  <div class="spec"><div class="l">ความละเอียด</div><div class="v">จุดสถานี (~80+ จุด)</div></div>
+  <div class="spec"><div class="l">ความถี่</div><div class="v">รายชั่วโมง</div></div>
+  <div class="spec"><div class="l">รูปแบบ</div><div class="v">JSON (จุด)</div></div>
+</div>
+
+<p><b>นี่คือ "เฉลย" ของทั้งโปรเจกต์</b> — ค่า PM2.5 จริงที่วัดด้วยเครื่องมาตรฐานที่พื้น ที่เราเอาไป<b>เทียบกับผลทำนาย</b>เพื่อคำนวณ loss (ตอนเทรน) และวัดความแม่น (ตอนทดสอบ, 5.1)</p>
+
+<h4>วิธีดึง — endpoint JSON สาธารณะ</h4>
+<pre><code><span class="kw">import</span> requests, pandas <span class="kw">as</span> pd
+<span class="cm"># สแนปช็อตสถานีล่าสุดทั้งประเทศ (พิกัด + ค่าปัจจุบัน)</span>
+url = <span class="st">"http://air4thai.pcd.go.th/services/getNewAQI_JSON.php"</span>
+js = requests.<span class="fn">get</span>(url, timeout=<span class="nm">30</span>).<span class="fn">json</span>()
+st = pd.<span class="fn">json_normalize</span>(js[<span class="st">"stations"</span>])
+<span class="fn">print</span>(st[[<span class="st">"stationID"</span>,<span class="st">"nameTH"</span>,<span class="st">"lat"</span>,<span class="st">"long"</span>,<span class="st">"AQILast.PM25.value"</span>]].head())</code></pre>
+
+<div class="warn"><b>ความจริงที่ต้องรู้:</b> endpoint Air4Thai เป็นแบบ "กึ่งทางการ/ไม่มีเอกสาร" — โครงสร้างเปลี่ยนได้, บางทีล่ม, และ <b>ข้อมูลย้อนหลังหลายปีดึงยาก</b> (ตัว API ให้ค่าปัจจุบันเป็นหลัก) · สำหรับ training ต้องการอดีต → ควรเสริมด้วยทางเลือกข้างล่าง</div>
+
+<h4>ทางเลือก/ตัวเสริมที่เสถียรกว่า (แนะนำให้ใช้คู่กัน)</h4>
+<table>
+<tr><th>แหล่ง</th><th>ดีตรงไหน</th><th>หมายเหตุ</th></tr>
+<tr><td><b>OpenAQ</b> (API v3)</td><td>มีเอกสาร, เสถียร, <b>รวมสถานีหลายประเทศใน SEA</b> (ดีต่อ transboundary), ดึงอดีตได้</td><td>สมัคร API key ฟรี · รวม Air4Thai เข้ามาด้วยส่วนหนึ่ง</td></tr>
+<tr><td>CMU CCDC / Dustboy</td><td>เซนเซอร์ราคาถูก <b>หนาแน่นในภาคเหนือ</b> (เชียงใหม่)</td><td>ความแม่นต่ำกว่าเครื่องมาตรฐาน → ใช้เสริมความหนาแน่น</td></tr>
+<tr><td>สถานทูตสหรัฐ / AirNow</td><td>มาตรฐานสูง</td><td>มีแค่ไม่กี่จุด (กรุงเทพ/เชียงใหม่)</td></tr>
+</table>
+
+<div class="green-box"><b>บทบาทใน HazeNet:</b> เป็น <b>label สำหรับ supervised learning</b> · เพราะเป็น "จุด" → ตอนเทรนเราเทียบเฉพาะ pixel ที่มีสถานี (point-wise loss) · และเป็นหัวใจของการประเมินแบบ <b>leave-stations-out CV</b> (5.2) ที่พิสูจน์ว่าโมเดลทำนายที่ "ไม่เคยเห็นสถานี" ได้จริง</div>
+<div class="danger"><b>caveat สำคัญที่สุดของโปรเจกต์:</b> สถานี <b>กระจุกในเมือง</b> และ <b>เพื่อนบ้าน (เมียนมา/ลาว) แทบไม่มีสถานีสาธารณะ</b> · นี่คือเหตุผลที่ validate "ต้นทางควันข้ามแดน" โดยตรงทำได้ยาก — ต้องพึ่ง AOD ดาวเทียมเป็นตัวตรวจทานแทน และต้องเขียน caveat นี้ตรง ๆ ในรายงาน</div>
+</div>
+</div>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. DEM — ภูมิประเทศ (ฉากหลังนิ่ง) <span class="rtag r-st" style="margin-left:6px">STATIC</span></h2>
+
+<div class="src">
+<div class="src-head">
+  <div class="src-ic" style="background:rgba(188,140,255,.18)">⛰️</div>
+  <div><div class="src-name" style="color:var(--purple)">DEM</div><div class="src-sub">Digital Elevation Model — แบบจำลองความสูงภูมิประเทศ (แนะนำ Copernicus DEM GLO-30)</div></div>
+</div>
+<div class="src-body">
+<div class="specs">
+  <div class="spec"><div class="l">ให้อะไร</div><div class="v">ความสูงพื้นดิน (เมตร)</div></div>
+  <div class="spec"><div class="l">ความละเอียด</div><div class="v">30 ม. (ละเอียดมาก)</div></div>
+  <div class="spec"><div class="l">ความถี่</div><div class="v">นิ่ง (static) — ดึงครั้งเดียว</div></div>
+  <div class="spec"><div class="l">รูปแบบ</div><div class="v">GeoTIFF (กริด)</div></div>
+</div>
+
+<p><b>DEM เป็นข้อมูลนิ่ง</b> — ภูเขาไม่ขยับ จึงดึงครั้งเดียวใช้ตลอด · แต่สำคัญมากกับงานเรา เพราะ <b>ภูมิประเทศกำหนดทางเดินลมและการกักฝุ่น</b></p>
+
+<div class="ex"><b>ทำไม DEM สำคัญกับฝุ่นภาคเหนือเป็นพิเศษ:</b> เชียงใหม่/เชียงราย/แม่ฮ่องสอนเป็น <b>แอ่งกระทะ</b> ล้อมด้วยภูเขา · ตอนกลางคืน/เช้าอากาศเย็นไหลลงก้นแอ่ง เกิด "ฝาครอบอุณหภูมิ" (temperature inversion) → ควันที่ลอยมาติดอยู่ในแอ่ง ระบายไม่ออก → ค่าฝุ่นพุ่ง · DEM คือสิ่งที่บอกโมเดลว่า "ตรงนี้เป็นแอ่ง" — ฟิสิกส์ที่สถิติธรรมดามองไม่เห็น</div>
+
+<h4>วิธีดึง — Copernicus DEM จาก AWS (เปิด, ไม่ต้องสมัคร)</h4>
+<pre><code><span class="cm"># bucket เปิด: copernicus-dem-30m (แบ่งเป็น tile ละ 1°×1°)</span>
+<span class="kw">import</span> s3fs, rioxarray
+fs = s3fs.<span class="fn">S3FileSystem</span>(anon=<span class="kw">True</span>)
+<span class="cm"># ตัวอย่าง tile ครอบเชียงใหม่ (~18N, 98E)</span>
+key = <span class="st">"copernicus-dem-30m/Copernicus_DSM_COG_10_N18_00_E098_00_DEM/"</span> \
+      <span class="st">"Copernicus_DSM_COG_10_N18_00_E098_00_DEM.tif"</span>
+<span class="kw">with</span> fs.<span class="fn">open</span>(key) <span class="kw">as</span> f:
+    dem = rioxarray.<span class="fn">open_rasterio</span>(f)
+<span class="fn">print</span>(dem.shape, <span class="st">"min/max ความสูง:"</span>, <span class="fn">float</span>(dem.<span class="fn">min</span>()), <span class="fn">float</span>(dem.<span class="fn">max</span>()))</code></pre>
+<p class="muted">ทางเลือกอื่น: SRTM 30/90ม., NASADEM, MERIT DEM, หรือผ่าน OpenTopography API / Google Earth Engine</p>
+
+<div class="green-box"><b>บทบาทใน HazeNet:</b> เป็น <b>static input channel</b> (ความสูง + อนุพันธ์เช่นความลาดชัน) ที่ต่อท้ายทุก timestep · ให้ "ฉากหลังคงที่" ที่อากาศ (ERA5) ไหลผ่าน · ช่วยโมเดลเข้าใจว่าทำไมบางจุดฝุ่นสะสมเสมอ (แอ่ง) บางจุดระบายดี (สันเขา)</div>
+</div>
+</div>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. แหล่งเสริม — รู้ไว้ หยิบมาเพิ่มได้ถ้ามีเวลา</h2>
+<p>5 อันบนคือ "แกนหลัก" ที่พอเริ่มงานได้ · ด้านล่างคือตัวเสริมที่ยกระดับงาน (แต่ <b>ไม่จำเป็นในเฟสแรก</b> — ระวังขอบเขตงานบานปลายในเวลา 2 เดือน):</p>
+<table>
+<tr><th>แหล่ง</th><th>ให้อะไร</th><th>เพิ่มคุณค่าตรงไหน</th></tr>
+<tr><td><b>FINN v2.5</b> (NCAR)</td><td>กริดการปล่อย <b>แยกตามสาร</b> (PM2.5, OC, BC, CO, NOx, VOC) แปลงจากไฟ MODIS/VIIRS</td><td><b>สะพานจาก FRP → มวลปล่อยจริง</b> · ทำให้พจน์ E สมจริงกว่าเอา FRP ดิบ ๆ · เข้ากับเคมีของ FastCTM</td></tr>
+<tr><td><b>Sentinel-5P TROPOMI</b></td><td>NO₂, CO, SO₂, aerosol index ทั่วภาพ</td><td>สารร่วมที่ปล่อยมากับควัน → ช่วยแยกแหล่ง (เผาชีวมวล vs จราจร/อุตสาหกรรม)</td></tr>
+<tr><td><b>MODIS MAIAC</b> (MCD19A2)</td><td>AOD 1 กม. (ละเอียดกว่า Himawari)</td><td>แลกความถี่ (วันละ ~2) กับความละเอียดเชิงพื้นที่ — ใช้คู่ Himawari</td></tr>
+<tr><td><b>ESA WorldCover</b></td><td>ชนิดสิ่งปกคลุมดิน 10 ม. (ป่า/นา/เมือง)</td><td>static channel เสริม — บอก "เชื้อเพลิง" ของไฟ + มาสก์เมือง</td></tr>
+</table>
+<div class="why"><b>คำแนะนำลำดับความสำคัญ:</b> ถ้าจะเพิ่มแค่ "หนึ่งอย่าง" จาก 5 แกน → เพิ่ม <b>FINN v2.5</b> ก่อน เพราะมันทำให้พจน์การปล่อย (E) ถูกต้องเชิงฟิสิกส์ ซึ่งเป็นหัวใจของทั้ง forecast และ attribution</div>
+
+<!-- ============ 9 ============ -->
+<h2 id="p9">9. ตารางสรุปใหญ่ — ทุกแหล่งในที่เดียว</h2>
+<table>
+<tr><th>แหล่ง</th><th>ให้อะไร</th><th>บทบาท HazeNet</th><th>พื้นที่</th><th>เวลา</th><th>รูปแบบ</th><th>วิธีดึง</th></tr>
+<tr><td style="color:var(--orange)"><b>FIRMS</b></td><td>จุดไฟ + FRP</td><td>Input: ต้นทาง E + ป้าย source (3.6)</td><td>375ม.–1กม. (จุด)</td><td>~2–4/วัน</td><td>CSV</td><td>Area API (MAP_KEY)</td></tr>
+<tr><td style="color:var(--blue)"><b>ERA5</b></td><td>ลม/PBL/ฝน/T/RH</td><td>Input: ตัวขับฟิสิกส์ทุกพจน์ (1.3)</td><td>~31 กม. (กริด)</td><td>รายชม.</td><td>NetCDF/GRIB</td><td>cdsapi</td></tr>
+<tr><td style="color:var(--cyan)"><b>Himawari</b></td><td>AOD</td><td>Input: สังเกตการณ์ควันจากบน</td><td>~5 กม. (กริด)</td><td>10 นาที</td><td>NetCDF/HDF</td><td>P-Tree / AWS</td></tr>
+<tr><td style="color:var(--green)"><b>Air4Thai</b></td><td>PM2.5 พื้นดิน</td><td><b>Target/เฉลย</b> (loss + 5.1/5.2)</td><td>จุดสถานี</td><td>รายชม.</td><td>JSON</td><td>endpoint / OpenAQ</td></tr>
+<tr><td style="color:var(--purple)"><b>DEM</b></td><td>ความสูงพื้น</td><td>Static input: ฉากหลัง/แอ่งกักฝุ่น</td><td>30 ม. (กริด)</td><td>นิ่ง</td><td>GeoTIFF</td><td>AWS (เปิด)</td></tr>
+</table>
+
+<!-- ============ 10 ============ -->
+<h2 id="p10">10. ชุดข้อมูลขั้นต่ำสำหรับโปรเจกต์ 2 เดือน <span class="pin">★ ทำจริง</span></h2>
+<p>นี่คือข้อเสนอ "ทำได้จริงในเวลา + งบ A100 จำกัด" — เลือกให้พอครบเพื่อพิสูจน์แนวคิด ไม่บานปลาย:</p>
+
+<div class="card">
+<h4>โดเมน + เวลา</h4>
+<table>
+<tr><th>มิติ</th><th>เลือก</th><th>เหตุผล</th></tr>
+<tr><td>พื้นที่</td><td>lat 5–25°N, lon 92–110°E</td><td>คลุมไทยตอนบน + เมียนมา(ฉาน) + ลาวเหนือ = แหล่งควันข้ามแดนหลัก</td></tr>
+<tr><td>กริด</td><td>0.1° (~11 กม.) → ~180×200 ช่อง</td><td>ละเอียดพอเห็นแอ่ง แต่เบาพอเทรนบน A100 เดียว</td></tr>
+<tr><td>ฤดูกาล</td><td>เน้นฤดูเผา ธ.ค.–เม.ย.</td><td>ช่วงที่ปัญหาเกิดจริง + signal แรง (เทรนคุ้มกว่าเอาทั้งปี)</td></tr>
+<tr><td>ปี</td><td>~5 ฤดู เช่น 2019–2023 (เทรน) + 2024 (ทดสอบ)</td><td>แบ่งตามเวลา กัน data leakage (5.2)</td></tr>
+<tr><td>ความถี่เวลา</td><td>เริ่มที่ราย 3 ชม. (ขยับเป็นรายชม.ได้)</td><td>ลดขนาดข้อมูล 3 เท่า → เทรนเร็ว/ประหยัดงบตอน prototype</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h4>ช่องข้อมูล (channels) ใน datacube</h4>
+<ul>
+<li><b>Input ไดนามิก:</b> u, v, PBL, precip, T, RH (ERA5) · AOD (Himawari) · E การปล่อย (FIRMS→กริด หรือ FINN)</li>
+<li><b>Input static:</b> ความสูง + ความลาดชัน (DEM) · (ทางเลือก) land cover</li>
+<li><b>Target:</b> PM2.5 ที่ตำแหน่งสถานี (Air4Thai/OpenAQ)</li>
+</ul>
+<p class="muted">ประเมินขนาด: ~12 ช่อง × 180×200 × (5 ฤดู×~5 เดือน×ราย3ชม.) ≈ หลัก <b>10 GB</b> เมื่อบีบอัดเป็น Zarr/float16 → พอดีกับ Colab (จัดการ memory ใน 4.5)</p>
+</div>
+
+<div class="warn"><b>กฎกันงานบานปลาย:</b> เฟสแรกใช้ <b>5 แกน</b> เท่านั้น · อย่าเพิ่งแตะ TROPOMI/MAIAC/WorldCover จนกว่า pipeline พื้นฐาน (4.4) จะวิ่งครบรอบและเทรนได้ผลแรก · "ให้มันวิ่งก่อน แล้วค่อยทำให้ดี"</div>
+
+<!-- ============ 11 ============ -->
+<h2 id="p11">11. เชื่อม HazeNet + สิ่งที่จะทำต่อ + caveat</h2>
+<p>หลังดึง 5 แหล่งดิบมาแล้ว ขั้นต่อไปคือทำให้มัน "คุยกันรู้เรื่อง" บนกริดเดียว:</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 720 90" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="af" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker></defs>
+  <rect x="8" y="30" width="120" height="38" rx="8" fill="#1c2330" stroke="#56d4dd"/><text x="68" y="48" fill="#56d4dd" font-size="12" text-anchor="middle">4.1 ดึงข้อมูล</text><text x="68" y="62" fill="#9aa7b4" font-size="9.5" text-anchor="middle">(บทนี้)</text>
+  <line x1="128" y1="49" x2="158" y2="49" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#af)"/>
+  <rect x="160" y="30" width="120" height="38" rx="8" fill="#161b22" stroke="#30363d"/><text x="220" y="48" fill="#e6edf3" font-size="12" text-anchor="middle">4.2 รูปแบบไฟล์</text><text x="220" y="62" fill="#9aa7b4" font-size="9.5" text-anchor="middle">NetCDF/Zarr/xarray</text>
+  <line x1="280" y1="49" x2="310" y2="49" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#af)"/>
+  <rect x="312" y="30" width="120" height="38" rx="8" fill="#161b22" stroke="#30363d"/><text x="372" y="48" fill="#e6edf3" font-size="12" text-anchor="middle">4.3 regrid</text><text x="372" y="62" fill="#9aa7b4" font-size="9.5" text-anchor="middle">รวมเป็น 0.1°</text>
+  <line x1="432" y1="49" x2="462" y2="49" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#af)"/>
+  <rect x="464" y="30" width="120" height="38" rx="8" fill="#0f1f17" stroke="#3fb950"/><text x="524" y="48" fill="#3fb950" font-size="12" text-anchor="middle">4.4 datacube</text><text x="524" y="62" fill="#9aa7b4" font-size="9.5" text-anchor="middle">ก้อนพร้อมเทรน</text>
+  <line x1="584" y1="49" x2="614" y2="49" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#af)"/>
+  <rect x="616" y="30" width="96" height="38" rx="8" fill="#1c2330" stroke="#e3b341"/><text x="664" y="52" fill="#e3b341" font-size="12" text-anchor="middle">เทรน HazeNet</text>
+</svg>
+</div>
+
+<div class="green-box"><b>สรุปการแมป "แหล่ง → พจน์ในฟิสิกส์":</b> FIRMS→ <b>E</b> (การปล่อย) · ERA5 ลม→ <b>advection</b>, PBL/T→ <b>K กระจาย</b>, ฝน/RH→ <b>การสูญเสีย/เคมี</b> · Himawari AOD→ ตัวสังเกตการณ์ตรวจทาน · DEM→ ฉากหลังเชิงพื้นที่ · Air4Thai→ เฉลยที่ใช้คำนวณ loss · นี่คือเหตุผลว่าทำไม "ข้อมูล" กับ "ฟิสิกส์ใน 1.2" เป็นเรื่องเดียวกัน</div>
+
+<div class="danger"><b>3 caveat ที่ต้องเขียนในรายงานตั้งแต่ต้น (ความซื่อสัตย์):</b><br>
+1) <b>ช่องว่างเชิงพื้นที่ฝั่ง target:</b> สถานีกระจุกในเมืองไทย ฝั่งเมียนมา/ลาวแทบไม่มี → validate ต้นทางข้ามแดนตรง ๆ ไม่ได้ ต้องพึ่ง AOD<br>
+2) <b>ช่องว่างจากเมฆ/กลางคืน:</b> ทั้ง FIRMS และ Himawari หายตอนเมฆ/มืด → ต้องมีวิธีจัดการ missing data (4.4) และระบุผลกระทบ<br>
+3) <b>error สะสมจากการแปลงจุด→กริดและ regrid:</b> ทุกการแปลงความละเอียดมี error → ควรทำ ablation ว่าผลไวต่อ choice เหล่านี้แค่ไหน (5.4)</div>
+
+<!-- ============ cheat ============ -->
+<h2 id="cheat">12. Cheat sheet + แบบฝึกหัด</h2>
+<div class="card">
+<h4>Cheat sheet — จำ 1 บรรทัดต่อแหล่ง</h4>
+<ul>
+<li>🔥 <b>FIRMS</b> = ไฟอยู่ไหน แรงแค่ไหน (FRP) → <b>ต้นทาง E</b> · CSV จุด · MAP_KEY</li>
+<li>🌬️ <b>ERA5</b> = อากาศครบทุกชม. → <b>ตัวขับฟิสิกส์</b> · NetCDF กริด · cdsapi</li>
+<li>🛰️ <b>Himawari</b> = ควันจากบน ทุก 10 นาที → <b>สังเกตการณ์</b> · กริด · P-Tree/AWS</li>
+<li>📍 <b>Air4Thai</b> = PM2.5 จริงที่พื้น → <b>เฉลย (ไม่ใช่ input!)</b> · JSON จุด · +OpenAQ</li>
+<li>⛰️ <b>DEM</b> = รูปร่างภูเขา/แอ่ง → <b>ฉากหลัง static</b> · GeoTIFF · AWS เปิด</li>
+</ul>
+</div>
+
+<div class="chk">
+<p class="q">❓ แบบฝึกหัด (ตอบในใจ — เช็กความเข้าใจ)</p>
+<ol>
+<li>ทำไม Air4Thai ห้ามใส่เป็น input ของโมเดล?</li>
+<li>Himawari ได้เปรียบ MODIS เรื่องอะไร และเสียเปรียบเรื่องอะไร?</li>
+<li>FRP จาก FIRMS เป็นข้อมูล "จุด" — ต้องทำอะไรก่อนป้อนโมเดล?</li>
+<li>ทำไม DEM (ข้อมูลนิ่ง) ถึงสำคัญกับฝุ่นเชียงใหม่เป็นพิเศษ?</li>
+<li>ถ้าจะเพิ่มแหล่งเสริมได้ 1 อย่าง ควรเพิ่มอะไร เพราะอะไร?</li>
+</ol>
+<details><summary>เฉลย</summary>
+<ol>
+<li>เพราะมันคือ "เฉลย" (target) — ถ้าใส่เป็น input = โกง (data leakage) ผลดีปลอม (0.4)</li>
+<li>ได้เปรียบ: ความถี่ทุก 10 นาที (จับพลวัตรายชม.) · เสียเปรียบ: กลางคืน/เมฆใช้ไม่ได้ + ความละเอียดเชิงพื้นที่หยาบกว่า (5กม. vs 375ม.-1กม.)</li>
+<li>ต้อง rasterize = นับ/รวม FRP ลงช่องกริด 0.1° ให้กลายเป็นกริดการปล่อย E (2.2)</li>
+<li>ภาคเหนือเป็นแอ่งกระทะ → เกิด inversion กักควัน · DEM บอกโมเดลว่าจุดไหนเป็นแอ่ง (ฟิสิกส์ที่มองไม่เห็นจากค่าฝุ่นอย่างเดียว)</li>
+<li>FINN v2.5 — แปลง FRP→มวลปล่อยจริงแยกตามสาร ทำให้พจน์ E ถูกต้องเชิงฟิสิกส์ (สำคัญต่อทั้ง forecast + attribution)</li>
+</ol>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">✅ เช็กลิสต์ก่อนไปบท 4.2</p>
+<ul>
+<li>☐ บอกบทบาท (input/target/static) ของทั้ง 5 แหล่งได้</li>
+<li>☐ รู้ว่าแหล่งไหนเป็น "จุด" แหล่งไหนเป็น "กริด"</li>
+<li>☐ สมัคร MAP_KEY (FIRMS) + บัญชี CDS (ERA5) เรียบร้อย</li>
+<li>☐ ลองดึงข้อมูลตัวอย่างได้อย่างน้อย 1 แหล่งจริง</li>
+<li>☐ เข้าใจ caveat 3 ข้อ (ช่องว่างสถานี / เมฆ-กลางคืน / error การแปลงกริด)</li>
+</ul>
+</div>
+
+<hr>
+<p class="center muted">4.1 — แหล่งข้อมูล + วิธีดึง · โมดูล 4 (ข้อมูล+วิศวกรรม) · ต่อไป: <b style="color:var(--cyan)">4.2 รูปแบบ geospatial (NetCDF/Zarr/xarray/GeoTIFF)</b></p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HazeNet vs AFNO+StormCast — วิเคราะห์เทียบจุดต่อจุด</title>
+<style>
+  :root{
+    --bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;
+    --red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ffa657;--nvgreen:#76b900;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:"Segoe UI",Tahoma,"Sarabun",sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:1080px;margin:0 auto;padding:30px 20px 120px}
+  h1{font-size:33px;line-height:1.22;margin:0 0 6px}
+  .tagline{color:var(--cyan);font-size:18px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  h2{font-size:25px;margin:58px 0 14px;padding-bottom:10px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19.5px;margin:30px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);
+    padding:18px 22px;border-radius:10px;margin:22px 0;font-size:17px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin:16px 0}
+  .analogy{background:linear-gradient(180deg,#1a2433,#141b26);border:1px solid #2d4358;
+    border-left:4px solid var(--cyan);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .analogy .h{color:var(--cyan);font-weight:bold;font-size:15px;margin-bottom:4px}
+  .analogy .h::before{content:"🧠 ";}
+  .warn{background:rgba(227,179,65,.07);border:1px solid var(--border);border-left:4px solid var(--amber);border-radius:10px;padding:14px 20px;margin:16px 0}
+  .danger{background:rgba(248,81,73,.07);border:1px solid var(--border);border-left:4px solid var(--red);border-radius:10px;padding:14px 20px;margin:16px 0}
+  .ok{background:rgba(63,185,80,.07);border:1px solid var(--border);border-left:4px solid var(--green);border-radius:10px;padding:14px 20px;margin:16px 0}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14.5px}
+  th,td{border:1px solid var(--border);padding:9px 12px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  .eq{background:#11161d;border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:8px;
+    padding:14px 18px;margin:14px 0;font-size:16.5px;overflow-x:auto;font-family:"Cambria Math",serif;line-height:2}
+  .eq .lbl{display:block;color:var(--muted);font-size:13px;font-family:"Segoe UI",sans-serif;margin-top:6px}
+  a{color:var(--blue)}
+  .muted{color:var(--muted)} b.k{color:var(--green)}
+  .center{text-align:center}
+  .pill{display:inline-block;font-size:12.5px;padding:2px 11px;border-radius:20px;margin:3px 4px 3px 0;border:1px solid var(--border);color:var(--muted)}
+  .pill.g{color:var(--green);border-color:var(--green);background:rgba(63,185,80,.1)}
+  .pill.p{color:var(--purple);border-color:var(--purple);background:rgba(188,140,255,.1)}
+  .pill.a{color:var(--amber);border-color:var(--amber);background:rgba(227,179,65,.1)}
+  .pill.r{color:var(--red);border-color:var(--red);background:rgba(248,81,73,.1)}
+  .hero{background:linear-gradient(135deg,#161b22 0%,#1a2433 60%,#141b26 100%);
+    border:1px solid var(--border);border-radius:16px;padding:30px 30px 26px;margin:18px 0 10px}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 24px;margin:24px 0;columns:2;font-size:15px}
+  @media(max-width:720px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;display:block;padding:3px 0}
+  .toc a:hover{color:var(--cyan)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .win-us{color:var(--green);font-weight:bold}
+  .win-them{color:var(--red);font-weight:bold}
+  .win-tie{color:var(--amber);font-weight:bold}
+  .num-list{counter-reset:step;list-style:none;padding-left:0}
+  .num-list li{position:relative;padding:10px 0 10px 46px;border-bottom:1px dashed var(--border)}
+  .num-list li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:10px;
+    width:30px;height:30px;border-radius:50%;background:var(--panel2);border:1px solid var(--cyan);color:var(--cyan);
+    display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:15px}
+  .lesson{counter-reset:lesson;list-style:none;padding-left:0}
+  .lesson > li{position:relative;padding:4px 0 4px 0;margin:16px 0}
+  .flow text{font-family:"Segoe UI",Tahoma,sans-serif}
+  .kpill{display:inline-block;font-size:11.5px;padding:1px 9px;border-radius:6px;margin-left:6px;font-weight:bold}
+  .k-now{background:rgba(63,185,80,.15);color:var(--green);border:1px solid var(--green)}
+  .k-gap{background:rgba(248,81,73,.12);color:var(--red);border:1px solid var(--red)}
+  .scorebar{display:flex;height:26px;border-radius:6px;overflow:hidden;margin:6px 0;border:1px solid var(--border);font-size:12px;font-weight:bold}
+  .scorebar div{display:flex;align-items:center;justify-content:center;color:#0d1117}
+  .nvtag{display:inline-block;background:var(--nvgreen);color:#0d1117;font-weight:bold;font-size:12px;padding:1px 8px;border-radius:5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>HazeNet ⚔️ AFNO + StormCast</h1>
+  <p class="tagline">วิเคราะห์เทียบจุดต่อจุด แบบตรงไปตรงมา — งานเราดีพอหรือยัง และจะขึ้น SOTA ได้ยังไง</p>
+  <p class="sub">เอกสารวิเคราะห์ต่อเนื่องจาก <a href="HazeNet_Pipeline_Explained.html">HazeNet_Pipeline_Explained.html</a> · ถอดบทเรียนจากโปสเตอร์ <span class="nvtag">AFNO + StormCast</span> (พยากรณ์อากาศไทย ทดสอบกับไต้ฝุ่นนอรู) มาเทียบกับโปรเจกต์เรา</p>
+  <p style="margin-top:14px">
+    <span class="pill g">เรานำด้าน: ความใหม่ + ฟิสิกส์</span>
+    <span class="pill r">เขานำด้าน: ปิดจบ + สื่อสาร</span>
+    <span class="pill p">เป้า: เอาจุดแข็งทั้งสองมารวมกัน</span>
+  </p>
+</div>
+
+<div class="lead">
+<b>ข้อสรุปใน 30 วินาที:</b> งาน AFNO+StormCast <b>ไม่ใช่ SOTA ของโลก</b> — มันคือ "งานต่อเครื่องมือ NVIDIA 2 ตัวแล้วเอามาจับไทย" ที่<b>ปิดจบสวยและขายเป็น</b> · งานเรา<b>ทะเยอทะยานและใหม่กว่าเชิงวิทยาศาสตร์มาก</b> (มี attribution + counterfactual + physics guarantee ที่เขาไม่มีเลย) · แต่เราตามหลังเขาเรื่อง <b>"ผลลัพธ์ชนะที่สะอาด + การสื่อสารที่คม + การปิดจบให้ทันเวลา"</b> — บทเรียนสำคัญสุดคือ <b>diffusion (StormCast) คือยาแก้จุดอ่อนที่ใหญ่ที่สุดของเรา</b> (จับพีควันวิกฤต)
+</div>
+
+<!-- TOC -->
+<div class="toc">
+<b style="color:var(--green)">📑 สารบัญ</b><br>
+<a href="#decode">1. ถอดรหัส: งานนี้คืออะไรจริงๆ</a>
+<a href="#why">2. ทำไมงานนี้ถึง "ดูสำเร็จ"</a>
+<a href="#vs">3. ⚔️ เทียบจุดต่อจุด (ตารางหลัก)</a>
+<a href="#weak">4. จุดอ่อนงานเรา (ไม่กลบ)</a>
+<a href="#learn">5. เรียนรู้อะไร + ปรับใช้ทันที</a>
+<a href="#twohead">6. 🚀 ไอเดียก้าวข้าม: สถาปัตยกรรม 2 หัว</a>
+<a href="#sota">7. ทำยังไงให้ขึ้น SOTA จริง</a>
+<a href="#action">8. ✅ Action เรียงตามความสำคัญ</a>
+</div>
+
+<!-- 1. DECODE -->
+<h2 id="decode">1. ถอดรหัส — งานนี้คืออะไรจริงๆ</h2>
+<p>จาก 4 ภาพ (Objective / Methodology / Results / Conclusions) แกะได้ว่างานนี้คือ:</p>
+<div class="card">
+<table>
+<tr><th>องค์ประกอบ</th><th>เขาทำอะไร</th><th>เทียบกับเรา</th></tr>
+<tr><td><b>AFNO</b></td><td>= FourCastNet ทำนายอากาศหยาบๆ ในโดเมนความถี่ (FFT)</td><td>เราก็ใช้ AFNO เป็น backbone เดียวกัน</td></tr>
+<tr><td><b>StormCast</b></td><td>U-Net regression + <b>diffusion</b> เติมรายละเอียดคมๆ ทับ</td><td>เรา<u>ตัด diffusion ทิ้ง</u> (เพราะกลัวพัง superposition) ← จุดที่ต้องคิดใหม่</td></tr>
+<tr><td><b>Advection −∇·(uv)</b></td><td>ใช้ฟิสิกส์พัดพาตัวแปรเปลี่ยนช้า (Z, SST, p_sfc)</td><td><b>เหมือน 𝒜 ของเราเป๊ะ</b> — operator splitting → ยืนยันว่าเรามาถูกทาง</td></tr>
+<tr><td><b>Rolling 24 time</b></td><td>autoregressive ป้อนผลกลับ ทำนาย 24 ชม.</td><td>เหมือน rollout ของเรา (เราทำถึง 48 ชม.)</td></tr>
+<tr><td><b>8 input channels</b></td><td>precip, terrain, SST, pressure, t2m, rh, u10, v10</td><td>เราใช้ลม+DEM+precip+rh+temp+emission (7 ch) คล้ายกัน</td></tr>
+</table>
+</div>
+<div class="danger">
+<b>ความจริงข้อแรกที่ต้องยอมรับ:</b> งานนี้คือ <b>application / recombination project</b> ความเสี่ยงต่ำ — เอาของที่มีอยู่มาต่อกัน ไม่ได้คิดคณิตใหม่ · SOTA จริงของวงการคือ GraphCast, GenCast, Aurora, StormCast ตัวต้นฉบับ · <b>งานเราใหม่เชิงวิทยาศาสตร์กว่ามาก</b> แต่...
+</div>
+<div class="ok"><b>...แต่งานนี้ "สำเร็จ" เพราะมันทำสิ่งที่เรายังทำไม่ได้:</b> ปิดจบสวย + มีผลชนะที่สะอาด + สื่อสารใน 1 นาทีเข้าใจ</div>
+
+<!-- 2. WHY SUCCESS -->
+<h2 id="why">2. ทำไมงานนี้ถึง "ดูประสบความสำเร็จ" (ถอดบทเรียน)</h2>
+<table>
+<tr><th>สิ่งที่เขาทำ</th><th>ทำไมมันได้ผล (สิ่งที่เราต้องก๊อป)</th></tr>
+<tr><td><b>ตารางผล head-to-head</b><br>(AFNO vs AFNO+StormCast)</td><td>ชนะ<b>ทุกตัวแปร</b>ในบรรทัดเดียว เห็นปุ๊บเชื่อปั๊บ — นี่คือ "money figure" ที่ทั้งงานยืนอยู่บนมัน</td></tr>
+<tr><td><b>เล่า 4 ช่อง</b> Objective→Method→Results→Conclusion</td><td>คนไม่รู้เรื่องเข้าใจใน 1 นาที โครงสร้างมาตรฐานที่กรรมการคุ้น</td></tr>
+<tr><td><b>Case study มีชื่อ</b> ไต้ฝุ่นนอรู + น้ำท่วมอุบลฯ</td><td>จับต้องได้ อินกับคนไทย เห็น impact จริง</td></tr>
+<tr><td><b>สเปกชัด</b> 3×3 กม. · 24 ชม. ใน "วินาที"</td><td>ลูกค้า/กรรมการจำตัวเลขได้ ขายของเป็น</td></tr>
+<tr><td><b>เลือกความเสี่ยงต่ำ</b></td><td>ต่อ 2 เครื่องมือ → จบทันเวลาแน่ๆ ไม่เสี่ยงทำไม่เสร็จ</td></tr>
+</table>
+
+<div class="warn"><b>แต่อย่าหลงบูชาเกินไป — งานนี้มีรูรั่วชัดๆ:</b>
+<ul style="margin:6px 0">
+<li><b>ฝน ACC = 0.1153</b> = แทบไม่มี skill เลย (แต่ทาสีเขียวเพราะแค่ดีกว่า AFNO เปล่า) — จุดพีค/เหตุการณ์สุดขั้วเขายังจับไม่ได้</li>
+<li><b>เทียบแค่ตัวเอง</b> (AFNO vs AFNO+StormCast) ไม่มี baseline ภายนอก (IFS/ECMWF/persistence) → ตอบไม่ได้ว่า "ดีจริงไหมเทียบโลก"</li>
+<li><b>"Tested on Typhoon Noru → shows potential"</b> = เคลมเชิงคุณภาพ ไม่ได้พิสูจน์เชิงปริมาณว่าจับไต้ฝุ่นได้แม่น</li>
+<li>ไม่มี physics guarantee, ไม่มี attribution, ไม่มี error analysis, case เดียวไม่มี significance</li>
+</ul>
+</div>
+
+<!-- 3. POINT BY POINT -->
+<h2 id="vs">3. ⚔️ เทียบจุดต่อจุด — ตารางหลัก</h2>
+<table>
+<tr><th>มิติ</th><th>AFNO+StormCast (เขา)</th><th>HazeNet (เรา)</th><th>ใครนำ</th></tr>
+<tr><td><b>ความใหม่เชิงวิทยาศาสตร์</b></td><td>ต่ำ — ต่อเครื่องมือเดิม</td><td>สูง — conditionally-linear + attribution ฟรี</td><td class="win-us">🟢 เรานำชัด</td></tr>
+<tr><td><b>Physics-informed</b></td><td>มี (advection 1 พจน์)</td><td>ลึกกว่า (advection + อนุรักษ์มวล + ไม่ติดลบ)</td><td class="win-us">🟢 เรานำ</td></tr>
+<tr><td><b>Source attribution</b></td><td class="win-them">✗ ไม่มี</td><td>✓ exact, inline, ทุก pixel</td><td class="win-us">🟢 เรานำขาด</td></tr>
+<tr><td><b>Counterfactual (what-if)</b></td><td class="win-them">✗ ไม่มี</td><td>✓ ฟรีจากเชิงเส้น</td><td class="win-us">🟢 เรานำขาด</td></tr>
+<tr><td><b>ผลลัพธ์ชนะที่สะอาด</b></td><td>✅ ตารางชนะทุกตัว</td><td>❌ ยังไม่มี (MAE 55, inversion พัง r=−0.04)</td><td class="win-them">🔴 เขานำขาด</td></tr>
+<tr><td><b>เทียบ baseline ภายนอก</b></td><td>❌ เทียบแค่ AFNO ตัวเอง</td><td>วางแผนเทียบ GNN/AirPhyNet (ยัง<u>ไม่รัน</u>)</td><td class="win-tie">🟡 เสมอ (พลาดทั้งคู่)</td></tr>
+<tr><td><b>Case study มีชื่อ</b></td><td>✅ ไต้ฝุ่นนอรู</td><td>❌ ยังไม่ทำสตอรี่วันวิกฤต</td><td class="win-them">🔴 เขานำ</td></tr>
+<tr><td><b>จับจุดพีค/เหตุการณ์สุดขั้ว</b></td><td>❌ ฝน ACC=0.115 (เกือบใช้ไม่ได้)</td><td>ยังไม่พิสูจน์ แต่<b>นี่คือคุณค่าหลักเรา</b></td><td class="win-tie">🟡 โอกาสทอง</td></tr>
+<tr><td><b>Error analysis / budget</b></td><td class="win-them">✗ ไม่มี</td><td>✓ ออกแบบ oracle substitution ไว้</td><td class="win-us">🟢 เรานำ</td></tr>
+<tr><td><b>สื่อสาร / ปิดจบ</b></td><td>✅ คมมาก 4 ช่องจบ</td><td>❌ เอกสารลึกแต่กระจาย ยังไม่มีโปสเตอร์</td><td class="win-them">🔴 เขานำ</td></tr>
+<tr><td><b>ความเสี่ยงทำไม่ทัน</b></td><td>ต่ำ</td><td>สูง (สโคปใหญ่)</td><td class="win-them">🔴 เขาปลอดภัยกว่า</td></tr>
+<tr><td><b>ความละเอียด</b></td><td>3×3 กม. (มี downscaling)</td><td>~11 กม. (0.1°)</td><td class="win-them">🔴 เขานำ</td></tr>
+</table>
+
+<h3>สรุปคะแนนเป็นภาพ</h3>
+<div class="card">
+<p style="margin:0 0 4px"><b>ด้านความใหม่ + ความเข้มงวดเชิงวิทยาศาสตร์</b></p>
+<div class="scorebar"><div style="width:78%;background:var(--green)">HazeNet 78%</div><div style="width:22%;background:var(--red)">เขา 22%</div></div>
+<p style="margin:14px 0 4px"><b>ด้านการ execution + ปิดจบ + สื่อสาร</b></p>
+<div class="scorebar"><div style="width:30%;background:var(--green)">เรา 30%</div><div style="width:70%;background:var(--nvgreen)">เขา 70%</div></div>
+</div>
+<div class="lead"><b>บรรทัดเดียว:</b> เรา<b>ออกแบบเหนือกว่า แต่ execution กับการปิดจบตามหลังเขามาก</b> · เขาชนะเพราะ "เสร็จและขายเป็น" เราเสี่ยงแพ้เพราะ "ใหญ่และยังไม่เสร็จ"</div>
+
+<!-- 4. WEAKNESS -->
+<h2 id="weak">4. จุดอ่อนงานเรา (พูดตรง ไม่กลบ)</h2>
+<ol class="num-list">
+<li><b>ยังไม่มี "ตารางชนะที่สะอาด" สักใบ</b> <span class="kpill k-gap">จุดอ่อนเบอร์ 1</span><br>
+ทั้งโปสเตอร์เขายืนบนตาราง ACC ใบเดียว เรามี MAE 55 ที่ "ยังไม่ชนะใครแบบเห็นภาพ" และที่แย่กว่า — <b>ยังไม่ได้รัน PM2.5-GNN/AirPhyNet จริง</b> ถ้าวันส่งยังเทียบแค่ XGBoost/mean เราจะโดนตกแบบเดียวกับที่โปสเตอร์เขาเสี่ยง (เทียบแค่ตัวเอง)</li>
+
+<li><b>Inversion พัง (r = −0.038)</b> <span class="kpill k-gap">ต้องตัด</span><br>
+ผลลบบนฟีเจอร์ที่เคยโฆษณา → ต้อง<b>ตัดทิ้งให้สะอาด</b>หรือลดเป็น proof-of-concept เคสไฟจุดเดียว อย่าปล่อยเลขติดลบในรายงาน</li>
+
+<li><b>Attribution ยัง "ดูสมเหตุสมผล" เฉยๆ ยังไม่ validate</b> <span class="kpill k-gap">เสี่ยงโดนแทง</span><br>
+ถ้าไม่เทียบ WRF-Chem/PMF จริง มันคือ "รูปสวยที่พิสูจน์ไม่ได้" = จุดที่กรรมการแทงง่ายสุด</li>
+
+<li><b>จุดพีค/วันวิกฤต = คุณค่าหลักเรา แต่เป็นส่วนที่ AI ทำยากที่สุด</b> <span class="kpill k-gap">กำแพงใหญ่</span><br>
+ดูโปสเตอร์: ตัวแปร sparse + heavy-tail (ฝน) เขาได้ ACC แค่ 0.115 = แทบใช้ไม่ได้ — <b>PM2.5 พีควันวิกฤต คือ "ฝน" ของเรา</b> เรากำลังโจมตีส่วนยากที่สุดเป็นแกนหลัก ถ้าไม่มีกลยุทธ์เฉพาะ จะชนกำแพงเดียวกับที่เขายอมแพ้</li>
+
+<li><b>สโคปใหญ่เกินจะปิดจบ</b> <span class="kpill k-gap">เสี่ยงไม่ทัน</span><br>
+เขาทำ 1 อย่างให้เสร็จ เรามี 5–6 อย่าง → ความเสี่ยง "ทำครบแต่ตื้นทุกอัน" สูงมาก</li>
+</ol>
+
+<!-- 5. LEARN -->
+<h2 id="learn">5. เรียนรู้อะไร + เอามาปรับใช้ทันที</h2>
+
+<h3>🔑 บทเรียน 1 — สร้าง "Money Figure" 2 ใบ แล้วถอยหลังมาทำงาน</h3>
+<p>ทั้งโปสเตอร์เขายืนบน (ก) ตาราง ablation ชนะทุกตัว (ข) case study ไต้ฝุ่น · เรากำหนด money figure ของเราเดี๋ยวนี้:</p>
+<div class="grid2">
+<div class="card" style="border-left:4px solid var(--green)">
+<h4 style="color:var(--green)">📊 ใบที่ 1 — ตาราง ablation ชนะทุกช่อง</h4>
+<p style="font-size:14px">แถว: <code>CLNO เปล่า → +emission curve → +BLH → เทียบ GNN/AirPhyNet</code><br>คอลัมน์: MAE · RMSE · bias ปีต่ำ · CSI วันวิกฤต<br>เป้า: ลด bias ปีต่ำ +45→≤25 + ชนะทุก baseline</p>
+</div>
+<div class="card" style="border-left:4px solid var(--cyan)">
+<h4 style="color:var(--cyan)">🗺️ ใบที่ 2 — case study วันเชียงใหม่อันดับ 1 โลก</h4>
+<p style="font-size:14px">วันที่ มี.ค. 2023 ที่ CM ติดอันดับ 1 อากาศแย่สุดโลก → แผนที่พยากรณ์ + แผนที่ attribution "ควัน X% มาจากเมียนมา" = <b>ไต้ฝุ่นนอรูเวอร์ชันเรา</b></p>
+</div>
+</div>
+
+<h3>🔑 บทเรียน 2 — Diffusion คือ "ยา" แก้จุดอ่อนใหญ่สุดของเรา <span class="kpill k-now">สำคัญสุด</span></h3>
+<p>เราเคยตัดสินใจ<b>ไม่ใช้ diffusion</b> เพราะมันทำลาย superposition + ช้า — ซึ่ง<u>ถูกต้องสำหรับแกน attribution</u> แต่โปสเตอร์นี้<b>พิสูจน์ว่า diffusion คือวิธี SOTA ที่แก้อาการ "AI ทำนายเบลอ/พลาดจุดพีค" ได้จริง</b> (ดู rh_2m พุ่ง 0.55→0.70 เพราะ StormCast)</p>
+<div class="analogy"><div class="h"></div>AFNO เปล่า = วาดภาพด้วยพู่กันใหญ่ → ได้ภาพเบลอๆ ค่าเฉลี่ย · diffusion = เอาพู่กันเล็กมาเก็บรายละเอียดคมๆ กู้ "ยอดแหลม" กลับมา · นี่คือสาเหตุที่ฝน(ค่าพีคแหลมๆ) ดีขึ้นเมื่อเติม StormCast</div>
+<div class="warn"><b>อาการที่เราเคยกลัว (ทำนายเบลอ underpredict พีค จากการใส่ noise) → diffusion คือยาแก้โดยตรง</b> เราตัดมันทิ้งเร็วเกินไป ควรนำกลับมาแบบมีเงื่อนไข (ดูข้อ 6)</div>
+
+<h3>🔑 บทเรียน 3 — กล่อง Advection ของเขายืนยันว่าเรามาถูกทาง</h3>
+<p>"งานที่สำเร็จ" ก็ใช้ operator splitting + physics advection เหมือนเรา → <b>อย่าไปสงสัยแกนตัวเอง</b> จุดต่างของเราคือทำให้มันเชิงเส้นเพื่อ attribution ซึ่ง defend ได้</p>
+
+<h3>🔑 บทเรียน 4 — สเปก + ความละเอียดที่ขายได้</h3>
+<p>เขาขาย "3×3 กม." เราอยู่ 11 กม. → ถ้าทำหัว diffusion (ข้อ 6) จะได้ downscaling มาฟรี → พูดได้ว่า "พยากรณ์ + ระบุแหล่ง ระดับ ~3 กม. ใน X วินาที"</p>
+
+<h3>🔑 บทเรียน 5 — บีบสโคปให้เหลือ "1 unit ที่ปิดจบสวย"</h3>
+<p>แกนต้องเสร็จ 100%: <b>พยากรณ์ชนะ baseline + attribution validated + 1 case study + error budget</b> · ส่วน inversion/GFS/twin = roadmap slide</p>
+
+<!-- 6. TWO HEAD -->
+<h2 id="twohead">6. 🚀 ไอเดียก้าวข้ามทั้งสองงาน — สถาปัตยกรรม "2 หัว"</h2>
+<p>นี่คือจุดที่ทำให้เรา<b>ไม่ใช่แค่ลอกเขา แต่ก้าวข้ามทั้งเขาและตัวเราเดิม</b> — เก็บแกนเชิงเส้นไว้ทำ attribution + เพิ่มหัว diffusion มากู้จุดพีค โดย<u>แยกหน้าที่ชัดเจนไม่ให้พังกัน</u></p>
+
+<div class="center card">
+<svg class="flow" viewBox="0 0 920 430" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#58a6ff"/></marker>
+    <marker id="arg" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker>
+  </defs>
+
+  <rect x="320" y="20" width="280" height="48" rx="8" fill="#1c2330" stroke="#56d4dd" stroke-width="2"/>
+  <text x="460" y="40" fill="#56d4dd" font-size="13" font-weight="bold" text-anchor="middle">Datacube + Met + ไฟติดป้ายแหล่ง</text>
+  <text x="460" y="58" fill="#9aa7b4" font-size="11" text-anchor="middle">(BLH + emission curve เพิ่มแล้ว)</text>
+
+  <!-- HEAD 1 -->
+  <rect x="60" y="110" width="370" height="160" rx="12" fill="#0f141b" stroke="#3fb950" stroke-width="2"/>
+  <text x="245" y="134" fill="#3fb950" font-size="14" font-weight="bold" text-anchor="middle">หัวที่ 1 · CLNO เชิงเส้น (แกนล็อก)</text>
+  <text x="245" y="156" fill="#e6edf3" font-size="12" text-anchor="middle">𝒜 พัดพา + ℱθ เชิงเส้นใน C</text>
+  <rect x="90" y="172" width="140" height="40" rx="7" fill="#161b22" stroke="#56d4dd"/>
+  <text x="160" y="190" fill="#56d4dd" font-size="11.5" text-anchor="middle" font-weight="bold">Σ tracer</text>
+  <text x="160" y="205" fill="#9aa7b4" font-size="10" text-anchor="middle">superposition เป๊ะ</text>
+  <rect x="258" y="172" width="142" height="40" rx="7" fill="#161b22" stroke="#e3b341"/>
+  <text x="329" y="190" fill="#e3b341" font-size="11.5" text-anchor="middle" font-weight="bold">attribution</text>
+  <text x="329" y="205" fill="#9aa7b4" font-size="10" text-anchor="middle">+ what-if ฟรี</text>
+  <text x="245" y="240" fill="#3fb950" font-size="11.5" text-anchor="middle" font-weight="bold">→ ผลผลิต: ระบุแหล่ง + counterfactual</text>
+  <text x="245" y="257" fill="#9aa7b4" font-size="10.5" text-anchor="middle">(แม่นยำเชิงโครงสร้าง แต่อาจเบลอที่พีค)</text>
+
+  <!-- HEAD 2 -->
+  <rect x="490" y="110" width="370" height="160" rx="12" fill="#0f141b" stroke="#bc8cff" stroke-width="2"/>
+  <text x="675" y="134" fill="#bc8cff" font-size="14" font-weight="bold" text-anchor="middle">หัวที่ 2 · Diffusion refinement (เสริม)</text>
+  <text x="675" y="156" fill="#e6edf3" font-size="12" text-anchor="middle">StormCast-style: U-Net + diffusion</text>
+  <rect x="520" y="172" width="310" height="40" rx="7" fill="#161b22" stroke="#bc8cff"/>
+  <text x="675" y="190" fill="#e6edf3" font-size="11" text-anchor="middle">รับผล CLNO มา "เติมรายละเอียด + กู้ยอดพีค"</text>
+  <text x="675" y="205" fill="#9aa7b4" font-size="10" text-anchor="middle">+ downscale → ละเอียดขึ้น (เป้า ~3 กม.)</text>
+  <text x="675" y="240" fill="#bc8cff" font-size="11.5" text-anchor="middle" font-weight="bold">→ ผลผลิต: พยากรณ์คม จับวันวิกฤต</text>
+  <text x="675" y="257" fill="#9aa7b4" font-size="10.5" text-anchor="middle">(ใช้เฉพาะ "ค่าพยากรณ์รวม" ไม่แตะ tracer)</text>
+
+  <line x1="400" y1="68" x2="245" y2="108" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#arg)"/>
+  <line x1="520" y1="68" x2="675" y2="108" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#arg)"/>
+  <line x1="430" y1="190" x2="488" y2="190" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+  <text x="459" y="182" fill="#58a6ff" font-size="10" text-anchor="middle">ส่งต่อ</text>
+
+  <!-- OUTPUTS -->
+  <rect x="120" y="320" width="300" height="56" rx="10" fill="#1c2330" stroke="#3fb950"/>
+  <text x="270" y="344" fill="#3fb950" font-size="12.5" font-weight="bold" text-anchor="middle">Output A · ระบุแหล่ง + what-if</text>
+  <text x="270" y="362" fill="#9aa7b4" font-size="10.5" text-anchor="middle">มาจากหัว 1 (เชิงเส้น คงไว้)</text>
+  <rect x="500" y="320" width="300" height="56" rx="10" fill="#1c2330" stroke="#bc8cff"/>
+  <text x="650" y="344" fill="#bc8cff" font-size="12.5" font-weight="bold" text-anchor="middle">Output B · พยากรณ์คมจับพีค</text>
+  <text x="650" y="362" fill="#9aa7b4" font-size="10.5" text-anchor="middle">มาจากหัว 2 (diffusion) — รายงานเป็น ablation</text>
+  <line x1="245" y1="270" x2="270" y2="318" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="675" y1="270" x2="650" y2="318" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+
+  <text x="460" y="404" fill="#e3b341" font-size="12.5" font-weight="bold" text-anchor="middle">ได้ทั้ง attribution แม่น (เขาไม่มี) + จับพีคคม (ที่เขาเพิ่งโชว์ว่าได้ผล) = เหนือทั้งคู่</text>
+</svg>
+</div>
+
+<div class="card">
+<h4>กฎเหล็กของการต่อ 2 หัว (กันพัง)</h4>
+<table>
+<tr><th>ประเด็น</th><th>วิธีกันไม่ให้พัง</th></tr>
+<tr><td>diffusion ทำลาย superposition?</td><td>หัว 2 ทำงานกับ <b>ค่าพยากรณ์รวม (total) เท่านั้น</b> — ไม่แตะ tracer แยกสี → attribution ยังมาจากหัว 1 ที่เชิงเส้น 100%</td></tr>
+<tr><td>diffusion ช้า ทำลายเคลม "วินาที"?</td><td>รัน diffusion <b>เฉพาะ output สุดท้าย</b> ไม่ใช่ทุก rollout step + ใช้ few-step sampler → ยังเร็ว</td></tr>
+<tr><td>พิสูจน์ว่ามันช่วยจริง?</td><td>รายงานเป็น <b>ablation: CLNO เปล่า vs CLNO+diffusion</b> บน CSI วันวิกฤต — เลียนแบบตาราง AFNO vs AFNO+StormCast ของเขาเป๊ะ</td></tr>
+<tr><td>ถ้าทำไม่ทัน?</td><td>หัว 2 เป็น<b>ของเสริม ตัดได้</b> — แกน attribution ไม่ตายตาม (ตรงตามกฎ "แกนห้ามตายเพื่อของเสริม")</td></tr>
+</table>
+</div>
+<div class="ok"><b>ทำไมนี่คือ SOTA จริง:</b> AFNO+StormCast มี diffusion แต่<u>ไม่มี attribution</u> · HazeNet เดิมมี attribution แต่<u>ไม่มี diffusion (จับพีคไม่ได้)</u> · <b>HazeNet 2 หัว = ตัวแรกในโลกที่มีทั้งคู่</b> สำหรับควันข้ามแดน</div>
+
+<!-- 7. SOTA -->
+<h2 id="sota">7. ทำยังไงให้ขึ้น SOTA จริง (ไม่ใช่แค่ชนะโปสเตอร์นี้)</h2>
+<p>โปสเตอร์นี้คือ benchmark ด้าน <b>"execution + communication"</b> ไม่ใช่ด้าน novelty — เราชนะด้าน novelty อยู่แล้ว สิ่งที่ทำให้เราเป็น<b>งานวิจัยระดับโลกจริง</b> คือเอา 3 ของที่เรามี/เขาไม่มี มาทำให้ "พิสูจน์ได้สะอาดเท่าตาราง ACC ของเขา":</p>
+<div class="card">
+<ol class="lesson" style="counter-reset:none">
+<li>✅ <b>Exact attribution ที่ validate เทียบ WRF-Chem + PMF</b> → ไม่มี AI มลพิษตัวไหนในโลกทำ</li>
+<li>✅ <b>Counterfactual ที่ validate เทียบ source-off</b> → ของจริงที่ใช้ตัดสินนโยบาย</li>
+<li>✅ <b>Error budget แบบ oracle substitution</b> → บอกได้ว่า error มาจากไหน (เขาบอกไม่ได้เลย)</li>
+<li>🚀 <b>+ จับพีควันวิกฤตด้วยหัว diffusion</b> → จุดที่ฝน ACC 0.115 ของเขาล้มเหลว ถ้าเราจับ "วันเชียงใหม่อันดับ 1 โลก" ได้ = ความเหนือกว่าที่จับต้องได้</li>
+</ol>
+</div>
+
+<!-- 8. ACTION -->
+<h2 id="action">8. ✅ Action ที่ควรทำตอนนี้ (เรียงตามความสำคัญ)</h2>
+<ol class="num-list">
+<li><b>รัน PM2.5-GNN + AirPhyNet จริง</b> ให้ได้ตารางเทียบภายนอก — ห้ามเทียบแค่ตัวเอง (กับดักของโปสเตอร์นี้)</li>
+<li><b>ปิด gate emission curve + BLH</b> ให้ bias ปีต่ำ +45→≤25 → ออกมาเป็น <b>ตาราง ablation ชนะทุกช่อง</b> (money figure #1)</li>
+<li><b>ทำ case study วันเชียงใหม่อันดับ 1 โลก</b> + แผนที่ attribution (money figure #2)</li>
+<li><b>ตัดสินใจหัว diffusion ที่ 2</b> — เก็บ CLNO ทำ attribution + เพิ่ม diffusion refinement กู้จุดพีค (ไอเดียที่ทำให้เหนือทั้งสองงาน)</li>
+<li><b>ตัด inversion ที่พัง</b> ออกจากแกน ลดเป็น PoC/roadmap</li>
+<li><b>ทำโปสเตอร์ 4 ช่องแบบเขา</b> (Objective/Method/Results/Conclusion) — เราเก่งเรื่องลึกอยู่แล้ว ขาดแค่ "ปิดจบให้คม"</li>
+</ol>
+
+<hr>
+<div class="lead center">
+<b>สรุปบรรทัดสุดท้าย:</b> งาน AFNO+StormCast สอนเราว่า "ความสำเร็จ = เสร็จ + ชนะสะอาด + สื่อสารคม" ไม่ใช่ "ทะเยอทะยานสุด" · เรา<b>ใหม่กว่าเขาอยู่แล้ว</b> สิ่งที่ขาดคือวินัยการปิดจบของเขา · เอา <b>3 จุดแข็งเรา (attribution + counterfactual + error budget)</b> มาพิสูจน์ให้สะอาด <b>+ ยืม diffusion มากู้จุดพีค</b> = เราจะไม่ใช่แค่ชนะโปสเตอร์นี้ แต่เป็น <b class="k">SOTA ใหม่ของโลกสำหรับควันข้ามแดน</b>
+</div>
+
+<p class="center muted" style="margin-top:34px">HazeNet vs AFNO+StormCast · วิเคราะห์เทียบจุดต่อจุด · ต่อเนื่องจาก <a href="HazeNet_Pipeline_Explained.html">HazeNet_Pipeline_Explained.html</a></p>
+
+</div>
+</body>
+</html>

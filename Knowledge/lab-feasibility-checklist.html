@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab — Feasibility Checklist (เทสเบา ๆ ก่อนทำ pipeline จริง)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:44px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:26px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .green-box b{color:var(--green)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.2px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--green);color:var(--green);margin-left:6px}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+  a.ext{color:var(--blue)}
+  .tier{border:1px solid var(--border);border-radius:11px;margin:18px 0;overflow:hidden;background:var(--panel)}
+  .tier-h{display:flex;align-items:center;gap:12px;padding:12px 18px;background:var(--panel2);border-bottom:1px solid var(--border)}
+  .tier-n{border-radius:9px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:16px;flex-shrink:0;color:#06210f}
+  .tier-t{font-size:17px;font-weight:bold}
+  .tier-meta{margin-left:auto;font-size:12px;color:var(--muted);text-align:right}
+  .tier-b{padding:8px 18px 16px}
+  .dod{border-left:4px solid var(--green);background:rgba(63,185,80,.08);padding:8px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:14.5px}
+  .dod b{color:var(--green)}
+  .tag{font-size:11.5px;padding:1px 8px;border-radius:11px;border:1px solid var(--border);color:var(--muted);margin-left:4px}
+  .gate{background:linear-gradient(90deg,rgba(227,179,65,.12),transparent);border:1px solid var(--amber);border-radius:11px;padding:12px 18px;margin:20px 0}
+  .gate b{color:var(--amber)}
+  .ck{list-style:none;padding-left:4px}
+  .ck li{margin:7px 0}
+  .ck li::before{content:"☐ ";color:var(--cyan);font-size:17px}
+  .risk-hi{color:var(--red);font-weight:bold}.risk-md{color:var(--amber)}.risk-lo{color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Lab — Feasibility Checklist <span class="pin">🟢 ลงมือจริง</span></h1>
+<p class="tagline">เทส "เบา ๆ" ทุกชิ้นว่ารันได้ไหม ก่อนทุ่มสร้าง pipeline จริงทั้งหมด</p>
+<p class="sub">ทำก่อน Lab 0 · ใช้ข้อมูลจิ๋ว/เครื่องฟรี · เป้าคือ "เจอจุดระเบิดให้เร็วและถูกที่สุด" — ไม่ใช่ได้ผลลัพธ์สวย</p>
+
+<div class="lead">
+<b>หลักเดียวที่ยึด — Fail Fast:</b> <b class="k">เทสสิ่งที่ "ถ้าพังแล้วทั้งโปรเจกต์เปลี่ยน" ก่อน และเลือกวิธีที่ถูก/เร็วที่สุด</b><br><br>
+เรามีเวลา 2 เดือน + A100 แค่ ~15 ชม. · เราจึง <b>ไม่มีงบให้ค้นพบปัญหาใหญ่ตอนสัปดาห์ที่ 5</b> · checklist นี้บังคับให้เจอความเสี่ยงร้ายแรงที่สุดตั้งแต่วันแรก ๆ ตอนที่ยังแก้ทันและแก้ถูก
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#why">0. ทำไมต้องเทสก่อน + ความเสี่ยง 5 ชั้น</a><br>
+<a href="#scope">1. ขนาด "เบา" ที่ใช้เทส</a><br>
+<a href="#t0">ชั้น 0 — เข้าถึงข้อมูลได้ไหม</a><br>
+<a href="#t1">ชั้น 1 — ข้อมูลใช้ได้จริงไหม</a><br>
+<a href="#t2">ชั้น 2 — จัดแนว/ประกอบได้ไหม</a><br>
+<a href="#t3">ชั้น 3 — ฮาร์ดแวร์ไหวไหม</a><br>
+<a href="#t4">ชั้น 4 — วิทยาศาสตร์เวิร์กไหม</a><br>
+<a href="#order">2. ลำดับลงมือ + 3 ประตู go/no-go</a><br>
+<a href="#master">3. Master Checklist</a><br>
+<a href="#caveat">4. กับดัก + caveat</a><br>
+</div>
+
+<!-- why -->
+<h2 id="why">0. ทำไมต้องเทสก่อน + ความเสี่ยง 5 ชั้น</h2>
+<p>โปรเจกต์วิจัยที่มีกำหนดสั้นล้มเพราะ "ค้นพบปัญหาช้า" มากกว่าล้มเพราะ "ไอเดียไม่ดี" · ถ้าเพิ่งรู้ตอนสัปดาห์ที่ 5 ว่าสถานี PM2.5 ในช่วงที่เลือกไม่มีข้อมูล หรือ ERA5 คิวรอ 3 วัน — เวลาที่เหลือไม่พอกู้ · เราจึงเรียงเทสตาม <b>(ความร้ายแรง × ความถูกของการเทส)</b></p>
+
+<div class="center card">
+<svg class="svg" viewBox="0 0 640 230" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <text x="320" y="18" fill="#e6edf3" font-size="13" text-anchor="middle" font-weight="bold">ปิรามิดความเสี่ยง — เทสจากล่าง (ถูก/ร้ายแรง) ขึ้นบน (แพง/เบา)</text>
+  <!-- pyramid layers -->
+  <g font-size="11.5" text-anchor="middle">
+   <polygon points="320,34 470,74 170,74" fill="rgba(248,81,73,.30)" stroke="#f85149"/>
+   <text x="320" y="60" fill="#fff" font-weight="bold">ชั้น 0 · เข้าถึง</text>
+   <polygon points="170,76 470,76 510,116 130,116" fill="rgba(255,155,84,.25)" stroke="#ff9b54"/>
+   <text x="320" y="102" fill="#fff" font-weight="bold">ชั้น 1 · ใช้ได้จริง (project-killer เงียบ)</text>
+   <polygon points="130,118 510,118 540,158 100,158" fill="rgba(227,179,65,.22)" stroke="#e3b341"/>
+   <text x="320" y="144" fill="#fff">ชั้น 2 · จัดแนว/ประกอบ (= Lab 0)</text>
+   <polygon points="100,160 540,160 565,196 75,196" fill="rgba(88,166,255,.2)" stroke="#58a6ff"/>
+   <text x="320" y="183" fill="#fff">ชั้น 3 · ฮาร์ดแวร์</text>
+   <polygon points="75,198 565,198 590,228 50,228" fill="rgba(188,140,255,.2)" stroke="#bc8cff"/>
+   <text x="320" y="220" fill="#fff">ชั้น 4 · วิทยาศาสตร์ (= Lab 1, แพงสุด)</text>
+  </g>
+  <text x="610" y="55" fill="#f85149" font-size="10" text-anchor="end">ร้ายแรงสุด</text>
+  <text x="610" y="223" fill="#bc8cff" font-size="10" text-anchor="end">เบาสุด</text>
+</svg>
+</div>
+
+<table>
+<tr><th>ชั้น</th><th>คำถามที่ต้องตอบ</th><th>ต้นทุนเทส</th><th>ถ้าพัง =</th><th>เมื่อไหร่</th></tr>
+<tr><td><b>0. เข้าถึง</b></td><td>ดึงข้อมูลได้ไหม?</td><td class="risk-lo">ถูกสุด (1 วัน)</td><td class="risk-hi">เดินไม่ได้เลย</td><td>ก่อน Lab 0</td></tr>
+<tr><td><b>1. ใช้ได้จริง</b></td><td>ข้อมูลมีพอ/ครบช่วงไหม?</td><td class="risk-lo">ถูก (1 วัน)</td><td class="risk-hi">ต้องเปลี่ยนพื้นที่/ช่วงเวลา</td><td>ก่อน Lab 0</td></tr>
+<tr><td><b>2. จัดแนวได้</b></td><td>รวมเข้ากริดเดียวได้ไหม?</td><td class="risk-md">กลาง</td><td class="risk-md">แก้โค้ดได้</td><td>= Lab 0</td></tr>
+<tr><td><b>3. เทรนได้</b></td><td>ฮาร์ดแวร์ไหวไหม?</td><td class="risk-md">กลาง</td><td class="risk-md">ปรับ batch/res</td><td>= Lab 0</td></tr>
+<tr><td><b>4. วิทย์เวิร์ก</b></td><td>ไอเดียหลักเข้าท่าไหม?</td><td class="risk-hi">แพงสุด</td><td class="risk-hi">เปลี่ยน scope วิจัย</td><td>= Lab 1</td></tr>
+</table>
+<div class="why"><b>insight:</b> ชั้น 0–1 ต้องเทส <b>ก่อน Lab 0 ด้วยซ้ำ</b> เพราะมันเปลี่ยน "แผน" (พื้นที่/ช่วงเวลา/แหล่งข้อมูล) · ส่วนชั้น 2–3 คือ Lab 0 (walking skeleton), ชั้น 4 คือ Lab 1 (science spike)</div>
+
+<!-- scope -->
+<h2 id="scope">1. ขนาด "เบา" ที่ใช้เทส</h2>
+<p>ทุกการเทสในไฟล์นี้ใช้ <b>ปริมาณจิ๋วสุด</b> ที่ยังตอบคำถามได้ — ดึง 1 จุด/1 วัน/1 tile พอ ไม่ต้องดึงทั้งโดเมน/ทั้งปี</p>
+<table>
+<tr><th>มิติ</th><th>ค่าที่ใช้เทส</th></tr>
+<tr><td>พื้นที่</td><td>กล่องเชียงใหม่ ~18–19.5°N, 98–100°E</td></tr>
+<tr><td>เวลา</td><td>1 วัน (เทสเข้าถึง) → 1 สัปดาห์ ฤดูเผา (เทสความครบ)</td></tr>
+<tr><td>ฮาร์ดแวร์</td><td>CPU / T4 ฟรี — <b>ยังไม่แตะ A100</b></td></tr>
+<tr><td>เกณฑ์ผ่าน</td><td>"รันได้/ดึงได้/ออกตัวเลขได้" — <b>ไม่ใช่ "แม่น"</b></td></tr>
+</table>
+
+<!-- TIER 0 -->
+<h2 id="t0">ชั้น 0 — เข้าถึงข้อมูลได้ไหม <span class="tag">go/no-go จริง</span></h2>
+<div class="tier">
+<div class="tier-h"><div class="tier-n" style="background:var(--red)">0</div><div class="tier-t">ดึง "1 จุด/1 วัน/1 tile" ของแต่ละแหล่ง</div><div class="tier-meta">~1 วัน · โยง 4.1</div></div>
+<div class="tier-b">
+<p>เป้า: พิสูจน์ว่ากุญแจ/บัญชี/endpoint ใช้ได้ — ดึงน้อยที่สุด</p>
+
+<h4>🔴 สองตัวที่เสี่ยงสุด — เทสวันแรกเลย</h4>
+<div class="danger">
+<b>① ERA5 / CDS (คอขวดเวลา):</b> CDS เปลี่ยนระบบปี 2024 → ต้อง (1) สมัคร + (2) <b>กด accept license ของ ERA5 ในหน้าเว็บ dataset ก่อน</b> ไม่งั้น request จะ error · (3) คิวประมวลผลอาจรอ <b>เป็นชั่วโมงถึงวัน</b><br>
+<span class="muted">→ ถ้าคิวช้ามากจนกระทบแผน: ใช้ <b>ARCO-ERA5</b> (Zarr analysis-ready บน Google Cloud) หรือ ERA5 ผ่าน Google Earth Engine แทน — ได้ข้อมูลเดียวกันแบบไม่ต้องรอคิว</span>
+</div>
+<pre><code><span class="cm"># เทส ERA5 เบาสุด: u10 1 วัน 1 กล่อง</span>
+<span class="kw">import</span> cdsapi
+c = cdsapi.<span class="fn">Client</span>()
+c.<span class="fn">retrieve</span>(<span class="st">"reanalysis-era5-single-levels"</span>, {
+  <span class="st">"product_type"</span>:<span class="st">"reanalysis"</span>, <span class="st">"variable"</span>:[<span class="st">"10m_u_component_of_wind"</span>],
+  <span class="st">"year"</span>:<span class="st">"2023"</span>,<span class="st">"month"</span>:<span class="st">"03"</span>,<span class="st">"day"</span>:<span class="st">"10"</span>,<span class="st">"time"</span>:[<span class="st">"00:00"</span>,<span class="st">"12:00"</span>],
+  <span class="st">"area"</span>:[<span class="nm">19.5</span>,<span class="nm">98</span>,<span class="nm">18</span>,<span class="nm">100</span>], <span class="st">"format"</span>:<span class="st">"netcdf"</span>}, <span class="st">"test_era5.nc"</span>)</code></pre>
+
+<div class="danger">
+<b>② Air4Thai (เปราะ/ล่มบ่อย):</b> เป็น endpoint กึ่งทางการ ไม่มี SLA · ล่ม/เปลี่ยน format ได้<br>
+<span class="muted">→ ใช้ <b>OpenAQ เป็นหลัก</b> (มี API key ฟรี, เสถียรกว่า, ครอบ SEA) · Air4Thai เป็นสำรอง · เทสทั้งคู่ว่าตัวไหนมีสถานีเชียงใหม่ช่วงที่ต้องการ</span>
+</div>
+
+<h4>เทสที่เหลือ (เสถียรกว่า)</h4>
+<table>
+<tr><th>แหล่ง</th><th>เทสเบาสุด</th><th>ความเสี่ยง</th><th>fallback</th></tr>
+<tr><td><b>FIRMS</b></td><td>ยิง Area API 1 วัน 1 กล่อง → CSV จุดไฟ</td><td class="risk-lo">ต่ำ</td><td>สมัคร MAP_KEY ใหม่ฟรี</td></tr>
+<tr><td><b>Copernicus DEM</b></td><td>s3fs anonymous เปิด 1 COG tile</td><td class="risk-lo">ต่ำมาก</td><td>—</td></tr>
+<tr><td><b>Himawari AOD</b></td><td>s3fs เปิด 1 ไฟล์จาก AWS open data</td><td class="risk-md">กลาง (ยุ่ง)</td><td><b>ตัดออกจาก channel เริ่มต้นได้</b> (nice-to-have)</td></tr>
+</table>
+<pre><code><span class="cm"># เทส DEM + Himawari ผ่าน s3fs (ไม่ต้องมี key)</span>
+<span class="kw">import</span> s3fs, xarray <span class="kw">as</span> xr
+fs = s3fs.<span class="fn">S3FileSystem</span>(anon=<span class="kw">True</span>)
+<span class="fn">print</span>(fs.<span class="fn">ls</span>(<span class="st">"copernicus-dem-30m/"</span>)[:<span class="nm">3</span>])   <span class="cm"># เห็นรายชื่อ tile = เข้าถึงได้</span></code></pre>
+
+<div class="dod"><b>ผ่านเมื่อ:</b> ได้ไฟล์จริงจากทุกแหล่งที่จะใช้ (อย่างน้อย ERA5 + FIRMS + DEM + PM2.5 1 สถานี) เปิดดูได้ ไม่ corrupt</div>
+<ul class="ck">
+<li>FIRMS: ดึง CSV 1 วันได้</li>
+<li>ERA5/CDS: accept license + ดึง .nc 1 วันได้ (จับเวลาคิวด้วย)</li>
+<li>PM2.5: OpenAQ <b>หรือ</b> Air4Thai คืนค่าสถานีเชียงใหม่ได้</li>
+<li>DEM: s3fs เปิด tile ได้</li>
+<li>Himawari: เปิดได้ <b>หรือ</b> ตัดสินใจตัดออก</li>
+</ul>
+</div>
+</div>
+
+<!-- TIER 1 -->
+<h2 id="t1">ชั้น 1 — ข้อมูลใช้ได้จริงไหม <span class="tag">project-killer เงียบ</span></h2>
+<div class="tier">
+<div class="tier-h"><div class="tier-n" style="background:var(--orange)">1</div><div class="tier-t">เช็ก "ความครบของช่วงเวลา/พื้นที่ที่เลือก"</div><div class="tier-meta">~1 วัน · โยง 4.1/4.4/5.2</div></div>
+<div class="tier-b">
+<div class="why"><b>ทำไมชั้นนี้สำคัญสุด:</b> "ดึงได้" ≠ "ใช้ได้" · คนพลาดบ่อยสุดคือเลือกสัปดาห์ที่สถานีดับ หรือช่วงที่ไฟยังไม่เริ่ม แล้วไปสร้าง Lab 0 บนทราย · เทสนี้ตอบคำถาม <b>"สัปดาห์/พื้นที่ที่ฉันจะใช้ทำ Lab 0 ใช้ได้จริงไหม"</b></div>
+
+<table>
+<tr><th>ต้องเช็ก</th><th>วิธีเบาสุด</th><th>ถ้าแย่ =</th></tr>
+<tr><td><b>สถานี PM2.5 ครบสัปดาห์ที่เลือกไหม</b></td><td>โหลด PM2.5 เชียงใหม่ 8–15 มี.ค. 2023 → plot → นับ % missing</td><td class="risk-hi"><b>ย้ายสัปดาห์/ปี</b> ไปช่วงที่สถานีครบ</td></tr>
+<tr><td>FIRMS มีไฟพอในโดเมน/ช่วงนั้นไหม</td><td>นับจำนวนจุดไฟต่อวัน</td><td>เลือกช่วง peak จริง (ก.พ.–เม.ย.)</td></tr>
+<tr><td>Himawari AOD หายกี่ % (เมฆ/กลางคืน)</td><td>นับ NaN ต่อเฟรม</td><td>ยอมรับ + ใส่ mask channel (4.4) หรือไม่ใช้</td></tr>
+<tr><td><b>แหล่งต้นทาง (พม่า/ลาว) มีสถานีไหม</b></td><td>query OpenAQ ในกล่องพม่า</td><td class="risk-hi"><b>เกือบไม่มี → ข้อจำกัดเชิงโครงสร้าง</b> เขียนใน caveat: validate ด้วย field ไม่ใช่จุด (โยง 5.2 leave-stations-out)</td></tr>
+<tr><td>timestamp / timezone ตรงกันไหม</td><td>เทียบเวลาแต่ละแหล่ง (UTC vs ICT +7)</td><td>resample ลงกริดเวลาเดียว</td></tr>
+</table>
+
+<pre><code><span class="cm"># เทสความครบของ target: plot + นับ missing</span>
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+pm = pd.<span class="fn">read_csv</span>(<span class="st">"data/raw/pm25_cnx.csv"</span>, parse_dates=[<span class="st">"time"</span>])
+<span class="fn">print</span>(<span class="st">"missing %:"</span>, pm.pm25.<span class="fn">isna</span>().<span class="fn">mean</span>()*<span class="nm">100</span>)
+pm.<span class="fn">set_index</span>(<span class="st">"time"</span>).pm25.<span class="fn">plot</span>()   <span class="cm"># มีรูต่อเนื่องยาว ๆ ไหม?</span></code></pre>
+
+<div class="dod"><b>ผ่านเมื่อ:</b> ยืนยันได้ว่า "สัปดาห์ + พื้นที่ที่จะใช้ทำ Lab 0" มีสถานี target ครบพอ + มีไฟพอ + รู้ว่าแหล่งไหนหายเยอะ (และวางแผนรับมือแล้ว)</div>
+<ul class="ck">
+<li>สถานี PM2.5 มี missing &lt; ~30% ในสัปดาห์ที่เลือก (ไม่งั้นย้ายสัปดาห์)</li>
+<li>FIRMS มีจุดไฟชัดเจนในโดเมน/ช่วงนั้น</li>
+<li>รู้ % missing ของ Himawari AOD แล้ว + ตัดสินใจว่าใช้/ไม่ใช้</li>
+<li>ยืนยันแล้วว่าแหล่งต้นทางไม่มีสถานี → จดเป็น caveat</li>
+<li>จัดการ timezone ให้ตรงกันแล้ว</li>
+</ul>
+</div>
+</div>
+
+<div class="gate"><b>🚪 ประตู 1 — "มีข้อมูลใช้ได้ไหม?"</b><br>ผ่านชั้น 0+1 = ยืนยันว่าดึงได้จริง + ช่วง/พื้นที่ที่เลือกใช้ได้จริง · <b>ห้ามเริ่ม Lab 0 ก่อนผ่านประตูนี้</b> เพราะถ้าข้อมูลไม่ครบ Lab 0 จะเสียเปล่า</div>
+
+<!-- TIER 2 -->
+<h2 id="t2">ชั้น 2 — จัดแนว/ประกอบได้ไหม <span class="tag">= Lab 0 Stage 2–5</span></h2>
+<div class="tier">
+<div class="tier-h"><div class="tier-n" style="background:var(--amber)">2</div><div class="tier-t">เปิดทุก format → regrid กริดเดียว → Zarr → DataLoader</div><div class="tier-meta">~2–3 วัน · โยง 4.2/4.3/4.4</div></div>
+<div class="tier-b">
+<p>ชั้นนี้ <b>ไม่ใช่ showstopper</b> (เป็นบั๊กโค้ดที่แก้ได้) แต่กินเวลา → ทำใน Lab 0 (walking skeleton)</p>
+<table>
+<tr><th>เทส</th><th>เช็กอะไร</th><th>โยง</th></tr>
+<tr><td>เปิดทุก format</td><td>NetCDF/GeoTIFF/CSV/JSON เปิดด้วย xarray/rioxarray/pandas ได้</td><td>4.2</td></tr>
+<tr><td>plot ดูตา</td><td>ลม + DEM ดูสมจริง (เชียงใหม่เป็นแอ่ง) — กันภาพกลับหัว</td><td>4.2</td></tr>
+<tr><td><b>ลำดับ lat + CRS</b></td><td>ทุกแหล่งเรียง lat ทางเดียวกัน + CRS เดียวกัน</td><td>4.3</td></tr>
+<tr><td><b>regrid โหมดถูก</b></td><td>ลม=bilinear · emission=sum (อนุรักษ์มวล ไม่รั่ว)</td><td>4.3</td></tr>
+<tr><td>Zarr + sanity 5 ข้อ</td><td>เปิด cube ได้ · normalize train-only · train/test ไม่ทับ</td><td>4.4</td></tr>
+<tr><td>DataLoader</td><td>คืน <code>(X,y)</code> รูปร่าง <code>(batch,ch,lat,lon)</code> ถูก ไม่มี NaN</td><td>4.4</td></tr>
+</table>
+<div class="warn"><b>จุดพลาดคลาสสิก:</b> ใช้ bilinear กับ emission → มวลรั่วเงียบ ๆ (โยง 2.4/4.3) · ลำดับ lat สลับ → ภาพกลับหัวแต่ไม่ error · normalize ด้วยสถิติรวม test → data leakage (โยง 0.4/4.4)</div>
+<div class="dod"><b>ผ่านเมื่อ:</b> ได้ <code>mini_cube.zarr</code> + DataLoader คืน tensor รูปร่างถูก (= Lab 0 Stage 4–5 เขียว)</div>
+<ul class="ck">
+<li>เปิดครบทุก format + plot ดูสมจริง</li>
+<li>ทุก DataArray มี lat/lon เท่ากันเป๊ะ</li>
+<li>emission ใช้ sum, ลมใช้ bilinear</li>
+<li>sanity check ผ่าน 5/5 + normalize train-only</li>
+<li>DataLoader คืน <code>(X,y)</code> รูปร่างถูก ไม่มี NaN</li>
+</ul>
+</div>
+</div>
+
+<!-- TIER 3 -->
+<h2 id="t3">ชั้น 3 — ฮาร์ดแวร์ไหวไหม <span class="tag">= Lab 0 Stage 6</span></h2>
+<div class="tier">
+<div class="tier-h"><div class="tier-n" style="background:var(--blue)">3</div><div class="tier-t">overfit test + เช็ก GPU/bf16/checkpoint/memory</div><div class="tier-meta">~1 วัน · โยง 4.5</div></div>
+<div class="tier-b">
+<table>
+<tr><th>เทส</th><th>วิธีเบา</th><th>ผ่านคือ</th></tr>
+<tr><td><b>overfit 1 batch</b> (สำคัญสุด)</td><td>CNN จิ๋ว เทรนซ้ำ batch เดียว</td><td class="risk-lo">loss → ~0 (= วงจรเทรนทำงาน, gradient ไหล)</td></tr>
+<tr><td>A100 จัดสรรได้ไหม</td><td>เปิด Colab → <code>nvidia-smi</code></td><td>เห็น GPU (Colab ไม่การันตี A100!)</td></tr>
+<tr><td>bf16 ทำงานไหม</td><td><code>autocast(dtype=bfloat16)</code> 1 step</td><td>ไม่ error + เร็วขึ้น</td></tr>
+<tr><td>checkpoint→Drive→resume</td><td>เซฟ + โหลดกลับ 1 รอบ</td><td>โหลด state กลับได้ตรง</td></tr>
+<tr><td><b>rollout กิน memory พอกไหม</b></td><td>rollout 1→2→4 step ดู VRAM</td><td>รู้ว่าโตเร็วแค่ไหน → วางแผน gradient checkpointing</td></tr>
+</table>
+<div class="green-box"><b>overfit test = เทสที่คุ้มที่สุด:</b> ถ้าโมเดลจำ 1 batch ไม่ได้ = มีบั๊กแน่ (gradient ไม่ไหล/target ผิด/loss ผิด) · ถูกและเร็วที่สุดที่ยืนยันว่า "ท่อเทรนทำงาน" — ผ่านอันนี้ก่อนค่อยคิดเรื่องอื่น</div>
+<pre><code><span class="cm"># overfit 1 batch — เทสหัวใจของ Stage 3</span>
+xb, yb = <span class="fn">next</span>(<span class="fn">iter</span>(loader))
+<span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">200</span>):
+    opt.<span class="fn">zero_grad</span>(); loss = loss_fn(model(xb), yb)
+    loss.<span class="fn">backward</span>(); opt.<span class="fn">step</span>()
+<span class="fn">print</span>(loss.<span class="fn">item</span>())   <span class="cm"># ต้องเข้าใกล้ 0</span></code></pre>
+<div class="dod"><b>ผ่านเมื่อ:</b> overfit ผ่าน + รู้ว่า A100/bf16/checkpoint ใช้ได้ + รู้พฤติกรรม memory ของ rollout</div>
+<ul class="ck">
+<li>overfit 1 batch → loss ลงเข้าใกล้ 0</li>
+<li>เห็น GPU จาก <code>nvidia-smi</code> + bf16 รันได้</li>
+<li>เซฟ/โหลด checkpoint จาก Drive ได้</li>
+<li>รู้ว่า rollout เพิ่ม step แล้ว VRAM โตเท่าไร</li>
+</ul>
+</div>
+</div>
+
+<div class="gate"><b>🚪 ประตู 2 — "ท่อไม่รั่ว?"</b><br>ผ่านชั้น 2+3 = Lab 0 (walking skeleton) เขียวครบ · pipeline ทั้งเส้นวิ่งได้ + วงจรเทรนทำงาน · ที่เหลือคือเรื่องวิทยาศาสตร์ ไม่ใช่เรื่องวิศวกรรมแล้ว</div>
+
+<!-- TIER 4 -->
+<h2 id="t4">ชั้น 4 — วิทยาศาสตร์เวิร์กไหม <span class="tag">= Lab 1 Science Spike</span></h2>
+<div class="tier">
+<div class="tier-h"><div class="tier-n" style="background:var(--purple)">4</div><div class="tier-t">เทส 3 หัวใจ + การแสดงกลุ่มควัน แบบจิ๋ว</div><div class="tier-meta">~2–3 วัน · โยง 1.2/2.5/3.5/3.6</div></div>
+<div class="tier-b">
+<div class="why"><b>นี่คือความเสี่ยงที่ walking skeleton ไม่ได้แตะ:</b> skeleton พิสูจน์ "ท่อส่งน้ำได้" แต่ไม่พิสูจน์ "น้ำพิเศษ" · ความพิเศษ (physics operator + attribution) คือเหตุผลทั้งหมดที่โปรเจกต์นี้ต้องเป็น GeoAI · ต้องเทส <b>เบา ๆ ก่อน</b> ตั้งแต่ต้น ไม่ใช่รอปลายบันได</div>
+<table>
+<tr><th>หัวใจ</th><th>เทสเบาสุด</th><th>"ผ่าน" คือ</th><th>โยง</th></tr>
+<tr><td><b>physics operator (3.5)</b></td><td>implement conditionally-linear layer → overfit 1 batch</td><td>loss ลงได้ = โครงสร้างไม่พัง</td><td>1.2→3.5</td></tr>
+<tr><td><b>เทียบ CNN</b></td><td>RMSE operator vs CNN จิ๋ว บนข้อมูลเดียวกัน</td><td>operator ≥ CNN (ไม่แย่กว่า)</td><td>5.3/5.4</td></tr>
+<tr><td><b>superposition (2.5)</b></td><td>แยก emission 2 แหล่ง → รันแยก → sum กลับ</td><td>ผลรวม = total (มวลอนุรักษ์)</td><td>2.5/2.4</td></tr>
+<tr><td><b>attribution (3.6)</b></td><td>tagged-tracer 2 channel (กล่องพม่า / local เชียงใหม่)</td><td>สัดส่วนออกมาไม่ degenerate (ไม่ใช่ 100/0)</td><td>3.6</td></tr>
+<tr><td><b>แสดงกลุ่มควัน</b></td><td>stacked plot ที่สถานี + แผนที่ field ต่อแหล่ง</td><td>กราฟออก + ดูเข้าท่าเชิงกายภาพ</td><td>3.6</td></tr>
+</table>
+<div class="green-box"><b>ข้อ superposition + attribution + การแสดงกลุ่มควัน = selling point ทั้งหมดของ HazeNet</b> · ถ้าพิสูจน์ได้แบบจิ๋วตั้งแต่สัปดาห์ที่ 2 ว่า "ออกมาเข้าท่า" ความเสี่ยงทั้งโปรเจกต์ลดลงมหาศาล</div>
+<div class="dod"><b>ผ่านเมื่อ:</b> operator เทรนได้ + ไม่แย่กว่า CNN + tagged-tracer ให้สัดส่วนแหล่งที่ไม่ degenerate + plot กลุ่มควันออกมาดูสมเหตุผล</div>
+<ul class="ck">
+<li>conditionally-linear layer overfit 1 batch ผ่าน</li>
+<li>RMSE operator ≥ CNN จิ๋ว</li>
+<li>superposition: sum 2 แหล่ง = total (มวลตรง)</li>
+<li>tagged-tracer คืนสัดส่วนแหล่งที่ไม่ degenerate</li>
+<li>stacked plot "พม่า X% / local Y%" + แผนที่ field ออกมาได้</li>
+</ul>
+</div>
+</div>
+
+<div class="gate"><b>🚪 ประตู 3 — "ไอเดียหลักเข้าท่า?"</b><br>ผ่านชั้น 4 = Lab 1 เขียว · ยืนยันแล้วว่า physics operator + attribution ทำงานเชิงหลักการ · <b>ตอนนี้ค่อยปลอดภัยที่จะทุ่ม A100 ไต่บันไดขยายไปทำ run จริงทั้งหมด</b></div>
+
+<!-- order -->
+<h2 id="order">2. ลำดับลงมือ + 3 ประตู go/no-go (เทียบ timeline 2 เดือน)</h2>
+<div class="center card">
+<svg class="svg" viewBox="0 0 660 200" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <line x1="40" y1="40" x2="620" y2="40" stroke="#30363d" stroke-width="2"/>
+  <g font-size="11" text-anchor="middle">
+   <!-- nodes -->
+   <circle cx="90" cy="40" r="7" fill="#f85149"/><text x="90" y="22" fill="#f85149">สัปดาห์ 0</text>
+   <text x="90" y="62" fill="#e6edf3">ชั้น 0+1</text><text x="90" y="78" fill="#9aa7b4" font-size="9.5">เข้าถึง+ใช้ได้</text>
+   <circle cx="250" cy="40" r="7" fill="#e3b341"/><text x="250" y="22" fill="#e3b341">สัปดาห์ 1</text>
+   <text x="250" y="62" fill="#e6edf3">Lab 0</text><text x="250" y="78" fill="#9aa7b4" font-size="9.5">ชั้น 2+3 ท่อไม่รั่ว</text>
+   <circle cx="410" cy="40" r="7" fill="#bc8cff"/><text x="410" y="22" fill="#bc8cff">สัปดาห์ 2</text>
+   <text x="410" y="62" fill="#e6edf3">Lab 1</text><text x="410" y="78" fill="#9aa7b4" font-size="9.5">ชั้น 4 วิทย์เวิร์ก</text>
+   <circle cx="580" cy="40" r="7" fill="#3fb950"/><text x="580" y="22" fill="#3fb950">สัปดาห์ 3+</text>
+   <text x="580" y="62" fill="#e6edf3">ขยาย→run จริง</text><text x="580" y="78" fill="#9aa7b4" font-size="9.5">A100</text>
+   <!-- gates -->
+   <g font-size="10">
+   <rect x="150" y="105" width="80" height="26" rx="6" fill="rgba(227,179,65,.15)" stroke="#e3b341"/><text x="190" y="122" fill="#e3b341">🚪 ประตู 1</text>
+   <rect x="310" y="105" width="80" height="26" rx="6" fill="rgba(227,179,65,.15)" stroke="#e3b341"/><text x="350" y="122" fill="#e3b341">🚪 ประตู 2</text>
+   <rect x="470" y="105" width="80" height="26" rx="6" fill="rgba(227,179,65,.15)" stroke="#e3b341"/><text x="510" y="122" fill="#e3b341">🚪 ประตู 3</text>
+   </g>
+   <text x="330" y="160" fill="#9aa7b4" font-size="10.5">ประตูแดง = หยุด แก้ตรงนั้น อย่าเดินหน้า (ยิ่งไปไกล ยิ่งแก้แพง)</text>
+  </g>
+</svg>
+</div>
+<table>
+<tr><th>ประตู</th><th>ถามว่า</th><th>ผ่าน = ทำต่อ</th><th>ไม่ผ่าน = ทำอะไร</th></tr>
+<tr><td><b>1</b></td><td>มีข้อมูลใช้ได้ไหม?</td><td>เริ่ม Lab 0</td><td>เปลี่ยนสัปดาห์/พื้นที่/แหล่ง · หา fallback (ARCO-ERA5, OpenAQ)</td></tr>
+<tr><td><b>2</b></td><td>ท่อไม่รั่ว?</td><td>เริ่ม Lab 1</td><td>debug รอยต่อ (แยกเทส stage ด้วยข้อมูลปลอม)</td></tr>
+<tr><td><b>3</b></td><td>ไอเดียหลักเข้าท่า?</td><td>ทุ่ม A100 run จริง</td><td>ปรับ scope (ลดความซับซ้อน operator / เปลี่ยนวิธี attribution)</td></tr>
+</table>
+
+<!-- master -->
+<h2 id="master">3. Master Checklist — ติ๊กตามจริงตอนลงมือ</h2>
+<div class="chk">
+<p class="q">ชั้น 0 — เข้าถึง</p>
+<ul class="ck">
+<li>FIRMS ดึง CSV 1 วันได้</li>
+<li>ERA5/CDS: accept license + ดึง .nc ได้ (จดเวลาคิว)</li>
+<li>PM2.5: OpenAQ หรือ Air4Thai คืนสถานีเชียงใหม่ได้</li>
+<li>DEM: s3fs เปิด tile ได้</li>
+<li>Himawari: เปิดได้ หรือ ตัดออก (ตัดสินใจแล้ว)</li>
+</ul>
+<p class="q">ชั้น 1 — ใช้ได้จริง</p>
+<ul class="ck">
+<li>สถานี target missing &lt; ~30% ในสัปดาห์ที่เลือก</li>
+<li>FIRMS มีไฟพอในโดเมน/ช่วงนั้น</li>
+<li>รู้ % missing Himawari + ตัดสินใจใช้/ไม่ใช้</li>
+<li>ยืนยันแหล่งต้นทางไม่มีสถานี → จด caveat</li>
+<li>timezone/timestamp จัดให้ตรงแล้ว</li>
+</ul>
+<p class="q">🚪 ประตู 1 ผ่าน → เริ่ม Lab 0</p>
+<p class="q">ชั้น 2 — จัดแนว (Lab 0)</p>
+<ul class="ck">
+<li>เปิดครบทุก format + plot สมจริง</li>
+<li>lat/lon ทุกแหล่งตรงกันเป๊ะ</li>
+<li>emission=sum, ลม=bilinear</li>
+<li>Zarr + sanity 5/5 + normalize train-only</li>
+<li>DataLoader คืน <code>(X,y)</code> รูปร่างถูก</li>
+</ul>
+<p class="q">ชั้น 3 — ฮาร์ดแวร์ (Lab 0)</p>
+<ul class="ck">
+<li>overfit 1 batch → loss ~0</li>
+<li>เห็น GPU + bf16 รันได้</li>
+<li>checkpoint→Drive→resume ได้</li>
+<li>รู้พฤติกรรม memory ของ rollout</li>
+</ul>
+<p class="q">🚪 ประตู 2 ผ่าน → เริ่ม Lab 1</p>
+<p class="q">ชั้น 4 — วิทยาศาสตร์ (Lab 1)</p>
+<ul class="ck">
+<li>operator (3.5) overfit ผ่าน</li>
+<li>RMSE operator ≥ CNN จิ๋ว</li>
+<li>superposition: sum 2 แหล่ง = total</li>
+<li>tagged-tracer สัดส่วนไม่ degenerate</li>
+<li>stacked plot + แผนที่กลุ่มควันออกมาได้</li>
+</ul>
+<p class="q">🚪 ประตู 3 ผ่าน → ทุ่ม A100 ไต่บันไดขยายไป run จริง</p>
+</div>
+
+<!-- caveat -->
+<h2 id="caveat">4. กับดัก + caveat ของเฟสนี้</h2>
+<div class="danger"><b>อย่าหลงทาง:</b>
+<ul>
+<li><b>เทส ≠ ทำจริง</b> — ทุกอย่างชั้น 0–4 ใช้ข้อมูลจิ๋ว/เครื่องฟรี เป้าคือ "รันได้ไหม" ไม่ใช่ "แม่นไหม" · อย่าตัดสินวิทยาศาสตร์จากเฟสนี้</li>
+<li><b>อย่าข้ามชั้น 1</b> — น่าเบื่อแต่เป็นตัวฆ่าโปรเจกต์เงียบที่สุด (เลือกสัปดาห์ที่สถานีดับ = เสียเวลาทั้งสาย)</li>
+<li><b>ERA5/CDS เป็นคอขวดเวลา</b> — เริ่มสมัคร + ยิง request วันแรกเลย เพราะคิวรอนาน ไม่ใช่เรื่องโค้ดแต่เป็นเรื่องเวลา</li>
+<li><b>อย่าทำชั้นใดให้สมบูรณ์แบบก่อนผ่านประตู</b> — "พอใช้ได้" แล้วไปประตูถัดไป · เก็บการจูนละเอียดไว้ตอน run จริง</li>
+<li><b>อย่าแตะ A100 ก่อนประตู 3</b> — ทั้ง 3 ประตูทำบนของฟรีได้ → เก็บงบ 15 ชม.ไว้ run จริงตอนทุกอย่างนิ่ง (โยง 4.5)</li>
+</ul></div>
+<div class="warn"><b>เทคนิค debug:</b> ถ้าชั้นไหนพัง ให้แยกทดสอบเฉพาะส่วนนั้นด้วย <code>np.random</code> แทนข้อมูลจริง เพื่อแยกว่าเป็นบั๊กของ "ข้อมูล" หรือ "โค้ด" — หลักเดียวกับ oracle/ablation (5.5/5.4) แต่ใช้ดีบัก</div>
+
+<hr>
+<p class="center muted">Lab — Feasibility Checklist · ทำก่อน Lab 0 · ผ่าน 3 ประตู (ข้อมูล → ท่อ → วิทยาศาสตร์) แล้วค่อยทุ่ม A100 ทำ pipeline จริงทั้งหมด</p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Readiness — ก่อนรันจริงทั้งหมด แล้วส่ง (เดโม + repo)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:44px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:26px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .green-box b{color:var(--green)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.2px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--green);color:var(--green);margin-left:6px}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+  a.ext{color:var(--blue)}
+  .item{border:1px solid var(--border);border-radius:11px;margin:16px 0;overflow:hidden;background:var(--panel)}
+  .item-h{display:flex;align-items:center;gap:12px;padding:11px 18px;background:var(--panel2);border-bottom:1px solid var(--border)}
+  .item-n{background:var(--green);color:#06210f;border-radius:9px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:15px;flex-shrink:0}
+  .item-t{font-size:16.5px;font-weight:bold}
+  .item-b{padding:8px 18px 15px}
+  .dod{border-left:4px solid var(--green);background:rgba(63,185,80,.08);padding:8px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:14.5px}
+  .dod b{color:var(--green)}
+  .tag{font-size:11.5px;padding:1px 8px;border-radius:11px;border:1px solid var(--border);color:var(--muted);margin-left:4px}
+  .gate{background:linear-gradient(90deg,rgba(227,179,65,.12),transparent);border:1px solid var(--amber);border-radius:11px;padding:12px 18px;margin:20px 0}
+  .gate b{color:var(--amber)}
+  .ck{list-style:none;padding-left:4px}
+  .ck li{margin:7px 0}
+  .ck li::before{content:"☐ ";color:var(--cyan);font-size:17px}
+  .pill{display:inline-block;font-size:12px;padding:1px 10px;border-radius:20px;margin-left:6px;border:1px solid var(--purple);color:var(--purple)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Readiness — ก่อนรันจริงทั้งหมด แล้วส่ง <span class="pin">🟢 ลงมือจริง</span></h1>
+<p class="tagline">เป้าหมายการส่ง: <b>เดโม + repo โค้ด</b> ที่รันได้จริงและโชว์ "กลุ่มควันมาจากไหน" ได้</p>
+<p class="sub">ทำหลังผ่าน feasibility 3 ประตู · เน้น "ของที่ใช้งานได้จริง + ทำซ้ำได้" มากกว่าความเข้มงวดแบบเปเปอร์ · A100 แตะเฉพาะ main run</p>
+
+<div class="lead">
+<b>นิยาม "เสร็จ" สำหรับเดโม + repo:</b><br>
+<b class="k">คนอื่น clone repo → ติดตั้งตาม README → รันเดโม → เห็นพยากรณ์ PM2.5 + แผนที่กลุ่มควันว่ามาจากแหล่งไหน + ความไม่แน่นอน — โดยไม่ต้องถามคุณ</b><br><br>
+ไม่ใช่ "โมเดลแม่นที่สุดในโลก" แต่คือ <b>"ระบบที่ทำงานครบวงจร โชว์จุดขายได้ และทำซ้ำได้"</b> · ความน่าเชื่อถือมาจากการมี baseline เทียบ + caveat ซื่อสัตย์ ไม่ใช่จากตัวเลขสวยอย่างเดียว
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#done">0. "เสร็จ" หน้าตาเป็นยังไง (demo+repo)</a><br>
+<a href="#preflight">1. Pre-flight 7 ข้อ ก่อนกดรันใหญ่</a><br>
+<a href="#budget">2. แผนงบ A100 ของ main run</a><br>
+<a href="#run">3. ลำดับการรันจริง</a><br>
+<a href="#repo">4. โครงสร้าง repo</a><br>
+<a href="#demo">5. ตัวเดโม — โชว์อะไร</a><br>
+<a href="#repro">6. ทำซ้ำได้ (reproducibility)</a><br>
+<a href="#caveat">7. caveat ที่ต้องเขียนใน README</a><br>
+<a href="#dod">8. Definition of Done — ส่งได้</a><br>
+</div>
+
+<!-- done -->
+<h2 id="done">0. "เสร็จ" หน้าตาเป็นยังไง — สำหรับเดโม + repo</h2>
+<p>เป้าการส่งกำหนดว่า main run ต้องผลิตอะไร · เดโม+repo ต้องการ 5 ชิ้นนี้:</p>
+<table>
+<tr><th>ชิ้น</th><th>คืออะไร</th><th>ทำไมต้องมี</th></tr>
+<tr><td><b>checkpoint 1 ตัว</b></td><td>โมเดลที่เทรนเสร็จ (.pt) จาก run ที่ดีที่สุด</td><td>หัวใจของเดโม — โหลดมาใช้ inference</td></tr>
+<tr><td><b>เดโมรันได้</b></td><td>app/notebook: ใส่วันที่ → ออกพยากรณ์ + แผนที่กลุ่มควัน + uncertainty</td><td>= ตัวส่งหลัก โชว์จุดขาย (3.6)</td></tr>
+<tr><td><b>หลักฐานว่าไม่ได้มั่ว</b></td><td>ตาราง RMSE vs persistence + กราฟ skill-vs-leadtime</td><td>ความน่าเชื่อถือ (5.1/5.3)</td></tr>
+<tr><td><b>repo สะอาด</b></td><td>โครงโฟลเดอร์ + README + requirements + config</td><td>คนอื่นรันต่อได้</td></tr>
+<tr><td><b>caveat ซื่อสัตย์</b></td><td>ส่วนข้อจำกัดใน README</td><td>งานวิจัยที่ดีต้องบอกขอบเขต</td></tr>
+</table>
+<div class="why"><b>เทียบเป้าอื่น:</b> ถ้าเป็นเปเปอร์ต้องมี CV ครบ + significance + baseline หลายตัว · แต่ <b>เดโม+repo</b> เน้น "ใช้งานได้ + ทำซ้ำได้ + มี baseline ขั้นต่ำ 1 ตัวกันมั่ว" → เบากว่ามาก เหมาะกับงบ 15 ชม.</div>
+
+<!-- preflight -->
+<h2 id="preflight">1. Pre-flight 7 ข้อ — ต้องล็อกครบก่อนกดรันใหญ่</h2>
+
+<div class="item"><div class="item-h"><div class="item-n">1</div><div class="item-t">ผ่าน feasibility 3 ประตูแล้ว</div></div>
+<div class="item-b">ข้อมูล (ชั้น 0–1) → ท่อ/Lab 0 (ชั้น 2–3) → วิทย์/Lab 1 (ชั้น 4) เขียวครบ · <b>นี่คือใบเบิกทาง ห้ามข้าม</b>
+<div class="dod"><b>เช็ก:</b> ทั้ง 3 ประตูในไฟล์ feasibility-checklist ติ๊กครบ</div></div></div>
+
+<div class="item"><div class="item-h"><div class="item-n">2</div><div class="item-t">แช่แข็ง config การทดลอง <span class="tag">4.4</span></div></div>
+<div class="item-b">เขียน <code>config.yaml</code> แล้วห้ามขยับระหว่างรัน:
+<pre><code><span class="nm">domain</span>:   {lat: [<span class="nm">5</span>,<span class="nm">25</span>], lon: [<span class="nm">92</span>,<span class="nm">110</span>], step: <span class="nm">0.1</span>}
+<span class="nm">time</span>:     {seasons: [<span class="st">"2021-2025 burning"</span>], freq: <span class="st">"3H"</span>}
+<span class="nm">channels</span>: [u10, v10, dem, emission, aod, pbl, precip, rh, ...]
+<span class="nm">split</span>:    {train: <span class="st">"...→2024"</span>, val: <span class="st">"2024"</span>, test: <span class="st">"2025"</span>}   <span class="cm"># บล็อกเวลา</span>
+<span class="nm">model</span>:    {type: cond_linear, ...}
+<span class="nm">train</span>:    {epochs: ?, lr: ?, batch: ?, rollout: ?}
+<span class="nm">seed</span>:     <span class="nm">42</span></code></pre>
+<div class="dod"><b>เช็ก:</b> มี config.yaml ที่ครอบทุก hyperparam · เปลี่ยน config = เปลี่ยนผล = ต้องรันใหม่ → จึงล็อกก่อน</div></div></div>
+
+<div class="item"><div class="item-h"><div class="item-n">3</div><div class="item-t">ประมาณงบ A100 จากของจริง <span class="pill">สำคัญสุด</span> <span class="tag">4.5</span></div></div>
+<div class="item-b">
+<div class="danger"><b>กับดักใหญ่สุดของโปรเจกต์:</b> เผางบ 15 ชม.หมดโดยยังไม่ได้ checkpoint ที่ใช้ได้ · ต้องประมาณ <b>ก่อน</b> ไม่ใช่ลุ้น</div>
+<ol>
+<li>วัด "วินาที/epoch" ตอนสเกลกลาง (1 ฤดู, โดเมนจริง, T4 หรือ A100 สั้น ๆ)</li>
+<li>คูณ: <code>เวลา/epoch × epochs × (main + baseline หนัก + ablation)</code></li>
+<li>ยืนยัน <b>รวม ≤ ~12 ชม.</b> (เผื่อพัง/รันซ้ำ 3 ชม.)</li>
+<li>ถ้าเกิน → ตัด scope <b>ตอนนี้</b>: ลดฤดู / ลด resolution / ลด rollout / ตัด baseline หนัก</li>
+</ol>
+<div class="dod"><b>เช็ก:</b> มีตารางงบที่บวกแล้ว ≤ 12 ชม. มีเผื่อ · รู้ว่าจะตัดอะไรถ้าไม่พอ</div></div></div>
+
+<div class="item"><div class="item-h"><div class="item-n">4</div><div class="item-t">ข้อมูลโหลดครบ + datacube cache เป็น Zarr <span class="tag">4.1/4.4</span></div></div>
+<div class="item-b"><b>ห้ามดึงข้อมูล/ประมวลผล regrid ระหว่างเทรน</b> — ทำให้เสร็จก่อน เก็บเป็น Zarr พร้อมใช้
+<div class="warn">A100 ที่เสียไปกับการรอ download/regrid = งบที่หายไปเปล่า · ทุก byte ที่โมเดลอ่านควรมาจาก Zarr ที่ทำเสร็จแล้ว</div>
+<div class="dod"><b>เช็ก:</b> มี <code>cube.zarr</code> ของโดเมน/ช่วงเต็ม + <code>norm_stats.json</code> (train-only) · เปิดเทสได้</div></div></div>
+
+<div class="item"><div class="item-h"><div class="item-n">5</div><div class="item-t">Checkpoint/resume + logging ใช้ได้จริง <span class="tag">4.5</span></div></div>
+<div class="item-b">Colab หลุดบ่อย → ต้อง resume ได้ + log ทุก epoch (ไม่งั้นรันเสร็จแต่ไม่มีกราฟไปโชว์)
+<pre><code><span class="cm"># เซฟทุก epoch ไป Drive + log metric</span>
+torch.<span class="fn">save</span>({<span class="st">"model"</span>:model.<span class="fn">state_dict</span>(),<span class="st">"opt"</span>:opt.<span class="fn">state_dict</span>(),
+  <span class="st">"epoch"</span>:ep,<span class="st">"val_rmse"</span>:val_rmse}, <span class="st">"/drive/ckpt_last.pt"</span>)
+log.<span class="fn">append</span>({<span class="st">"epoch"</span>:ep,<span class="st">"train_loss"</span>:..,<span class="st">"val_rmse"</span>:..})  <span class="cm"># → csv</span></code></pre>
+<div class="dod"><b>เช็ก:</b> kill แล้ว resume ต่อได้ตรงจุด · มี log csv ออกมาทุก epoch</div></div></div>
+
+<div class="item"><div class="item-h"><div class="item-n">6</div><div class="item-t">ตัดสินใจ "ผลที่ต้องผลิต" ก่อนรัน <span class="tag">5.1/3.6/3.9</span></div></div>
+<div class="item-b">รู้ก่อนว่าเดโมต้องโชว์อะไร จะได้ไม่ต้องรันซ้ำเพื่อเก็บผลเพิ่ม:
+<ul>
+<li>พยากรณ์ PM2.5 field (แผนที่ + เลื่อน lead time)</li>
+<li><b>แผนที่/กราฟ attribution</b> — กลุ่มควันจากแต่ละแหล่ง (จุดขาย, 3.6)</li>
+<li>uncertainty (3.9) — แถบความไม่แน่นอน</li>
+<li>กราฟ skill-vs-leadtime + ตาราง RMSE vs persistence (5.1/5.3)</li>
+</ul>
+<div class="dod"><b>เช็ก:</b> มีลิสต์รูป/ตารางที่ต้องได้ + โค้ด generate มันจาก checkpoint</div></div></div>
+
+<div class="item"><div class="item-h"><div class="item-n">7</div><div class="item-t">Reproducibility package พร้อม</div></div>
+<div class="item-b">seed คงที่ · <code>config.yaml</code> + <code>manifest</code> (เวอร์ชันข้อมูล/วันที่ดึง) · <code>requirements.txt</code> freeze
+<div class="dod"><b>เช็ก:</b> รันด้วย config+seed เดิม แล้วได้ผลใกล้เดิม</div></div></div>
+
+<!-- budget -->
+<h2 id="budget">2. แผนงบ A100 ของ main run (ตัวอย่างกรอบ ~12 ชม.)</h2>
+<p class="sub">ตัวเลขจริงต้องมาจากการวัด (ข้อ 3) — นี่คือ "กรอบให้เห็นภาพ" ปรับตามที่วัดได้</p>
+<table>
+<tr><th>กิจกรรม</th><th>เวลาโดยประมาณ</th><th>หมายเหตุ</th></tr>
+<tr><td>เทรน main model (cond-linear)</td><td>~5–7 ชม.</td><td>หัวใจ — ได้ checkpoint หลัก</td></tr>
+<tr><td>baseline ConvLSTM (ถ้าทำ)</td><td>~2–3 ชม.</td><td>ตัดได้ถ้างบตึง (persistence/climatology ฟรี)</td></tr>
+<tr><td>ablation 1 ตัว (ตัด 3.5 → CNN)</td><td>~2 ชม.</td><td>พิสูจน์ contribution หลัก (5.4)</td></tr>
+<tr><td>inference + generate รูป/attribution</td><td>&lt;0.5 ชม.</td><td>ถูกมาก (ไม่ใช่เทรน)</td></tr>
+<tr><td><b>เผื่อพัง/รันซ้ำ</b></td><td>~2–3 ชม.</td><td>ห้ามลืมกันไว้</td></tr>
+</table>
+<div class="warn"><b>ลำดับความสำคัญถ้างบไม่พอ:</b> main model &gt; ablation(3.5) &gt; ConvLSTM · baseline persistence/climatology ฟรี ทำได้เสมอ · เดโม+repo ไม่จำเป็นต้องมี baseline หนักครบ</div>
+
+<!-- run -->
+<h2 id="run">3. ลำดับการรันจริง</h2>
+<div class="center card">
+<svg class="svg" viewBox="0 0 660 130" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <line x1="40" y1="45" x2="620" y2="45" stroke="#30363d" stroke-width="2"/>
+  <g font-size="10.5" text-anchor="middle">
+   <circle cx="80" cy="45" r="6" fill="#3fb950"/><text x="80" y="28" fill="#3fb950">ไต่บันได</text><text x="80" y="68" fill="#9aa7b4" font-size="9">config นิ่ง (ฟรี/T4)</text>
+   <circle cx="220" cy="45" r="6" fill="#58a6ff"/><text x="220" y="28" fill="#58a6ff">main run</text><text x="220" y="68" fill="#9aa7b4" font-size="9">A100 → checkpoint</text>
+   <circle cx="360" cy="45" r="6" fill="#bc8cff"/><text x="360" y="28" fill="#bc8cff">ประเมิน</text><text x="360" y="68" fill="#9aa7b4" font-size="9">test+baseline+ablation</text>
+   <circle cx="500" cy="45" r="6" fill="#e3b341"/><text x="500" y="28" fill="#e3b341">generate</text><text x="500" y="68" fill="#9aa7b4" font-size="9">รูป/attribution</text>
+   <circle cx="600" cy="45" r="6" fill="#f778ba"/><text x="600" y="28" fill="#f778ba">demo+repo</text><text x="600" y="80" fill="#9aa7b4" font-size="9">ส่ง</text>
+  </g>
+</svg>
+</div>
+<ol>
+<li><b>ไต่บันไดจน config นิ่ง</b> — ขยายทีละแกนบนของฟรี/T4 จับเวลา/VRAM ทุกขั้น (อย่ากระโดดเต็ม)</li>
+<li><b>main run บน A100</b> — เทรน cond-linear เต็ม resume ได้ เซฟ checkpoint ที่ดีสุด (จาก val)</li>
+<li><b>ประเมิน</b> — test holdout: RMSE/skill-vs-leadtime + persistence/climatology (ฟรี) + ablation 3.5</li>
+<li><b>generate artifacts</b> — แผนที่พยากรณ์ + attribution + uncertainty + กราฟ (inference ราคาถูก)</li>
+<li><b>ประกอบ demo + repo</b> — โหลด checkpoint ในเดโม + เขียน README + caveat → ส่ง</li>
+</ol>
+
+<!-- repo -->
+<h2 id="repo">4. โครงสร้าง repo (เป้าหมายการส่ง)</h2>
+<pre><code>hazenet/
+├── README.md            <span class="cm"># วิธีติดตั้ง+รัน+เดโม + caveat (สำคัญสุดของ repo)</span>
+├── requirements.txt     <span class="cm"># freeze เวอร์ชัน</span>
+├── config.yaml          <span class="cm"># config การทดลองที่แช่แข็ง</span>
+├── data/
+│   ├── download.py      <span class="cm"># สคริปต์ดึงข้อมูล (ไม่ commit ไฟล์ใหญ่!)</span>
+│   └── sample/          <span class="cm"># ตัวอย่างจิ๋วให้เดโมรันได้ทันที</span>
+├── src/
+│   ├── datacube.py      <span class="cm"># regrid → Zarr (โมดูล 4.2–4.4)</span>
+│   ├── model.py         <span class="cm"># cond-linear operator (3.5)</span>
+│   ├── train.py         <span class="cm"># loop + checkpoint/resume (4.5)</span>
+│   ├── evaluate.py      <span class="cm"># metric + baseline (5.1/5.3)</span>
+│   └── attribution.py   <span class="cm"># tagged-tracer → กลุ่มควัน (3.6)</span>
+├── checkpoints/
+│   └── best.pt          <span class="cm"># โมเดลที่เทรนแล้ว (หรือลิงก์ดาวน์โหลด)</span>
+├── demo/
+│   └── app.py           <span class="cm"># Streamlit/Gradio หรือ notebook</span>
+└── notebooks/
+    └── results.ipynb    <span class="cm"># รูป/ตารางผลลัพธ์</span></code></pre>
+<div class="danger"><b>อย่า commit ไฟล์ใหญ่</b> (Zarr/checkpoint หลาย GB) ขึ้น git · ใส่ <code>.gitignore</code> + ให้ <code>download.py</code> หรือ Google Drive/HuggingFace เป็นที่เก็บแทน · commit แต่ <b>โค้ด + config + sample จิ๋ว</b></div>
+
+<!-- demo -->
+<h2 id="demo">5. ตัวเดโม — ต้องโชว์อะไร (= จุดขาย)</h2>
+<p>เดโมคือสิ่งที่กรรมการ/ผู้ใช้เห็นก่อน · ต้องเล่า "HazeNet ทำอะไรได้" ใน 1 หน้าจอ:</p>
+<table>
+<tr><th>โชว์</th><th>คืออะไร</th><th>โยง</th></tr>
+<tr><td>เลือกวันที่/เวลา</td><td>input ให้ผู้ใช้เลือกสถานการณ์</td><td>—</td></tr>
+<tr><td>พยากรณ์ PM2.5 field</td><td>แผนที่ + slider เลื่อน lead time</td><td>3.4/5.1</td></tr>
+<tr><td><b>กลุ่มควันจากแต่ละแหล่ง</b></td><td>แผนที่/กราฟ stacked: ที่จุดนี้ ควันมาจากพม่า X% / local Y%</td><td><b>3.6 (จุดขาย)</b></td></tr>
+<tr><td>ความไม่แน่นอน</td><td>แถบ/แผนที่ uncertainty</td><td>3.9</td></tr>
+<tr><td>เทียบ baseline</td><td>ตัวเลข RMSE โมเดล vs persistence</td><td>5.3</td></tr>
+</table>
+<pre><code><span class="cm"># เดโมแบบเบาสุด: Streamlit โหลด checkpoint แล้ว inference</span>
+<span class="kw">import</span> streamlit <span class="kw">as</span> st, torch
+model = <span class="fn">load_model</span>(<span class="st">"checkpoints/best.pt"</span>)
+date = st.<span class="fn">date_input</span>(<span class="st">"เลือกวันที่"</span>)
+lead = st.<span class="fn">slider</span>(<span class="st">"lead time (ชม.)"</span>, <span class="nm">6</span>, <span class="nm">72</span>, <span class="nm">24</span>)
+pred, attribution, unc = <span class="fn">forecast</span>(model, date, lead)
+st.<span class="fn">pyplot</span>(<span class="fn">plot_field</span>(pred))            <span class="cm"># แผนที่พยากรณ์</span>
+st.<span class="fn">pyplot</span>(<span class="fn">plot_attribution</span>(attribution)) <span class="cm"># กลุ่มควันจากแต่ละแหล่ง</span></code></pre>
+<div class="why"><b>ทางเลือกเดโม:</b> Streamlit/Gradio = interactive สวย · notebook = ง่ายสุด commit ได้เลย · เลือกตามเวลาที่เหลือ — <b>notebook ที่รันผ่านครบก็ "ส่งได้" แล้ว</b></div>
+
+<!-- repro -->
+<h2 id="repro">6. ทำซ้ำได้ (reproducibility) — เงื่อนไขของ repo ที่ดี</h2>
+<ul>
+<li><b>seed คงที่</b> ทุกที่ (torch/numpy/random) — ผลรันซ้ำใกล้เดิม</li>
+<li><b>config.yaml เดียว</b> คุมทุกอย่าง — เปลี่ยนทดลองที่ไฟล์เดียว</li>
+<li><b>manifest</b> — บันทึกว่าใช้ข้อมูลเวอร์ชันไหน ดึงวันไหน โดเมน/ช่วงอะไร</li>
+<li><b>requirements freeze</b> — <code>pip freeze &gt; requirements.txt</code></li>
+<li><b>README สั่งรันได้จริง</b> — <code>python data/download.py → python src/train.py → streamlit run demo/app.py</code></li>
+</ul>
+<div class="green-box"><b>เทสขั้นสุดท้าย:</b> ลอง clone repo ลงเครื่อง/Colab ใหม่ที่ไม่มี context อะไรเลย แล้วรันตาม README → ถ้าเดโมขึ้นได้ = <b>ส่งได้จริง</b></div>
+
+<!-- caveat -->
+<h2 id="caveat">7. caveat ที่ต้องเขียนใน README (ความซื่อสัตย์ = คุณภาพงานวิจัย)</h2>
+<div class="warn">เขียนส่วน "Limitations" ให้ชัด — กรรมการที่เก่งจะเชื่อถืองานที่รู้ขอบเขตตัวเองมากกว่างานที่อวด:
+<ul>
+<li><b>Compute:</b> เทรนบน A100 เดี่ยว ~ไม่กี่ชม. → สเกล/ความละเอียดจำกัด</li>
+<li><b>สถานี sparse:</b> target จากสถานีภาคพื้นจำกัด · <b>แหล่งต้นทาง (พม่า/ลาว) แทบไม่มีสถานี</b> → attribution validate ตรง ๆ ไม่ได้เต็มที่ (5.2)</li>
+<li><b>ข้อมูลหาย:</b> AOD ดาวเทียมหายช่วงเมฆ/กลางคืน → ใช้ mask</li>
+<li><b>ขอบเขตเวลา:</b> เทรน/เทสแค่ฤดูเผาบางปี → ไม่ extrapolate นอกช่วง</li>
+<li><b>attribution เป็นค่าประมาณ</b> จากโครงสร้าง superposition (2.5) ไม่ใช่ ground truth ของแหล่ง</li>
+</ul></div>
+
+<!-- dod -->
+<h2 id="dod">8. Definition of Done — "ส่งได้" เมื่อติ๊กครบ</h2>
+<div class="gate"><b>🚪 ประตูก่อนรันใหญ่:</b> Pre-flight ข้อ 1–7 ครบ → ค่อยกด main run บน A100</div>
+<div class="chk">
+<p class="q">ก่อนรันใหญ่ (Pre-flight)</p>
+<ul class="ck">
+<li>feasibility 3 ประตูเขียวครบ</li>
+<li>config.yaml แช่แข็งครบทุก hyperparam</li>
+<li>งบ A100 ประมาณแล้ว ≤ ~12 ชม. มีเผื่อ + รู้จะตัดอะไรถ้าไม่พอ</li>
+<li>cube.zarr + norm_stats.json พร้อม (ไม่ดึงข้อมูลระหว่างเทรน)</li>
+<li>checkpoint/resume + log csv ใช้ได้จริง</li>
+<li>ลิสต์รูป/ตารางที่ต้องผลิต + โค้ด generate พร้อม</li>
+<li>seed + manifest + requirements freeze</li>
+</ul>
+<p class="q">หลังรัน (Artifacts)</p>
+<ul class="ck">
+<li>checkpoint best.pt ที่ใช้ได้</li>
+<li>ตาราง RMSE โมเดล vs persistence + กราฟ skill-vs-leadtime</li>
+<li>ablation 3.5 (delta) อย่างน้อย 1 ตัว</li>
+<li>แผนที่ attribution/กลุ่มควัน + uncertainty</li>
+</ul>
+<p class="q">ส่ง (demo + repo)</p>
+<ul class="ck">
+<li>เดโม (app/notebook) รันได้ โชว์พยากรณ์ + กลุ่มควัน + uncertainty</li>
+<li>repo โครงสร้างสะอาด + .gitignore (ไม่มีไฟล์ใหญ่)</li>
+<li>README รันตามได้จริง (เทส clone ใหม่)</li>
+<li>ส่วน Limitations ซื่อสัตย์ครบ</li>
+</ul>
+</div>
+
+<hr>
+<p class="center muted">Readiness · เป้าส่ง = เดโม + repo · ผ่าน feasibility → ไต่บันได → main run (A100) → ประเมิน → ประกอบ demo+repo → ส่ง</p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.6 — Statistical Significance (Bootstrap CI · Paired Test)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .green-box b{color:var(--green)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.4px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--amber);color:var(--amber);margin-left:6px}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+  a.ext{color:var(--blue)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>5.6 — Statistical Significance: เคลม "ดีกว่า" อย่างมีหลักฐาน <span class="pin">🟡 กลาง</span></h1>
+<p class="tagline">bootstrap CI · paired test · multiple seeds — กันว่าชัยชนะเป็นของจริง ไม่ใช่บังเอิญ</p>
+<p class="sub">ปิดโมดูล 5 · โยง 5.1 (metric ที่ใส่ CI) · 5.2 (autocorrelation → block bootstrap) · 5.3 (เคลมชนะ baseline) · 5.4 (delta ablation ก็ต้องมีนัยสำคัญ) · 4.5 (seed=งบ A100)</p>
+
+<div class="lead">
+<b>โจทย์:</b> "HazeNet RMSE 11.8 ชนะ ConvLSTM 12.3" — ส่วนต่าง 0.5 นี่ <b>จริง</b> หรือแค่ <b>โชคดีของ test set/seed นี้?</b> · ถ้าตอบไม่ได้ คุณเคลม "ดีกว่า" อย่างซื่อสัตย์ไม่ได้ และ reviewer จะถามทันทีว่า <em>"significant ไหม?"</em><br><br>
+<b>หัวใจ:</b> ตัวเลขเดียว (RMSE บน test ชุดเดียว เทรนครั้งเดียว) คือ <b>"ตัวอย่างเดียว"</b> จากการกระจายที่มีความบังเอิญปน · เราต้องประเมิน "ขอบเขตความไม่แน่นอน" รอบมัน → รายงานเป็น <b class="k">11.8 [95% CI: 11.2–12.4]</b> ไม่ใช่ 11.8 เฉย ๆ<br><br>
+2 แหล่งความบังเอิญ: <b style="color:var(--blue)">① test set ที่เราบังเอิญวัด</b> (แก้ด้วย bootstrap) · <b style="color:var(--purple)">② การสุ่มตอนเทรน (seed)</b> (แก้ด้วยหลาย seed)
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. ทำไมต้องมีนัยสำคัญ ★</a><br>
+<a href="#p2">2. Confidence Interval — รายงานเป็นช่วง</a><br>
+<a href="#p3">3. Bootstrap — หา CI โดยไม่ต้องสมมุติ ★</a><br>
+<a href="#p4">4. Paired test — เทียบแบบจับคู่ ★</a><br>
+<a href="#p5">5. Block bootstrap — กับ autocorrelation ★</a><br>
+<a href="#p6">6. Multiple seeds — โชคดีหรือเก่งจริง</a><br>
+<a href="#p7">7. p-value + effect size (อ่านให้ถูก)</a><br>
+<a href="#p8">8. งบ A100 + แผนทำจริง</a><br>
+<a href="#cheat">9. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- 1 -->
+<h2 id="p1">1. ทำไมต้องมีนัยสำคัญ <span class="pin">★</span></h2>
+<p>test set ของเราเป็นแค่ "ตัวอย่างหนึ่ง" ของอากาศที่อาจเกิดขึ้น · ถ้าฤดูทดสอบบังเอิญมีวันง่าย ๆ เยอะ โมเดลใด ๆ ก็ดูดีหมด · ส่วนต่างเล็ก ๆ ระหว่าง 2 โมเดลอาจพลิกกลับได้ถ้าเปลี่ยน test ปีอื่น</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 540 150" width="92%" xmlns="http://www.w3.org/2000/svg">
+  <text x="140" y="16" fill="#f85149" font-size="11.5" text-anchor="middle">CI ทับกันมาก → ส่วนต่างอาจไม่จริง</text>
+  <line x1="40" y1="70" x2="240" y2="70" stroke="#30363d"/>
+  <line x1="80" y1="55" x2="160" y2="55" stroke="#3fb950" stroke-width="3"/><circle cx="120" cy="55" r="4" fill="#3fb950"/><text x="120" y="46" fill="#3fb950" font-size="10" text-anchor="middle">HazeNet</text>
+  <line x1="110" y1="88" x2="200" y2="88" stroke="#58a6ff" stroke-width="3"/><circle cx="155" cy="88" r="4" fill="#58a6ff"/><text x="155" y="106" fill="#58a6ff" font-size="10" text-anchor="middle">ConvLSTM</text>
+
+  <text x="410" y="16" fill="#3fb950" font-size="11.5" text-anchor="middle">CI แยกกัน → ส่วนต่างมีนัยสำคัญ ✓</text>
+  <line x1="310" y1="70" x2="510" y2="70" stroke="#30363d"/>
+  <line x1="330" y1="55" x2="380" y2="55" stroke="#3fb950" stroke-width="3"/><circle cx="355" cy="55" r="4" fill="#3fb950"/><text x="355" y="46" fill="#3fb950" font-size="10" text-anchor="middle">HazeNet</text>
+  <line x1="430" y1="88" x2="485" y2="88" stroke="#58a6ff" stroke-width="3"/><circle cx="457" cy="88" r="4" fill="#58a6ff"/><text x="457" y="106" fill="#58a6ff" font-size="10" text-anchor="middle">ConvLSTM</text>
+</svg>
+</div>
+<div class="danger"><b>เชื่อมกับ 5.4:</b> จำได้ไหมว่า ablation delta "+0.3" อาจเป็นแค่ noise? · บทนี้คือเครื่องมือที่ตอบว่า +0.3 นั้นจริงหรือมั่ว · <b>ทุกการเปรียบเทียบในโมดูล 5 (baseline, ablation, oracle) ต้องผ่านบทนี้ก่อนถึงเคลมได้</b></div>
+
+<!-- 2 -->
+<h2 id="p2">2. Confidence Interval — รายงานเป็น "ช่วง" ไม่ใช่จุด</h2>
+<p><b>95% CI</b> = ช่วงที่เรามั่นใจ ~95% ว่าค่าจริงอยู่ในนั้น · แทนที่จะพูด "RMSE = 11.8" พูดว่า <b>"11.8 [11.2, 12.4]"</b> · ช่วงแคบ = วัดได้แม่น/ข้อมูลเยอะ · ช่วงกว้าง = ไม่แน่นอนสูง</p>
+<div class="why"><b>กฎการเทียบด้วยตา (คร่าว ๆ):</b> ถ้า CI ของ 2 โมเดล <b>ไม่ทับกัน</b> → ต่างกันจริงเกือบแน่ · ถ้า <b>ทับกันมาก</b> → อาจไม่ต่าง · ถ้าทับกันนิดหน่อย → ต้องทดสอบให้ชัด (ใช้ paired test, §4) · <b>หมายเหตุ:</b> CI ทับกันเล็กน้อยยัง "ต่างอย่างมีนัยสำคัญ" ได้ ถ้าทดสอบแบบจับคู่ — การดูด้วยตาเป็นแค่ขั้นแรก</div>
+
+<!-- 3 -->
+<h2 id="p3">3. Bootstrap — หา CI โดยไม่ต้องสมมุติอะไร <span class="pin">★</span></h2>
+<p>เรามี test set เดียว แต่อยากรู้ "ถ้าได้ test set อื่นจะต่างแค่ไหน" · <b>bootstrap</b> เลียนแบบสิ่งนี้ด้วยการ <b>สุ่มหยิบซ้ำ (resample with replacement)</b> จาก test ที่มี หลายพันครั้ง → คำนวณ metric ทุกครั้ง → ได้ "การกระจายของ metric" → เอา percentile 2.5/97.5 เป็น CI</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 160" width="94%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="ab" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker></defs>
+  <rect x="20" y="55" width="90" height="44" rx="6" fill="#1c2330" stroke="#58a6ff"/><text x="65" y="74" fill="#58a6ff" font-size="11" text-anchor="middle">test set</text><text x="65" y="90" fill="#9aa7b4" font-size="9.5" text-anchor="middle">จริง (1 ชุด)</text>
+  <line x1="110" y1="77" x2="145" y2="77" stroke="#9aa7b4" marker-end="url(#ab)"/><text x="127" y="68" fill="#9aa7b4" font-size="8.5">สุ่มซ้ำ</text>
+  <g font-size="9.5" text-anchor="middle">
+   <rect x="150" y="34" width="84" height="20" rx="4" fill="#11271c" stroke="#3fb950"/><text x="192" y="48" fill="#3fb950">resample → RMSE₁</text>
+   <rect x="150" y="58" width="84" height="20" rx="4" fill="#11271c" stroke="#3fb950"/><text x="192" y="72" fill="#3fb950">resample → RMSE₂</text>
+   <rect x="150" y="82" width="84" height="20" rx="4" fill="#11271c" stroke="#3fb950"/><text x="192" y="96" fill="#3fb950">… ×2000</text>
+   <rect x="150" y="106" width="84" height="20" rx="4" fill="#11271c" stroke="#3fb950"/><text x="192" y="120" fill="#3fb950">resample → RMSEₙ</text>
+  </g>
+  <line x1="234" y1="77" x2="270" y2="77" stroke="#9aa7b4" marker-end="url(#ab)"/>
+  <!-- distribution -->
+  <g>
+   <path d="M300,120 Q360,30 420,120" fill="rgba(86,212,221,.18)" stroke="#56d4dd"/>
+   <line x1="330" y1="120" x2="330" y2="92" stroke="#e3b341" stroke-dasharray="3 2"/><line x1="390" y1="120" x2="390" y2="92" stroke="#e3b341" stroke-dasharray="3 2"/>
+   <text x="360" y="138" fill="#e3b341" font-size="10" text-anchor="middle">95% CI = [2.5th, 97.5th]</text>
+  </g>
+  <text x="470" y="80" fill="#9aa7b4" font-size="10">การกระจาย</text><text x="470" y="95" fill="#9aa7b4" font-size="10">ของ metric</text>
+</svg>
+</div>
+<pre><code><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">def</span> <span class="fn">bootstrap_ci</span>(err, n=<span class="nm">2000</span>):       <span class="cm"># err = array ของ error ราย sample</span>
+    stats = [np.<span class="fn">sqrt</span>(np.<span class="fn">mean</span>(np.<span class="fn">random</span>.<span class="fn">choice</span>(err, <span class="fn">len</span>(err))**<span class="nm">2</span>)) <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n)]
+    <span class="kw">return</span> np.<span class="fn">percentile</span>(stats, [<span class="nm">2.5</span>, <span class="nm">97.5</span>])</code></pre>
+<div class="green-box"><b>ทำไม bootstrap คือเครื่องมือหลัก:</b> ใช้ได้กับ <b>metric อะไรก็ได้</b> (RMSE, CSI, onset-lead จาก 5.1) โดย <b>ไม่ต้องสมมุติว่าข้อมูลกระจายแบบ normal</b> · และ <b>ไม่ต้องเทรนใหม่</b> — แค่คำนวณบนผลทำนายที่มีอยู่ → ฟรีในแง่งบ A100 · เป็นวิธีที่เหมาะกับ metric แปลก ๆ อย่าง onset-lead ที่ไม่มีสูตร CI สำเร็จรูป</div>
+
+<!-- 4 -->
+<h2 id="p4">4. Paired Test — เทียบแบบ "จับคู่" ถูกกว่าและไวกว่า <span class="pin">★</span></h2>
+<p>2 โมเดลทำนาย <b>วัน/สถานีเดียวกัน</b> → อย่าเทียบค่าเฉลี่ยแยกกัน · ให้เทียบ <b>ผลต่างราย sample</b> (error<sub>A</sub> − error<sub>B</sub> ที่จุดเดียวกัน) · เพราะ "วันที่ยากก็ยากสำหรับทั้งคู่" → การจับคู่ <b>หักความแปรปรวนร่วมนั้นทิ้ง</b> → เห็นความต่างจริงชัดขึ้นมาก</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 520 130" width="88%" xmlns="http://www.w3.org/2000/svg">
+  <text x="260" y="16" fill="#e6edf3" font-size="11.5" text-anchor="middle">จับคู่ที่วันเดียวกัน → ดูผลต่าง (A−B) ราย sample</text>
+  <line x1="40" y1="100" x2="480" y2="100" stroke="#30363d"/>
+  <g font-size="9" text-anchor="middle">
+   <text x="100" y="118" fill="#9aa7b4">วันง่าย</text><text x="260" y="118" fill="#9aa7b4">วันยาก</text><text x="420" y="118" fill="#9aa7b4">วันวิกฤต</text></g>
+  <circle cx="100" cy="80" r="4" fill="#3fb950"/><circle cx="100" cy="74" r="4" fill="#58a6ff"/>
+  <circle cx="260" cy="55" r="4" fill="#3fb950"/><circle cx="260" cy="44" r="4" fill="#58a6ff"/>
+  <circle cx="420" cy="40" r="4" fill="#3fb950"/><circle cx="420" cy="28" r="4" fill="#58a6ff"/>
+  <text x="150" y="40" fill="#3fb950" font-size="10">● HazeNet</text><text x="150" y="55" fill="#58a6ff" font-size="10">● ConvLSTM</text>
+  <text x="360" y="92" fill="#e3b341" font-size="10">A ต่ำกว่า B "ทุกวัน" อย่างสม่ำเสมอ → จริง</text>
+</svg>
+</div>
+<p>เครื่องมือ paired ที่ใช้บ่อย:</p>
+<ul>
+<li><b>Paired bootstrap on the difference:</b> resample sample แล้วคิด mean(error<sub>A</sub>−error<sub>B</sub>) → CI ของ "ผลต่าง" · <b>ถ้า CI ไม่คร่อม 0 → ต่างอย่างมีนัยสำคัญ</b></li>
+<li><b>Permutation test:</b> สุ่มสลับว่าโมเดลไหนได้ค่าไหน หลายพันครั้ง → ดูว่าความต่างขนาดนี้เกิดโดยบังเอิญบ่อยแค่ไหน = p-value</li>
+<li><b>Wilcoxon signed-rank:</b> paired test แบบ non-parametric (ไม่สมมุติ normal)</li>
+</ul>
+<div class="ex"><b>ทำไม paired ดีกว่า unpaired มาก:</b> ความแปรปรวนส่วนใหญ่มาจาก "วันยาก vs วันง่าย" ซึ่งกระทบทั้ง 2 โมเดลเท่า ๆ กัน · พอจับคู่แล้วลบกัน ความแปรปรวนนั้นหายไป เหลือแค่ "ความต่างจริงระหว่างโมเดล" → ทดสอบ <b>มีพลัง (power) สูงกว่า</b> มาก จับความต่างเล็ก ๆ ที่จริงได้</div>
+
+<!-- 5 -->
+<h2 id="p5">5. Block Bootstrap — แก้ปัญหา autocorrelation (สำคัญต่อข้อมูลเรา) <span class="pin">★</span></h2>
+<div class="danger"><b>กับดักใหญ่:</b> bootstrap ธรรมดาสมมุติว่า sample <b>อิสระต่อกัน</b> · แต่ข้อมูลเรา autocorrelated (ชั่วโมงติดกัน/สถานีใกล้กันคล้ายกัน — Tobler, 5.2) · ถ้า resample ราย "ชั่วโมง" → จะนับข้อมูลซ้ำเสมือนมีข้อมูลอิสระเยอะกว่าจริง → <b>CI แคบเกินจริง = มั่นใจเกินเหตุ = เคลมนัยสำคัญที่ไม่มีจริง</b></div>
+<p><b>ทางแก้ — block bootstrap:</b> resample เป็น <b>"ก้อน"</b> ที่อิสระต่อกัน ไม่ใช่รายจุด:</p>
+<ul>
+<li>resample ทั้ง <b>episode</b> (ช่วงฝุ่นพีคทั้งก้อน) แทนรายชั่วโมง</li>
+<li>resample ทั้ง <b>สถานี</b> แทนรายพิกเซล</li>
+<li>resample ทั้ง <b>บล็อกเวลา</b> (เช่นรายสัปดาห์)</li>
+</ul>
+<div class="why"><b>หลักเดียวกับ 5.2:</b> เหมือน CV ที่ต้อง "บล็อก" เพื่อกันรั่ว — bootstrap ก็ต้อง "บล็อก" เพื่อไม่ให้ประเมินความมั่นใจสูงเกิน · ทั้งคู่มาจากความจริงเดียว: <b>ข้อมูล geospatial ไม่อิสระ</b> · นี่คือจุดที่งาน AQ จำนวนมากทำพลาด แล้วเคลมนัยสำคัญปลอม</div>
+
+<!-- 6 -->
+<h2 id="p6">6. Multiple Seeds — แยก "โชคดี" ออกจาก "เก่งจริง"</h2>
+<p>bootstrap จัดการความบังเอิญจาก <b>test set</b> · แต่ยังมีความบังเอิญจาก <b>การเทรน</b> (สุ่ม init, สุ่มลำดับ batch) · โมเดลเดียวกันเทรน 2 ครั้งด้วย seed ต่างกันได้ผลไม่เท่ากัน</p>
+<p><b>ทางแก้:</b> เทรนหลายครั้งด้วย seed ต่างกัน → รายงาน <b>mean ± std ข้าม seed</b> · ถ้า "ชัยชนะ" ของเราอยู่ภายในความผันผวนของ seed → อาจเป็นแค่ seed ดวงดี ไม่ใช่ไอเดียดี</p>
+<div class="warn"><b>มาตรฐานทอง vs ความจริงงบเรา:</b> วงการ ML ถือว่า "รายงาน ≥3–5 seeds" คือมาตรฐาน · แต่ <b>แต่ละ seed = เทรนใหม่ = งบ A100</b> (โยง 4.5/5.2) · ด้วย ~15 ชม. เราทำหลาย seed สำหรับทุก variant ไม่ได้ · <b>ทางออกซื่อสัตย์:</b> ทำ bootstrap (ฟรี) ให้ครบทุกผล + ทำ multi-seed (2–3) เฉพาะ "ผลพาดหัว" (HazeNet vs baseline หลัก) + ระบุชัดว่าความไม่แน่นอนจากการเทรนวัดบนกี่ seed</div>
+
+<!-- 7 -->
+<h2 id="p7">7. p-value + Effect Size — อ่านให้ถูก</h2>
+<table>
+<tr><th>คำ</th><th>หมายความว่า</th><th>ไม่ได้หมายความว่า</th></tr>
+<tr><td>p &lt; 0.05</td><td>ความต่างขนาดนี้เกิดโดยบังเอิญ &lt;5%</td><td><b>ไม่ได้</b>แปลว่า "ต่างเยอะ" หรือ "สำคัญเชิงปฏิบัติ"</td></tr>
+<tr><td>Effect size</td><td>ต่างกัน <b>ขนาดเท่าไร</b> จริง ๆ (เช่น ลด RMSE 4 หน่วย)</td><td>—</td></tr>
+</table>
+<div class="danger"><b>2 กับดักที่ต้องเลี่ยง:</b><br>
+① <b>significant แต่จิ๋ว:</b> ด้วยข้อมูลเยอะ ความต่าง 0.05 μg/m³ อาจ "significant" แต่ <b>ไร้ความหมายเชิงปฏิบัติ</b> · ต้องรายงาน effect size คู่เสมอ — "ต่างอย่างมีนัยสำคัญ <em>และ</em> มากพอจะสำคัญจริง"<br>
+② <b>p-hacking:</b> ลองหลาย metric/threshold/subset แล้วรายงานเฉพาะอันที่ p&lt;0.05 = โกง · ตั้ง metric/test ที่จะดูไว้ก่อน แล้วถ้าทดสอบหลายอย่าง ต้องปรับ (เช่น Bonferroni)</div>
+
+<!-- 8 -->
+<h2 id="p8">8. งบ A100 + แผนทำจริง</h2>
+<table>
+<tr><th>เครื่องมือ</th><th>จัดการความบังเอิญจาก</th><th>ต้นทุน</th><th>ทำแค่ไหน</th></tr>
+<tr><td>Bootstrap CI (block)</td><td>test set</td><td>ฟรี (ไม่เทรนใหม่)</td><td><b>ทุกผล</b></td></tr>
+<tr><td>Paired test (bootstrap/permutation)</td><td>การเทียบ 2 โมเดล</td><td>ฟรี</td><td><b>ทุกการเคลม "ชนะ"</b></td></tr>
+<tr><td>Multiple seeds</td><td>การเทรน</td><td>แพง (เทรน×N)</td><td>เฉพาะผลพาดหัว (2–3 seed)</td></tr>
+</table>
+<div class="green-box"><b>สรุปแผน:</b> ใช้ <b>block bootstrap + paired test</b> (ฟรีทั้งคู่) เป็นกระดูกสันหลังของการรายงานนัยสำคัญทุกตัวเลข · เก็บ multi-seed ไว้สำหรับ 1–2 การเปรียบเทียบที่สำคัญที่สุด · รายงานทุกตัวเลขเป็น <b>"ค่า [95% CI]"</b> + ระบุว่าใช้ block อะไร, n เท่าไร, กี่ seed — ความโปร่งใสนี้คือสิ่งที่กรรมการมองหา</div>
+
+<!-- cheat -->
+<h2 id="cheat">9. Cheat sheet + แบบฝึกหัด</h2>
+<div class="card">
+<h4>Cheat sheet</h4>
+<ul>
+<li>ตัวเลขเดียว = ตัวอย่างเดียว · รายงานเป็น <b>ค่า [95% CI]</b> เสมอ</li>
+<li><b>Bootstrap</b> = สุ่มหยิบซ้ำ → การกระจายของ metric → percentile CI · ใช้กับ metric อะไรก็ได้ · ฟรี</li>
+<li><b>Paired test</b> = เทียบผลต่างราย sample (วันเดียวกัน) → ไวกว่ามาก · CI ของผลต่างไม่คร่อม 0 = ชนะจริง</li>
+<li><b>Block bootstrap</b> = resample เป็นก้อน (episode/สถานี) ไม่ใช่รายชั่วโมง — กัน CI แคบเกินจริง (autocorrelation, 5.2)</li>
+<li><b>Multiple seeds</b> = แยกโชคดีจากเก่งจริง · แพง → เฉพาะผลพาดหัว</li>
+<li><b>p-value ≠ effect size</b> · รายงานคู่กัน · อย่า p-hack</li>
+</ul>
+</div>
+<div class="chk">
+<p class="q">❓ แบบฝึกหัด</p>
+<ol>
+<li>ทำไม "RMSE 11.8 ชนะ 12.3" ยังเคลมไม่ได้ถ้าไม่มี CI?</li>
+<li>bootstrap หา CI ได้ยังไงโดยไม่ต้องสมมุติการกระจาย?</li>
+<li>paired test ดีกว่า unpaired ตรงไหน?</li>
+<li>ทำไมข้อมูลเราต้องใช้ block bootstrap ไม่ใช่ bootstrap ธรรมดา?</li>
+<li>"significant" แต่ effect size จิ๋ว ควรเคลมว่าดีกว่าไหม?</li>
+</ol>
+<details><summary>เฉลย</summary>
+<ol>
+<li>0.5 อาจเป็นแค่โชคของ test set/seed นี้ — ถ้า CI ทับกันมากก็อาจไม่ต่างจริง · ต้องวัดความไม่แน่นอนก่อน</li>
+<li>สุ่มหยิบซ้ำจาก test หลายพันครั้ง คำนวณ metric ทุกครั้ง → ได้การกระจายจากข้อมูลเอง → เอา percentile 2.5/97.5</li>
+<li>หักความแปรปรวนร่วม ("วันยากก็ยากทั้งคู่") ทิ้ง → เหลือความต่างจริงระหว่างโมเดล → power สูงกว่า</li>
+<li>ข้อมูล autocorrelated → resample รายชั่วโมงนับซ้ำเสมือนอิสระเยอะเกินจริง → CI แคบเกิน → เคลมนัยสำคัญปลอม · block แก้ได้</li>
+<li>ไม่ควรเคลมว่า "ดีกว่าอย่างมีความหมาย" — significant ≠ สำคัญเชิงปฏิบัติ · ต้องดู effect size ด้วย</li>
+</ol>
+</details>
+</div>
+<div class="chk">
+<p class="q">✅ เช็กลิสต์ปิดโมดูล 5</p>
+<ul>
+<li>☐ ทุกตัวเลข metric (5.1) รายงานพร้อม 95% CI (block bootstrap)</li>
+<li>☐ ทุกการเคลม "ชนะ" (5.3) ผ่าน paired test (CI ผลต่างไม่คร่อม 0)</li>
+<li>☐ delta ของ ablation (5.4) ทดสอบนัยสำคัญแล้ว</li>
+<li>☐ ผลพาดหัวมี multi-seed (≥2–3) + ระบุจำนวน seed</li>
+<li>☐ รายงาน effect size คู่ p-value · ไม่ p-hack</li>
+</ul>
+</div>
+
+<hr>
+<div class="green-box center"><b>🎉 จบโมดูล 5 — การประเมิน + การทดลอง (rigor)</b><br>
+5.1 metrics → 5.2 CV → 5.3 baselines → 5.4 ablation → 5.5 error decomposition/oracle → 5.6 significance<br>
+<span class="muted">ตอนนี้คุณมีชุดเครื่องมือครบที่จะ "พิสูจน์ว่าโมเดลดีจริง" อย่างที่กรรมการ/reviewer ยอมรับ — วัดถูก, ประเมินกันรั่ว, เทียบของจริง, พิสูจน์ทุกชิ้น, รู้ว่า error มาจากไหน, และมีนัยสำคัญ · เหลือโมดูล 6 (ทฤษฎีเชิงลึกสำหรับ A*)</span></div>
+
+<p class="center muted" style="margin-top:20px">5.6 — Statistical Significance · ปิดโมดูล 5 · ต่อไป: <b style="color:var(--cyan)">โมดูล 6 — ทฤษฎีเชิงลึก (6.1 Attribution Error Bound · 6.2 Causal · 6.3 Inverse problem)</b></p>
+
+</div>
+</body>
+</html>

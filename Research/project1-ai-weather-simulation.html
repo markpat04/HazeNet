@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PROJECT 1: AI-Based Weather Simulation — ถอดรหัสงานเหรียญทอง Super AI SS5</title>
+<style>
+  :root{
+    --bg:#0c0f14; --bg2:#11161d; --card:#151b24; --card2:#1b232e;
+    --ink:#e6edf3; --muted:#9aa7b4; --dim:#6b7785;
+    --line:#252e3a; --green:#76b900; --green-d:#5a8c00; --green-soft:rgba(118,185,0,.12);
+    --blue:#4aa3ff; --blue-soft:rgba(74,163,255,.12);
+    --orange:#ff9f43; --orange-soft:rgba(255,159,67,.12);
+    --purple:#b984ff; --purple-soft:rgba(185,132,255,.12);
+    --red:#ff6b6b; --red-soft:rgba(255,107,107,.12);
+    --cyan:#36d6c3; --cyan-soft:rgba(54,214,195,.12);
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Segoe UI","Sarabun","Tahoma",sans-serif; line-height:1.72; font-size:16px;}
+  .wrap{max-width:1060px; margin:0 auto; padding:0 18px;}
+  header.hero{background:radial-gradient(900px 400px at 18% -10%,rgba(118,185,0,.22),transparent),
+    linear-gradient(160deg,#0c0f14,#10151c); border-bottom:1px solid var(--line); padding:44px 20px 34px;}
+  .badge{display:inline-block; background:var(--green-soft); color:var(--green); border:1px solid var(--green-d);
+    padding:4px 13px; border-radius:20px; font-size:13px; font-weight:600; margin-bottom:14px;}
+  header.hero h1{margin:0 0 8px; font-size:30px; line-height:1.3;}
+  header.hero .sub{color:var(--muted); font-size:17px; margin:0;}
+  header.hero .gold{color:var(--green); font-weight:700;}
+  nav{position:sticky; top:0; z-index:30; background:rgba(12,15,20,.92);
+    backdrop-filter:blur(6px); border-bottom:1px solid var(--line);}
+  nav .wrap{display:flex; flex-wrap:wrap; gap:5px; padding:9px 18px;}
+  nav a{text-decoration:none; color:var(--muted); font-size:13px; padding:5px 10px; border-radius:7px; white-space:nowrap;}
+  nav a:hover{background:var(--green-soft); color:var(--green);}
+  section{padding:32px 0 6px;}
+  h2{font-size:23px; margin:0 0 4px; display:flex; align-items:center; gap:11px;}
+  h2 .n{background:var(--green); color:#0c0f14; min-width:32px; height:32px; border-radius:8px;
+    display:inline-flex; align-items:center; justify-content:center; font-size:15px; font-weight:800; flex:none;}
+  h3{font-size:18px; margin:22px 0 6px; color:#fff;}
+  h4{font-size:15px; margin:14px 0 4px; color:var(--green);}
+  p{margin:8px 0;} .lead{color:var(--muted); font-size:16.5px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px 22px; margin:15px 0;}
+  .grid{display:grid; gap:14px;} .g2{grid-template-columns:1fr 1fr;} .g3{grid-template-columns:1fr 1fr 1fr;}
+  @media(max-width:780px){.g2,.g3{grid-template-columns:1fr;}}
+  .pill{display:inline-block; font-size:12.5px; padding:3px 10px; border-radius:20px; margin:3px 4px 3px 0;
+    background:var(--blue-soft); color:var(--blue); border:1px solid rgba(74,163,255,.25);}
+  .pill.g{background:var(--green-soft); color:var(--green); border-color:var(--green-d);}
+  .pill.o{background:var(--orange-soft); color:var(--orange); border-color:rgba(255,159,67,.3);}
+  .pill.p{background:var(--purple-soft); color:var(--purple); border-color:rgba(185,132,255,.3);}
+  table{border-collapse:collapse; width:100%; font-size:14.5px; margin:10px 0; overflow:hidden; border-radius:10px;}
+  th,td{border:1px solid var(--line); padding:9px 12px; text-align:left; vertical-align:top;}
+  th{background:#1c2530; color:#fff; font-weight:600;} td{background:var(--card);}
+  tr:hover td{background:var(--card2);}
+  .num-good{color:var(--green); font-weight:700;}
+  .note{border-left:3px solid var(--green); background:var(--green-soft); padding:12px 16px; border-radius:9px; margin:13px 0;}
+  .note.b{border-color:var(--blue); background:var(--blue-soft);}
+  .note.o{border-color:var(--orange); background:var(--orange-soft);}
+  .note.r{border-color:var(--red); background:var(--red-soft);}
+  .label{font-size:11.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--dim); margin-bottom:5px;}
+  ul{margin:8px 0; padding-left:20px;} li{margin:5px 0;}
+  svg{max-width:100%; height:auto; display:block; margin:8px auto;}
+  .cap{text-align:center; color:var(--dim); font-size:13px; margin-top:2px;}
+  .miniflow{display:flex; align-items:stretch; gap:7px; flex-wrap:wrap; margin:12px 0;}
+  .step{background:var(--card2); border:1px solid var(--line); border-radius:10px; padding:9px 12px; flex:1; min-width:115px; text-align:center; font-size:13px;}
+  .step b{display:block; color:var(--green); margin-bottom:2px; font-size:12.5px;}
+  .arrow{display:flex; align-items:center; color:var(--dim); font-size:19px;}
+  @media(max-width:600px){.arrow{transform:rotate(90deg);}}
+  .vs{display:grid; grid-template-columns:1fr auto 1fr; gap:0; align-items:stretch; margin:14px 0;}
+  .vs .col{padding:16px 18px; border:1px solid var(--line);}
+  .vs .old{background:var(--red-soft); border-radius:12px 0 0 12px;}
+  .vs .new{background:var(--green-soft); border-radius:0 12px 12px 0;}
+  .vs .mid{display:flex; align-items:center; justify-content:center; color:var(--dim); font-weight:700; padding:0 10px;}
+  .stat{font-size:30px; font-weight:800; color:var(--green); line-height:1.1;}
+  .statlbl{color:var(--muted); font-size:13px;}
+  footer{padding:28px 18px 50px; color:var(--dim); font-size:13px; border-top:1px solid var(--line); margin-top:24px;}
+  code{background:#0a0d12; border:1px solid var(--line); padding:1px 6px; border-radius:5px; font-size:13.5px; color:var(--cyan);}
+  .anchor{scroll-margin-top:58px;}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="badge">🥇 เหรียญทอง · Super AI Engineer Season 5 · ได้ NVIDIA Grant</span>
+    <h1>PROJECT 1: AI-Based Weather Simulation</h1>
+    <p class="sub">พยากรณ์อากาศด้วย AI ที่ <span class="gold">เร็วระดับวินาที · ละเอียด 3 กม.</span> แทนซูเปอร์คอมพิวเตอร์ที่ใช้เวลาเป็นชั่วโมง — ทดสอบจริงกับพายุไต้ฝุ่นโนรู</p>
+  </div>
+</header>
+
+<nav>
+  <div class="wrap">
+    <a href="#tldr">สรุป 30 วินาที</a>
+    <a href="#pain">ปัญหา/Pain Point</a>
+    <a href="#io">ข้อมูลเข้า-ออก</a>
+    <a href="#pipe">Pipeline ทั้งหมด</a>
+    <a href="#afno">AFNO ทำงานยังไง</a>
+    <a href="#storm">StormCast</a>
+    <a href="#adv">Advection</a>
+    <a href="#roll">Rolling 24h</a>
+    <a href="#result">ผลลัพธ์ &amp; ACC</a>
+    <a href="#gold">ทำไมได้ทอง</a>
+    <a href="#learn">ต่อยอด</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- ===== TLDR ===== -->
+<section id="tldr" class="anchor">
+  <h2><span class="n">0</span> สรุปทั้งโปรเจกต์ใน 30 วินาที</h2>
+  <div class="card">
+    <p class="lead">โปรเจกต์นี้สร้าง "ตัวจำลองอากาศด้วย AI" (AI weather emulator) ที่เลียนแบบการพยากรณ์อากาศแบบฟิสิกส์ดั้งเดิม
+    แต่ <b>เร็วกว่าหลายพันเท่า</b> โดยต่อโมเดล 2 ตัวของ NVIDIA เข้าด้วยกัน:</p>
+    <div class="miniflow">
+      <div class="step"><b>ข้อมูลเข้า</b>สภาพอากาศ ณ ชั่วโมงนี้ (8 ตัวแปร)</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>AFNO</b>พยากรณ์ภาพรวมใหญ่ (FourCastNet)</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>StormCast</b>เติมรายละเอียด 3 กม. (Diffusion)</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>Advection</b>แก้ด้วยฟิสิกส์ ให้เสถียร</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>ผลลัพธ์</b>อากาศชั่วโมงถัดไป → วนซ้ำ 24 รอบ = 24 ชม.</div>
+    </div>
+    <div class="grid g3" style="margin-top:14px">
+      <div class="card" style="margin:0; text-align:center"><div class="stat">3×3 กม.</div><div class="statlbl">ความละเอียดเชิงพื้นที่</div></div>
+      <div class="card" style="margin:0; text-align:center"><div class="stat">~วินาที</div><div class="statlbl">เวลาพยากรณ์ 24 ชม.</div></div>
+      <div class="card" style="margin:0; text-align:center"><div class="stat">โนรู 2022</div><div class="statlbl">เคสจริงที่ใช้ทดสอบ</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PAIN ===== -->
+<section id="pain" class="anchor">
+  <h2><span class="n">1</span> Pain Point — ทำไมงานนี้ถึงสำคัญ</h2>
+  <p class="lead">การพยากรณ์อากาศแบบดั้งเดิม (Numerical Weather Prediction — NWP) แก้สมการฟิสิกส์ของบรรยากาศ
+  ซึ่งแม่นแต่ <b>มีคอขวดใหญ่ 3 ข้อ</b> ที่ทำให้ตอบโจทย์ภัยพิบัติได้ช้า</p>
+
+  <div class="vs">
+    <div class="col old">
+      <div class="label" style="color:var(--red)">❌ แบบดั้งเดิม (NWP)</div>
+      <ul>
+        <li><b>ช้า</b> — ต้องรันบนซูเปอร์คอมพิวเตอร์เป็นชั่วโมง</li>
+        <li><b>หยาบ</b> — โมเดลโลกความละเอียด ~25 กม. มองไม่เห็นฝนตกหนักเฉพาะจุดที่ทำให้น้ำท่วมฉับพลัน</li>
+        <li><b>แพง</b> — กินทรัพยากรมหาศาล เข้าถึงยากสำหรับหน่วยงานเล็ก/ประเทศกำลังพัฒนา</li>
+      </ul>
+    </div>
+    <div class="mid">⚡</div>
+    <div class="col new">
+      <div class="label" style="color:var(--green)">✅ AI Emulator (โปรเจกต์นี้)</div>
+      <ul>
+        <li><b>เร็ว</b> — พยากรณ์ 24 ชม. ในไม่กี่วินาทีบน GPU</li>
+        <li><b>ละเอียด</b> — ลงถึง 3 กม. เห็นพายุฝน/การพาความร้อนระดับท้องถิ่น</li>
+        <li><b>เข้าถึงง่าย</b> — ใช้ตัวแปรเข้าน้อยลง รันได้บนเครื่องเดียว</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="note r">
+    <b>ทำไมเรื่องนี้เป็นเรื่องคอขาดบาดตาย:</b> ก.ย. 2022 ไต้ฝุ่น <b>โนรู (Noru)</b> นำฝนหนักถล่มไทย เกิดน้ำท่วมหนัก
+    (เช่น อุบลราชธานี ต.ค. 2022) การเตือนภัยที่ <b>เร็วและละเอียดพอ</b> = มีเวลาอพยพ ลดความสูญเสีย
+    นี่คือเหตุผลที่โปรเจกต์เลือกเคสนี้มาพิสูจน์ฝีมือ
+  </div>
+
+  <h3>ประโยชน์ 2 ด้านที่โปรเจกต์ชูชัด</h3>
+  <div class="grid g2">
+    <div class="card"><div class="label">🌊 การจัดการภัยพิบัติ</div>พยากรณ์ฝน/ลมล่วงหน้า 24 ชม. → ระบบเตือนภัยน้ำท่วมเร็วขึ้น ตอบสนองทันเหตุการณ์</div>
+    <div class="card"><div class="label">🌬️ พลังงานหมุนเวียน</div>ทำนายลมและอุณหภูมิแม่นยำ → วางแผนผลิตไฟจากกังหันลม/โซลาร์ได้ดีขึ้น</div>
+  </div>
+</section>
+
+<!-- ===== IO ===== -->
+<section id="io" class="anchor">
+  <h2><span class="n">2</span> ข้อมูลเข้า → ข้อมูลออก</h2>
+
+  <h3>ข้อมูลเข้า (Input ณ เวลา t) — 8 ช่องตัวแปร</h3>
+  <p class="lead">แต่ละ "ช่อง" คือแผนที่ค่าหนึ่งตัวแปรครอบคลุมพื้นที่ไทย (เหมือนภาพหลายชั้นซ้อนกัน)</p>
+  <table>
+    <tr><th>#</th><th>ตัวแปร</th><th>หน่วย</th><th>มันบอกอะไร</th></tr>
+    <tr><td>1</td><td><b>Hourly Precipitation</b> (ปริมาณฝนรายชั่วโมง)</td><td>mm/hr</td><td>ฝนตกหนักแค่ไหน — ตัวแปรเป้าหมายหลักของภัยน้ำท่วม</td></tr>
+    <tr><td>2</td><td><b>Terrain Height</b> (ความสูงภูมิประเทศ)</td><td>m</td><td>ภูเขา/ที่ราบ — มีผลต่อการก่อตัวของฝน (คงที่)</td></tr>
+    <tr><td>3</td><td><b>Sea Surface Temperature</b> (อุณหภูมิผิวน้ำทะเล)</td><td>K</td><td>แหล่งพลังงานของพายุ</td></tr>
+    <tr><td>4</td><td><b>Surface Pressure</b> (ความกดอากาศที่ผิว)</td><td>hPa</td><td>โครงสร้างความกดอากาศ ตัวขับการเคลื่อนตัวของระบบอากาศ</td></tr>
+    <tr><td>5</td><td><b>Temperature at 2 m</b> (อุณหภูมิที่ 2 ม.)</td><td>°C</td><td>อุณหภูมิระดับที่คนอยู่</td></tr>
+    <tr><td>6</td><td><b>Relative Humidity at 2 m</b> (ความชื้นสัมพัทธ์)</td><td>%</td><td>ความชื้น — วัตถุดิบของฝน</td></tr>
+    <tr><td>7</td><td><b>u-Wind at 10 m</b> (ลมแกนตะวันออก-ตก)</td><td>m/s</td><td>ทิศทาง+ความเร็วลมแนวนอน</td></tr>
+    <tr><td>8</td><td><b>v-Wind at 10 m</b> (ลมแกนเหนือ-ใต้)</td><td>m/s</td><td>ทิศทาง+ความเร็วลมแนวตั้ง</td></tr>
+  </table>
+  <p class="cap">หมายเหตุ: u และ v รวมกันได้ "เวกเตอร์ลม" เต็มรูปแบบ (ทิศ + ความแรง)</p>
+
+  <h3>ข้อมูลออก (Output ณ เวลา t+1)</h3>
+  <div class="note">
+    แผนที่ตัวแปรชุดเดียวกันของ <b>ชั่วโมงถัดไป</b> ที่ความละเอียด <b>3×3 กม.</b> —
+    แล้วนำผลนี้ "ป้อนกลับเข้าโมเดลเป็น input รอบใหม่" เพื่อพยากรณ์ชั่วโมงถัด ๆ ไป จนครบ 24 ชั่วโมง
+    (เรียกว่า autoregressive — อธิบายในข้อ 6)
+  </div>
+</section>
+
+<!-- ===== PIPELINE ===== -->
+<section id="pipe" class="anchor">
+  <h2><span class="n">3</span> Workflow ทั้ง Pipeline (ภาพใหญ่)</h2>
+  <p class="lead">นี่คือ "เส้นทางข้อมูล" ทั้งหมดในรอบเดียว (ทำนาย 1 ชั่วโมงข้างหน้า) — แต่ละกล่องจะเจาะลึกในหัวข้อถัดไป</p>
+
+  <svg viewBox="0 0 980 470" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,Sarabun,sans-serif">
+    <defs>
+      <marker id="ar" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+        <path d="M0,0 L6,3 L0,6 Z" fill="#6b7785"/>
+      </marker>
+    </defs>
+    <!-- INPUT -->
+    <rect x="20" y="150" width="130" height="150" rx="10" fill="#11161d" stroke="#4aa3ff"/>
+    <text x="85" y="175" text-anchor="middle" fill="#4aa3ff" font-size="13" font-weight="bold">INPUT (t)</text>
+    <text x="85" y="196" text-anchor="middle" fill="#9aa7b4" font-size="10.5">8 ช่องตัวแปร</text>
+    <text x="85" y="214" text-anchor="middle" fill="#6b7785" font-size="9.5">ฝน·ลม·อุณหภูมิ</text>
+    <text x="85" y="228" text-anchor="middle" fill="#6b7785" font-size="9.5">ความชื้น·ความกด</text>
+    <text x="85" y="242" text-anchor="middle" fill="#6b7785" font-size="9.5">SST·ภูมิประเทศ</text>
+    <text x="85" y="270" text-anchor="middle" fill="#9aa7b4" font-size="9.5">แผนที่พื้นที่ไทย</text>
+
+    <line x1="150" y1="225" x2="182" y2="225" stroke="#6b7785" stroke-width="2" marker-end="url(#ar)"/>
+
+    <!-- AFNO -->
+    <rect x="185" y="120" width="245" height="210" rx="12" fill="#0f1620" stroke="#76b900" stroke-width="1.5"/>
+    <text x="307" y="143" text-anchor="middle" fill="#76b900" font-size="14" font-weight="bold">① AFNO (FourCastNet)</text>
+    <text x="307" y="160" text-anchor="middle" fill="#9aa7b4" font-size="10">พยากรณ์โครงสร้างใหญ่ของบรรยากาศ</text>
+    <rect x="205" y="172" width="205" height="26" rx="6" fill="#1b232e"/><text x="307" y="189" text-anchor="middle" fill="#e6edf3" font-size="11">Patch + Position Embedding</text>
+    <rect x="205" y="204" width="205" height="54" rx="6" fill="#1b232e" stroke="#5a8c00" stroke-dasharray="3 2"/>
+    <text x="307" y="221" text-anchor="middle" fill="#76b900" font-size="10.5" font-weight="bold">L × Layers</text>
+    <text x="307" y="237" text-anchor="middle" fill="#9aa7b4" font-size="10">Spatial Mixing (FFT→filter→iFFT)</text>
+    <text x="307" y="251" text-anchor="middle" fill="#9aa7b4" font-size="10">+ Channel Mixing (MLP)</text>
+    <rect x="205" y="264" width="205" height="26" rx="6" fill="#1b232e"/><text x="307" y="281" text-anchor="middle" fill="#e6edf3" font-size="11">Linear Decoder</text>
+    <text x="307" y="312" text-anchor="middle" fill="#6b7785" font-size="9.5">→ พยากรณ์หยาบ (large-scale)</text>
+
+    <line x1="430" y1="225" x2="462" y2="225" stroke="#6b7785" stroke-width="2" marker-end="url(#ar)"/>
+
+    <!-- STORMCAST -->
+    <rect x="465" y="120" width="225" height="210" rx="12" fill="#0f1620" stroke="#b984ff" stroke-width="1.5"/>
+    <text x="577" y="143" text-anchor="middle" fill="#b984ff" font-size="14" font-weight="bold">② Modified StormCast</text>
+    <text x="577" y="160" text-anchor="middle" fill="#9aa7b4" font-size="10">เติมรายละเอียดระดับ 3 กม.</text>
+    <rect x="485" y="174" width="185" height="30" rx="6" fill="#1b232e"/><text x="577" y="193" text-anchor="middle" fill="#e6edf3" font-size="11">U-Net (Regression) = ค่าเฉลี่ย</text>
+    <text x="577" y="220" text-anchor="middle" fill="#6b7785" font-size="14">＋</text>
+    <rect x="485" y="226" width="185" height="30" rx="6" fill="#1b232e"/><text x="577" y="245" text-anchor="middle" fill="#e6edf3" font-size="11">Diffusion = รายละเอียดคมชัด</text>
+    <text x="577" y="278" text-anchor="middle" fill="#9aa7b4" font-size="10">= ภาพอากาศคมชัดสมจริง</text>
+    <text x="577" y="296" text-anchor="middle" fill="#6b7785" font-size="9.5">(ฝน/ความชื้นดีขึ้นชัด)</text>
+
+    <line x1="690" y1="225" x2="722" y2="225" stroke="#6b7785" stroke-width="2" marker-end="url(#ar)"/>
+
+    <!-- ADVECTION -->
+    <rect x="725" y="150" width="135" height="150" rx="10" fill="#11161d" stroke="#ff9f43"/>
+    <text x="792" y="173" text-anchor="middle" fill="#ff9f43" font-size="13" font-weight="bold">③ Advection</text>
+    <text x="792" y="191" text-anchor="middle" fill="#9aa7b4" font-size="10">แก้ด้วยฟิสิกส์ (R)</text>
+    <text x="792" y="212" text-anchor="middle" fill="#9aa7b4" font-size="10">แทนค่าตัวแปรช้า</text>
+    <text x="792" y="228" text-anchor="middle" fill="#e6edf3" font-size="10.5">Z · SST · p_sfc</text>
+    <text x="792" y="250" text-anchor="middle" fill="#9aa7b4" font-size="10">ด้วยค่าที่ "พาไป"</text>
+    <text x="792" y="266" text-anchor="middle" fill="#9aa7b4" font-size="10">ตามลม → เสถียร</text>
+    <text x="792" y="286" text-anchor="middle" fill="#6b7785" font-size="9.5">ลดการสะสมerror</text>
+
+    <line x1="860" y1="225" x2="895" y2="225" stroke="#6b7785" stroke-width="2" marker-end="url(#ar)"/>
+
+    <!-- OUTPUT -->
+    <rect x="898" y="165" width="70" height="120" rx="10" fill="#0f1f12" stroke="#76b900"/>
+    <text x="933" y="205" text-anchor="middle" fill="#76b900" font-size="12" font-weight="bold">OUTPUT</text>
+    <text x="933" y="225" text-anchor="middle" fill="#9aa7b4" font-size="10">(t+1)</text>
+    <text x="933" y="245" text-anchor="middle" fill="#9aa7b4" font-size="10">3 กม.</text>
+
+    <!-- feedback loop -->
+    <path d="M933,285 C933,400 85,400 85,302" stroke="#76b900" stroke-width="2" stroke-dasharray="6 4" fill="none" marker-end="url(#ar)"/>
+    <rect x="380" y="378" width="240" height="42" rx="9" fill="#0f1f12" stroke="#5a8c00"/>
+    <text x="500" y="398" text-anchor="middle" fill="#76b900" font-size="12" font-weight="bold">🔁 Rolling Autoregression × 24</text>
+    <text x="500" y="413" text-anchor="middle" fill="#9aa7b4" font-size="10">ป้อนผลกลับเป็น input → ได้พยากรณ์ครบ 24 ชั่วโมง</text>
+
+    <!-- top labels -->
+    <text x="307" y="108" text-anchor="middle" fill="#6b7785" font-size="10">โครงข่ายแบบ Fourier (มองทั้งภาพพร้อมกัน)</text>
+    <text x="577" y="108" text-anchor="middle" fill="#6b7785" font-size="10">โมเดล Generative (Diffusion)</text>
+  </svg>
+  <p class="cap">รอบเดียว = ทำนาย 1 ชั่วโมง · เส้นประเขียว = วนกลับเพื่อต่อจนครบ 24 ชั่วโมง</p>
+</section>
+
+<!-- ===== AFNO ===== -->
+<section id="afno" class="anchor">
+  <h2><span class="n">4</span> เจาะลึก ① AFNO — หัวใจการพยากรณ์</h2>
+  <div class="card">
+    <p><b>AFNO = Adaptive Fourier Neural Operator</b> คือสมองของโมเดล <b>FourCastNet</b> ของ NVIDIA
+    เป็นญาติของ Transformer (ViT) แต่ <b>เปลี่ยนวิธี "ผสมข้อมูลเชิงพื้นที่"</b> ให้ทำงานในโลกของความถี่ (Fourier) ซึ่งเร็วและจับความสัมพันธ์ระยะไกลได้ดี</p>
+
+    <div class="note b">
+      <b>ทำไมต้อง Fourier?</b> อากาศเป็นปรากฏการณ์ "ระดับโลก" — ลมจากทะเลจีนใต้กระทบฝนที่ไทยได้
+      โมเดลจึงต้องมองความสัมพันธ์ "ทั้งภาพพร้อมกัน" การแปลงเป็นคลื่นความถี่ (FFT) ทำให้ผสมข้อมูลทั่วทั้งแผนที่
+      ได้ในครั้งเดียวอย่างมีประสิทธิภาพ (เร็วแบบ O(N log N))
+    </div>
+
+    <h3>ภายใน AFNO 1 ชั้น ทำอะไร (อ่านจากบนลงล่าง)</h3>
+    <div class="grid g2">
+      <div>
+        <h4>① Patch + Position Embedding</h4>
+        <p>หั่นแผนที่เป็นชิ้นเล็ก ๆ (patch) แปลงเป็นเวกเตอร์ตัวเลข + แปะ "ตำแหน่ง" กำกับ — เหมือนหั่นภาพเป็นจิ๊กซอว์ที่รู้ว่าชิ้นไหนอยู่ตรงไหน</p>
+        <h4>② Spatial Mixing (พระเอก)</h4>
+        <p>ผสมข้อมูลข้ามพื้นที่ผ่าน 3 ขั้น: <code>FFT</code> → <code>Multiply Frequency</code> (ฟิลเตอร์ที่เรียนรู้ได้) → <code>iFFT</code></p>
+        <h4>③ Channel Mixing</h4>
+        <p>ผสมข้อมูลข้าม "ตัวแปร" (เช่น ความชื้นกระทบฝน) ด้วย MLP</p>
+        <h4>④ Linear Decoder</h4>
+        <p>แปลงกลับเป็นแผนที่พยากรณ์</p>
+      </div>
+      <div>
+        <svg viewBox="0 0 320 300" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,Sarabun,sans-serif">
+          <text x="160" y="20" text-anchor="middle" fill="#76b900" font-size="13" font-weight="bold">กลไก Spatial Mixing</text>
+          <rect x="60" y="35" width="200" height="40" rx="8" fill="#11161d" stroke="#4aa3ff"/>
+          <text x="160" y="53" text-anchor="middle" fill="#e6edf3" font-size="12">แผนที่ (โลกของพื้นที่)</text>
+          <text x="160" y="68" text-anchor="middle" fill="#6b7785" font-size="10">space domain</text>
+          <line x1="160" y1="75" x2="160" y2="98" stroke="#6b7785" stroke-width="2" marker-end="url(#ar)"/>
+          <text x="195" y="92" fill="#36d6c3" font-size="11">FFT ⟶</text>
+          <rect x="40" y="100" width="240" height="62" rx="8" fill="#0f1620" stroke="#36d6c3"/>
+          <text x="160" y="121" text-anchor="middle" fill="#36d6c3" font-size="12" font-weight="bold">โลกของความถี่ (frequency)</text>
+          <text x="160" y="140" text-anchor="middle" fill="#e6edf3" font-size="11">× ฟิลเตอร์ที่โมเดลเรียนรู้</text>
+          <text x="160" y="155" text-anchor="middle" fill="#6b7785" font-size="10">เน้น/ตัดคลื่นความถี่สำคัญ</text>
+          <line x1="160" y1="162" x2="160" y2="185" stroke="#6b7785" stroke-width="2" marker-end="url(#ar)"/>
+          <text x="195" y="179" fill="#36d6c3" font-size="11">iFFT ⟶</text>
+          <rect x="60" y="187" width="200" height="40" rx="8" fill="#11161d" stroke="#76b900"/>
+          <text x="160" y="205" text-anchor="middle" fill="#e6edf3" font-size="12">แผนที่ที่ผสมข้อมูลแล้ว</text>
+          <text x="160" y="220" text-anchor="middle" fill="#6b7785" font-size="10">ทุกจุดรับรู้กันทั้งภาพ</text>
+          <text x="160" y="255" text-anchor="middle" fill="#9aa7b4" font-size="11">เปรียบเทียบ: แทนที่จะถามเพื่อนบ้าน</text>
+          <text x="160" y="271" text-anchor="middle" fill="#9aa7b4" font-size="11">ทีละคน → "ฟังทั้งวงพร้อมกัน"</text>
+          <text x="160" y="287" text-anchor="middle" fill="#9aa7b4" font-size="11">ผ่านการแยกเป็นคลื่นเสียง</text>
+        </svg>
+      </div>
+    </div>
+    <div class="label" style="margin-top:8px">เทคนิคที่เกี่ยวข้อง</div>
+    <span class="pill">Fourier Neural Operator (FNO)</span>
+    <span class="pill">Vision Transformer (ViT)</span>
+    <span class="pill">FFT / iFFT</span>
+    <span class="pill">Token Mixing</span>
+    <span class="pill g">FourCastNet (NVIDIA)</span>
+  </div>
+</section>
+
+<!-- ===== STORMCAST ===== -->
+<section id="storm" class="anchor">
+  <h2><span class="n">5</span> เจาะลึก ② StormCast — เติมรายละเอียดด้วย Generative AI</h2>
+  <div class="card">
+    <p>AFNO เก่งเรื่อง "ภาพรวมใหญ่" แต่ผลที่ได้มัก <b>เบลอ/ขาดรายละเอียดเล็ก</b> โดยเฉพาะฝนและพายุที่เกิดจากการพาความร้อน (convection)
+    จึงต่อด้วย <b>StormCast</b> ของ NVIDIA ซึ่งเป็นโมเดล <b>Diffusion</b> (ตระกูลเดียวกับ AI สร้างภาพ) ที่เลียนแบบโมเดลความละเอียดสูงระดับกิโลเมตร</p>
+
+    <div class="note p">
+      <b>แนวคิดง่าย ๆ:</b> StormCast แยกงานเป็น 2 ส่วนแล้วบวกกัน<br>
+      <b>(1) U-Net Regression</b> = ทาย"ค่าเฉลี่ย" ที่น่าจะเป็น (ภาพรวมเรียบ ๆ) +
+      <b>(2) Diffusion</b> = เติม "รายละเอียดคมชัดสมจริง" (ลายเมฆ แนวฝน พายุ) ที่ค่าเฉลี่ยทำไม่ได้
+    </div>
+
+    <svg viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,Sarabun,sans-serif">
+      <rect x="20" y="70" width="170" height="60" rx="9" fill="#11161d" stroke="#9aa7b4"/>
+      <text x="105" y="95" text-anchor="middle" fill="#e6edf3" font-size="12">ผลหยาบจาก AFNO</text>
+      <text x="105" y="113" text-anchor="middle" fill="#6b7785" font-size="10">เบลอ ขาดรายละเอียด</text>
+      <line x1="190" y1="100" x2="225" y2="100" stroke="#6b7785" stroke-width="2" marker-end="url(#ar)"/>
+
+      <rect x="230" y="35" width="190" height="50" rx="9" fill="#0f1620" stroke="#4aa3ff"/>
+      <text x="325" y="56" text-anchor="middle" fill="#4aa3ff" font-size="12" font-weight="bold">U-Net Regression</text>
+      <text x="325" y="73" text-anchor="middle" fill="#9aa7b4" font-size="10">ค่าเฉลี่ยที่แม่นยำ (เรียบ)</text>
+
+      <rect x="230" y="115" width="190" height="50" rx="9" fill="#0f1620" stroke="#b984ff"/>
+      <text x="325" y="136" text-anchor="middle" fill="#b984ff" font-size="12" font-weight="bold">Diffusion Model</text>
+      <text x="325" y="153" text-anchor="middle" fill="#9aa7b4" font-size="10">รายละเอียดคมชัดสมจริง</text>
+
+      <text x="455" y="105" text-anchor="middle" fill="#e6edf3" font-size="26">＋</text>
+      <line x1="420" y1="60" x2="448" y2="92" stroke="#6b7785" stroke-width="2"/>
+      <line x1="420" y1="140" x2="448" y2="110" stroke="#6b7785" stroke-width="2"/>
+      <line x1="478" y1="100" x2="510" y2="100" stroke="#6b7785" stroke-width="2" marker-end="url(#ar)"/>
+
+      <rect x="515" y="65" width="225" height="70" rx="9" fill="#0f1f12" stroke="#76b900"/>
+      <text x="627" y="92" text-anchor="middle" fill="#76b900" font-size="12.5" font-weight="bold">อากาศคมชัด 3 กม.</text>
+      <text x="627" y="111" text-anchor="middle" fill="#9aa7b4" font-size="10.5">เห็นพายุฝน การพาความร้อน</text>
+      <text x="627" y="126" text-anchor="middle" fill="#6b7785" font-size="10">= ตัวที่ดันคะแนนฝน/ความชื้นขึ้น</text>
+    </svg>
+    <p class="cap">นี่คือเหตุผลตรง ๆ ว่าทำไม "AFNO + StormCast" ถึงดีกว่า "AFNO เดี่ยว" ในตารางผลลัพธ์</p>
+
+    <div class="label">เทคนิคที่เกี่ยวข้อง</div>
+    <span class="pill p">Diffusion Model</span>
+    <span class="pill">U-Net</span>
+    <span class="pill">Generative AI</span>
+    <span class="pill">Convection-allowing (km-scale)</span>
+    <span class="pill g">StormCast (NVIDIA)</span>
+  </div>
+</section>
+
+<!-- ===== ADVECTION ===== -->
+<section id="adv" class="anchor">
+  <h2><span class="n">6</span> เจาะลึก ③ Advection Correction — ใส่ฟิสิกส์กันโมเดลเพี้ยน</h2>
+  <div class="card">
+    <p><b>ปัญหา:</b> เมื่อป้อนผลกลับเข้าไปวนซ้ำ 24 รอบ <b>error เล็ก ๆ จะสะสมจนภาพเพี้ยน</b> (model drift)
+    โดยเฉพาะตัวแปรที่ "เปลี่ยนช้า" เช่น ความกดอากาศ อุณหภูมิผิวน้ำทะเล</p>
+    <p><b>วิธีแก้ (จุดที่ทีมใส่ความคิดสร้างสรรค์):</b> แทนที่จะให้ AI เดาตัวแปรช้าพวกนี้เองทุกครั้ง
+    ทีมใช้หลักฟิสิกส์ <b>Advection</b> (การพาไปตามลม) — สมการในกล่องคือ <code>−∇·(uv)</code> (flux-form advection)
+    ซึ่ง <b>ใช้ลม u, v ที่โมเดลทำนายไป "พา" ตัวแปรช้า</b> ให้เคลื่อนตามการไหลของอากาศ แล้ว <b>"R" = แทนค่า (replace)</b>
+    ตัวแปรเหล่านี้ในผลทำนายหลักด้วยค่าฟิสิกส์ ได้แก่ <code>Z</code> (ความสูงศักย์/geopotential) · <code>SST</code> · <code>p_sfc</code> (ความกดผิว)</p>
+
+    <div class="miniflow">
+      <div class="step"><b>main</b>ผลทำนายจาก AI (AFNO+StormCast)</div>
+      <div class="arrow">＋</div>
+      <div class="step"><b>adv</b>ค่าที่คำนวณจากฟิสิกส์ (พาตามลม)</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>R · Replace</b>เอาค่า adv ไปแทนตัวแปรช้า Z·SST·p_sfc</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>ผลเสถียร</b>ไม่ดริฟต์ คงสภาพฟิสิกส์ที่ถูกต้อง</div>
+    </div>
+
+    <div class="note o">
+      <b>ทำไมเรื่องนี้ทำให้งานเด่น:</b> นี่คือการผสาน <b>"ML + ความรู้ฟิสิกส์ (physics-informed)"</b> —
+      ไม่เชื่อ AI 100% แต่ใช้กฎธรรมชาติช่วยคุมตัวแปรที่ AI มักทำพลาด → พยากรณ์ระยะยาวเสถียรขึ้นมาก
+      เป็นเทคนิคที่ "ฉลาด" และแสดงความเข้าใจปัญหาเชิงลึก
+    </div>
+  </div>
+</section>
+
+<!-- ===== ROLLING ===== -->
+<section id="roll" class="anchor">
+  <h2><span class="n">7</span> Rolling Autoregression — ต่อภาพ 1 ชั่วโมง ให้เป็น 24 ชั่วโมง</h2>
+  <div class="card">
+    <p>โมเดลทำนายทีละ 1 ชั่วโมง แล้ว <b>เอาผลลัพธ์เป็น input รอบใหม่</b> วนแบบนี้ <b>24 รอบ (Rolling 23 time → t+24)</b>
+    จึงได้พยากรณ์ตลอด 24 ชั่วโมง — ทั้งหมดนี้ใช้เวลาแค่ระดับวินาที</p>
+    <svg viewBox="0 0 820 130" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,Sarabun,sans-serif">
+      <rect x="15" y="45" width="120" height="44" rx="9" fill="#11161d" stroke="#4aa3ff"/>
+      <text x="75" y="64" text-anchor="middle" fill="#4aa3ff" font-size="11" font-weight="bold">Input (t)</text>
+      <text x="75" y="80" text-anchor="middle" fill="#6b7785" font-size="9.5">สภาพปัจจุบัน</text>
+      <line x1="135" y1="67" x2="165" y2="67" stroke="#6b7785" stroke-width="2" marker-end="url(#ar)"/>
+      <rect x="168" y="45" width="120" height="44" rx="9" fill="#0f1f12" stroke="#76b900"/>
+      <text x="228" y="64" text-anchor="middle" fill="#76b900" font-size="10.5" font-weight="bold">AFNO+StormCast</text>
+      <text x="228" y="80" text-anchor="middle" fill="#6b7785" font-size="9.5">→ Output (t+1)</text>
+      <line x1="288" y1="67" x2="318" y2="67" stroke="#6b7785" stroke-width="2" marker-end="url(#ar)"/>
+      <rect x="321" y="45" width="120" height="44" rx="9" fill="#0f1f12" stroke="#76b900"/>
+      <text x="381" y="64" text-anchor="middle" fill="#76b900" font-size="10.5" font-weight="bold">AFNO+StormCast</text>
+      <text x="381" y="80" text-anchor="middle" fill="#6b7785" font-size="9.5">→ Output (t+2)</text>
+      <text x="475" y="72" text-anchor="middle" fill="#9aa7b4" font-size="20">· · ·</text>
+      <line x1="500" y1="67" x2="528" y2="67" stroke="#6b7785" stroke-width="2" marker-end="url(#ar)"/>
+      <rect x="531" y="45" width="120" height="44" rx="9" fill="#0f1f12" stroke="#76b900"/>
+      <text x="591" y="64" text-anchor="middle" fill="#76b900" font-size="10.5" font-weight="bold">AFNO+StormCast</text>
+      <text x="591" y="80" text-anchor="middle" fill="#6b7785" font-size="9.5">→ Output (t+24)</text>
+      <line x1="651" y1="67" x2="681" y2="67" stroke="#6b7785" stroke-width="2" marker-end="url(#ar)"/>
+      <rect x="684" y="40" width="120" height="54" rx="9" fill="#11161d" stroke="#76b900"/>
+      <text x="744" y="62" text-anchor="middle" fill="#e6edf3" font-size="11" font-weight="bold">พยากรณ์</text>
+      <text x="744" y="79" text-anchor="middle" fill="#76b900" font-size="11" font-weight="bold">24 ชั่วโมง</text>
+      <path d="M228,89 C228,118 381,118 381,91" stroke="#5a8c00" stroke-width="1.5" stroke-dasharray="4 3" fill="none" marker-end="url(#ar)"/>
+      <text x="305" y="115" text-anchor="middle" fill="#6b7785" font-size="9">ผลรอบก่อน = input รอบถัดไป</text>
+    </svg>
+    <div class="note r">
+      <b>จุดเสี่ยงที่ Advection (ข้อ 6) เข้ามาช่วย:</b> ยิ่งวนหลายรอบ error ยิ่งสะสม การแทนตัวแปรช้าด้วยฟิสิกส์
+      คือกุญแจที่ทำให้พยากรณ์ครบ 24 ชม. ได้โดยไม่เพี้ยน
+    </div>
+  </div>
+</section>
+
+<!-- ===== RESULTS ===== -->
+<section id="result" class="anchor">
+  <h2><span class="n">8</span> ผลลัพธ์ — วัดด้วย ACC อย่างเป็นระบบ</h2>
+  <div class="card">
+    <h4>ACC (Anomaly Correlation Coefficient) คืออะไร?</h4>
+    <p>เป็นมาตรวัดมาตรฐานของวงการพยากรณ์อากาศ บอกว่า "รูปแบบที่ทำนาย" ตรงกับ "ของจริง" แค่ไหน
+    ค่าอยู่ระหว่าง 0–1 — <b>ยิ่งเข้าใกล้ 1 ยิ่งดี</b> (โดยทั่วไป &gt;0.6 ใช้ได้, &gt;0.8 ดีมาก)</p>
+
+    <table>
+      <tr><th>ตัวแปร</th><th>AFNO เดี่ยว</th><th>AFNO + StormCast</th><th>ดีขึ้น</th></tr>
+      <tr><td><b>p_sfc</b> ความกดผิว</td><td>0.9913</td><td class="num-good">0.9991</td><td>▲ เกือบสมบูรณ์แบบ</td></tr>
+      <tr><td><b>t2m</b> อุณหภูมิ 2 ม.</td><td>0.8512</td><td class="num-good">0.8950</td><td>▲ ดีมาก</td></tr>
+      <tr><td><b>rh_2m</b> ความชื้น</td><td>0.5536</td><td class="num-good">0.7003</td><td>▲▲ พุ่งแรง (+0.15)</td></tr>
+      <tr><td><b>u10m</b> ลม U</td><td>0.6483</td><td class="num-good">0.6922</td><td>▲</td></tr>
+      <tr><td><b>v10m</b> ลม V</td><td>0.5988</td><td class="num-good">0.6649</td><td>▲</td></tr>
+      <tr><td><b>Precip</b> ฝน</td><td>0.0893</td><td class="num-good">0.1153</td><td>▲ (ฝนยากที่สุดเสมอ)</td></tr>
+    </table>
+
+    <div class="grid g2">
+      <div class="note">
+        <b>อ่านผลยังไง:</b> การเติม StormCast <b>ทำให้คะแนนดีขึ้นทุกตัวแปร</b>
+        โดยเฉพาะ <b>ความชื้น (0.55→0.70)</b> และ <b>ฝน</b> — ซึ่งเป็นตัวแปรที่ "มีรายละเอียดเล็ก" ที่ Diffusion ช่วยได้ตรงจุด
+      </div>
+      <div class="note o">
+        <b>ทำไมฝนคะแนนต่ำ (0.11)?</b> ไม่ใช่จุดอ่อนของงาน — การพยากรณ์ "ฝนรายชั่วโมงเชิงพื้นที่" เป็น
+        <b>โจทย์ที่ยากที่สุดในวงการ</b> (เกิด/ดับเร็ว เป็นจุด ๆ) แค่ทำให้ดีขึ้นได้ก็ถือว่าเก่งแล้ว
+      </div>
+    </div>
+
+    <h4>ภาพประกอบผล (จากโปสเตอร์)</h4>
+    <p>แสดงแผนที่ <b>ลมโซนัล (U-Component)</b> และ <b>ฝนรายชั่วโมง</b> เหนือประเทศไทย ที่เวลา 00, 01, 03, 06, 12, 24 UTC
+    ของวัน <b>30 ก.ย. 2022</b> (ช่วงไต้ฝุ่นโนรู) เทียบให้เห็นว่าโมเดลจับการเคลื่อนตัวของระบบฝน/ลมได้</p>
+  </div>
+</section>
+
+<!-- ===== GOLD ===== -->
+<section id="gold" class="anchor">
+  <h2><span class="n">9</span> ทำไมงานนี้ถึงได้ "เหรียญทอง" + NVIDIA Grant</h2>
+
+  <div class="card">
+    <div class="label">🏆 รางวัลที่ได้</div>
+    <p>นอกจากเหรียญทอง Super AI Engineer SS5 ทีมยังได้ <b>NVIDIA Grant</b> เป็นทรัพยากรคำนวณระดับงานวิจัยจริง:</p>
+    <div class="grid g3">
+      <div class="card" style="margin:0;text-align:center"><div class="stat" style="font-size:22px">8× A100</div><div class="statlbl">GPU NVIDIA A100 (80GiB)</div></div>
+      <div class="card" style="margin:0;text-align:center"><div class="stat" style="font-size:22px">128 CPU</div><div class="statlbl">+ RAM 2TiB · Storage 61TiB</div></div>
+      <div class="card" style="margin:0;text-align:center"><div class="stat" style="font-size:22px">OCI</div><div class="statlbl">รันบน Oracle Cloud</div></div>
+    </div>
+  </div>
+
+  <h3>5 เหตุผลที่กรรมการให้คะแนนสูง</h3>
+  <div class="grid g2">
+    <div class="card"><div class="label" style="color:var(--green)">1 · เทคนิค State-of-the-Art</div>
+      ไม่ได้ใช้โมเดลพื้น ๆ แต่ <b>รวม 2 โมเดลล้ำสุดของ NVIDIA</b> (FourCastNet/AFNO + StormCast diffusion) เข้าด้วยกัน — แสดงความเข้าใจงานวิจัยล่าสุด</div>
+    <div class="card"><div class="label" style="color:var(--green)">2 · ความคิดสร้างสรรค์ (ผสมศาสตร์)</div>
+      เพิ่ม <b>Advection correction (ML + ฟิสิกส์)</b> เพื่อแก้ปัญหา drift — เป็นไอเดียที่ไม่ได้มากับโมเดลสำเร็จรูป สะท้อนการคิดเชิงลึก</div>
+    <div class="card"><div class="label" style="color:var(--green)">3 · Impact + Pain Point จริง</div>
+      ตอบโจทย์ <b>ภัยพิบัติของไทยโดยตรง</b> (ไต้ฝุ่นโนรู น้ำท่วม) + พลังงานหมุนเวียน — มีคุณค่าทางสังคมชัดเจน</div>
+    <div class="card"><div class="label" style="color:var(--green)">4 · วัดผลเป็นระบบ</div>
+      ใช้ <b>ACC เปรียบเทียบ baseline (AFNO) กับโมเดลใหม่</b> ทุกตัวแปร พิสูจน์ว่า "ดีขึ้นจริง" ด้วยตัวเลข ไม่ใช่แค่อ้าง</div>
+    <div class="card"><div class="label" style="color:var(--green)">5 · ทดสอบกับเคสจริง</div>
+      ไม่ใช่แค่ชุดข้อมูลทดลอง แต่ <b>เอาไปจับเหตุการณ์จริง (Typhoon Noru, ก.ย.–ต.ค. 2022)</b> ที่สร้างความเสียหายจริง</div>
+    <div class="card" style="background:var(--green-soft); border-color:var(--green-d)"><div class="label" style="color:var(--green)">สรุปสูตรเหรียญทอง</div>
+      <b>เทคนิคล้ำ + ไอเดียผสมศาสตร์ + ปัญหาจริงมี impact + วัดผลพิสูจน์ได้ + เคสจริง</b> = ครบทุกแกนที่กรรมการมองหา</div>
+  </div>
+</section>
+
+<!-- ===== LEARN ===== -->
+<section id="learn" class="anchor">
+  <h2><span class="n">→</span> ถ้าอยากต่อยอด / ทำความเข้าใจให้ลึกขึ้น</h2>
+  <div class="card">
+    <h4>คอนเซปต์ที่ควรไปอ่านต่อ (เรียงจากง่าย→ยาก)</h4>
+    <ul>
+      <li><b>FourCastNet / AFNO</b> — เปเปอร์ของ NVIDIA เรื่องพยากรณ์อากาศด้วย Fourier Neural Operator</li>
+      <li><b>StormCast</b> — โมเดล diffusion ระดับกิโลเมตรของ NVIDIA (เลียนแบบ HRRR)</li>
+      <li><b>Diffusion Models</b> — หลักการ generative ที่ใช้เติมรายละเอียด (เหมือน AI สร้างภาพ)</li>
+      <li><b>Anomaly Correlation Coefficient (ACC)</b> — มาตรวัดมาตรฐานพยากรณ์อากาศ</li>
+      <li><b>Physics-informed ML / Advection</b> — การใส่กฎฟิสิกส์เข้าไปคุมโมเดล</li>
+    </ul>
+    <div class="note b">
+      <b>เชื่อมกับเอกสารภาพรวม:</b> งานนี้คือตัวอย่างรูปธรรมของ <b>กลุ่ม C — Spatiotemporal Forecasting</b>
+      ในเอกสาร "ภาพรวม GeoAI" ที่เราทำไว้ก่อนหน้า (ตระกูลเดียวกับ GraphCast / Aurora) แต่เน้น
+      <b>downscaling ความละเอียดสูง + ปรับใช้กับไทย</b>
+    </div>
+    <h4>ไอเดียพัฒนาให้เด่นขึ้นอีก</h4>
+    <ul>
+      <li>ขยายจากทดสอบ 1 พายุ → <b>ประเมินหลายเหตุการณ์</b> (หลายปี) เพื่อพิสูจน์ความทนทาน</li>
+      <li>เพิ่ม <b>uncertainty / ensemble</b> (ความน่าจะเป็น) ให้การเตือนภัยน่าเชื่อถือขึ้น</li>
+      <li>ต่อ <b>โมดูลน้ำท่วม</b> (เอาฝนที่พยากรณ์ไปป้อนแบบจำลองน้ำท่วม) → จาก "พยากรณ์ฝน" สู่ "พยากรณ์พื้นที่น้ำท่วม"</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    เอกสารนี้ถอดความและวิเคราะห์จากโปสเตอร์ผลงาน PROJECT 1: AI-Based Weather Simulation (Super AI Engineer Season 5) ·
+    เรียบเรียงเพื่ออธิบาย workflow · เทคโนโลยี · และเหตุผลเชิงคุณค่าให้เข้าใจตั้งแต่พื้นฐาน
+  </div>
+</footer>
+
+</body>
+</html>

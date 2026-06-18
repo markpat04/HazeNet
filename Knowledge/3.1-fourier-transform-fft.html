@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.1 — Fourier Transform / FFT (สอนละเอียด)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.6px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>3.1 — Fourier Transform / FFT</h1>
+<p class="tagline">แปลงสัญญาณเป็น "ส่วนผสมของคลื่น" — ฐานคณิตของ AFNO (backbone นิวรอลเรา)</p>
+<p class="sub">เริ่ม Module 3 (สถาปัตยกรรมนิวรอล) · บทนี้เป็นเครื่องมือคณิตที่ AFNO (3.2) ใช้ · ผูกกับ HazeNet ตลอด</p>
+
+<div class="lead">
+<b>ทำไมต้องเรียน Fourier ก่อน AFNO:</b> backbone นิวรอลของเราชื่อ <b>AFNO</b> (Adaptive Fourier Neural Operator) — คำว่า "Fourier" อยู่ในชื่อเลย · มันทำงานโดย<b>แปลงแผนที่ควันไปเป็น "โลกของคลื่นความถี่" ทำงานที่นั่น แล้วแปลงกลับ</b> · ถ้าไม่เข้าใจว่า Fourier transform ทำอะไร จะไม่มีทางเข้าใจว่าทำไม AFNO "เห็นทั้งแผนที่พร้อมกัน" (global receptive field) ซึ่งเป็นเหตุผลที่มันเหมาะกับการพัดพาควันระยะไกลข้ามพรมแดน · บทนี้ปูเครื่องมือ ส่วน 3.2 จะเอาไปประกอบเป็นนิวรอล
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. ไอเดียหลัก: ทุกสัญญาณ = ผลรวมคลื่น ★</a><br>
+<a href="#p2">2. โดเมนเวลา/พื้นที่ vs ความถี่ ★</a><br>
+<a href="#p3">3. อ่านสเปกตรัม (ความถี่ต่ำ/สูง)</a><br>
+<a href="#p4">4. FFT คืออะไร (ทำไมเร็ว)</a><br>
+<a href="#p5">5. 2D FFT — ภาพ/แผนที่ ★</a><br>
+<a href="#p6">6. คุณสมบัติวิเศษ: convolution ★★</a><br>
+<a href="#p7">7. ทำไมเชื่อมกับ HazeNet/AFNO ★★</a><br>
+<a href="#p8">8. โค้ด torch.fft</a><br>
+<a href="#cheat">9. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. ไอเดียหลัก — ทุกสัญญาณคือผลรวมของคลื่น <span class="pin">★</span></h2>
+<p>หัวใจของ Fourier คือข้อความเดียว: <b>สัญญาณอะไรก็ตาม สามารถเขียนเป็นผลรวมของคลื่นไซน์/โคไซน์หลายความถี่ได้</b></p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 180" width="96%" xmlns="http://www.w3.org/2000/svg">
+  <!-- wave1 -->
+  <path d="M20,45 Q50,20 80,45 T140,45 T200,45" fill="none" stroke="#58a6ff" stroke-width="2"/>
+  <text x="220" y="49" fill="#58a6ff" font-size="11">คลื่นช้า</text>
+  <text x="270" y="49" fill="#9aa7b4" font-size="14">+</text>
+  <!-- wave2 -->
+  <path d="M295,45 Q310,25 325,45 T355,45 T385,45 T415,45 T445,45" fill="none" stroke="#bc8cff" stroke-width="2"/>
+  <text x="465" y="49" fill="#bc8cff" font-size="11">คลื่นเร็ว</text>
+  <!-- equals complex -->
+  <text x="20" y="105" fill="#9aa7b4" font-size="14">=</text>
+  <path d="M40,120 Q55,90 70,118 Q85,135 100,110 Q115,95 130,122 Q145,138 160,112 Q175,98 190,120 Q210,135 230,115 Q250,100 270,122 Q290,135 310,116 Q330,100 350,120 Q370,134 390,118 Q410,104 430,122 Q450,134 470,118 Q490,106 510,120" fill="none" stroke="#3fb950" stroke-width="2.5"/>
+  <text x="300" y="165" fill="#3fb950" font-size="11.5" text-anchor="middle">สัญญาณจริงที่ซับซ้อน = ผลรวมของคลื่นง่าย ๆ</text>
+</svg>
+</div>
+<div class="ex"><b>อุปมาที่ดีที่สุด — คอร์ดเปียโน:</b> เมื่อคุณกดคอร์ดเดียว เสียงที่ออกมาคือ "เสียงรวม" ที่ซับซ้อน · แต่หูที่ฝึกมา (หรือ Fourier) แยกออกได้ว่า "นี่คือโน้ต โด + มี + ซอล ผสมกัน" · <b>Fourier transform = เครื่องแยกคอร์ดออกเป็นโน้ตเดี่ยว ๆ</b> — บอกว่าสัญญาณมีคลื่นความถี่ไหนบ้าง แต่ละความถี่แรงแค่ไหน</div>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. โดเมนเวลา/พื้นที่ vs โดเมนความถี่ <span class="pin">★</span></h2>
+<p>ข้อมูลเดียวกัน มองได้ 2 มุม · Fourier transform คือ "ประตู" ที่สลับไปมาระหว่างสองมุมนี้ (ไม่เสียข้อมูล — แปลงกลับได้):</p>
+<table>
+<tr><th>โดเมน</th><th>แกนนอนคือ</th><th>บอกอะไร</th></tr>
+<tr><td><b style="color:#58a6ff">เวลา/พื้นที่</b> (signal เดิม)</td><td>เวลา หรือ ตำแหน่ง</td><td>"ค่าเท่าไรที่จุดไหน"</td></tr>
+<tr><td><b style="color:#bc8cff">ความถี่</b> (spectrum)</td><td>ความถี่</td><td>"มีคลื่นความถี่ไหนบ้าง แรงแค่ไหน"</td></tr>
+</table>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 150" width="96%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="ft" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#e3b341"/></marker></defs>
+  <!-- signal -->
+  <text x="120" y="20" fill="#58a6ff" font-size="11.5" text-anchor="middle">โดเมนเวลา</text>
+  <path d="M30,80 Q55,40 80,80 T130,80 T180,80 T230,80" fill="none" stroke="#58a6ff" stroke-width="2"/>
+  <line x1="30" y1="110" x2="230" y2="110" stroke="#30363d"/>
+  <text x="130" y="128" fill="#9aa7b4" font-size="9.5" text-anchor="middle">เวลา →</text>
+  <!-- FFT arrow -->
+  <line x1="250" y1="75" x2="320" y2="75" stroke="#e3b341" stroke-width="2" marker-end="url(#ft)"/>
+  <text x="285" y="65" fill="#e3b341" font-size="10.5" text-anchor="middle">FFT</text>
+  <line x1="320" y1="95" x2="250" y2="95" stroke="#e3b341" stroke-width="2" stroke-dasharray="3 3" marker-end="url(#ft)"/>
+  <text x="285" y="115" fill="#e3b341" font-size="10.5" text-anchor="middle">iFFT (กลับ)</text>
+  <!-- spectrum -->
+  <text x="445" y="20" fill="#bc8cff" font-size="11.5" text-anchor="middle">โดเมนความถี่</text>
+  <line x1="350" y1="110" x2="540" y2="110" stroke="#30363d"/>
+  <rect x="390" y="55" width="12" height="55" fill="#bc8cff"/>
+  <text x="396" y="128" fill="#9aa7b4" font-size="9" text-anchor="middle">f₁</text>
+  <text x="445" y="80" fill="#9aa7b4" font-size="9.5" text-anchor="middle">ความถี่ →</text>
+  <text x="396" y="48" fill="#bc8cff" font-size="9">แรง</text>
+</svg>
+</div>
+<p>สัญญาณคลื่นไซน์เดียวในโดเมนเวลา = แท่งเดียวในโดเมนความถี่ (ความถี่นั้น แรงเท่านั้น) · สัญญาณซับซ้อน = หลายแท่ง</p>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. อ่านสเปกตรัม — ความถี่ต่ำ vs สูง</h2>
+<ul>
+<li><b>ความถี่ต่ำ (low frequency):</b> คลื่นช้า กว้าง = "ภาพรวมใหญ่ ๆ" ที่เปลี่ยนช้า เช่น แนวโน้มฝุ่นทั่วทั้งภาค</li>
+<li><b>ความถี่สูง (high frequency):</b> คลื่นถี่ = "รายละเอียดเล็ก ขอบคม" ที่เปลี่ยนเร็ว เช่น กลุ่มควันเฉพาะจุด</li>
+</ul>
+<div class="ex"><b>เชื่อมกับฝุ่น:</b> สนาม PM2.5 ทั่วภาคเหนือ = ความถี่ต่ำคือ "ม่านควันใหญ่คลุมทั้งภาค", ความถี่สูงคือ "หย่อมควันเข้มเฉพาะจุดใกล้ไฟ" · Fourier ให้เราจัดการสองสเกลนี้แยกกันได้</div>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. FFT คืออะไร — ทำไมถึงเร็ว</h2>
+<p><b>DFT (Discrete Fourier Transform)</b> = สูตรคำนวณ Fourier สำหรับข้อมูลไม่ต่อเนื่อง (ตัวเลขในกริด, จาก 2.1) · แต่คำนวณตรง ๆ ช้ามาก (∝ N²)</p>
+<p><b>FFT (Fast Fourier Transform)</b> = อัลกอริทึมอัจฉริยะที่คำนวณ DFT ตัวเดียวกัน แต่<b>เร็วขึ้นมหาศาล</b> (∝ N·log N) ด้วยการแบ่งปัญหาเป็นครึ่ง ๆ ซ้ำ ๆ · นี่คือเหตุผลที่ Fourier ใช้งานจริงได้</p>
+<table>
+<tr><th>วิธี</th><th>ความเร็ว</th><th>N = 1 ล้านจุด</th></tr>
+<tr><td>DFT ตรง ๆ</td><td>∝ N²</td><td>~10¹² operations (ช้ามาก)</td></tr>
+<tr><td><b>FFT</b></td><td>∝ N·log N</td><td>~2×10⁷ (เร็วกว่าหลายหมื่นเท่า)</td></tr>
+</table>
+<div class="warn"><b>ไม่ต้องรู้ข้างในของ FFT:</b> คุณไม่ต้อง implement FFT เอง — PyTorch/NumPy มี <code>fft()</code> ให้ · แค่รู้ว่ามัน "แปลงไปโดเมนความถี่ได้เร็ว" และ "แปลงกลับได้ด้วย ifft()" ก็พอใช้งาน AFNO</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. 2D FFT — สำหรับภาพและแผนที่ <span class="pin">★</span></h2>
+<p>FFT ขยายเป็น 2 มิติได้ตรง ๆ · แผนที่ฝุ่น (lat × lon, จาก 2.1) เป็น "ภาพ" → 2D FFT แยกมันเป็นคลื่นใน 2 ทิศ (แนวนอน+แนวตั้ง)</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 480 170" width="88%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="f2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#e3b341"/></marker></defs>
+  <!-- map -->
+  <rect x="30" y="40" width="120" height="90" rx="6" fill="#1c2330" stroke="#58a6ff"/>
+  <g fill="#9aa7b4" opacity="0.7"><circle cx="60" cy="70" r="8"/><circle cx="95" cy="95" r="11"/><circle cx="125" cy="65" r="6"/></g>
+  <text x="90" y="150" fill="#58a6ff" font-size="11" text-anchor="middle">แผนที่ฝุ่น (lat×lon)</text>
+  <line x1="160" y1="85" x2="220" y2="85" stroke="#e3b341" stroke-width="2" marker-end="url(#f2)"/>
+  <text x="190" y="75" fill="#e3b341" font-size="10">2D FFT</text>
+  <!-- spectrum 2d -->
+  <rect x="240" y="40" width="120" height="90" rx="6" fill="#1c2330" stroke="#bc8cff"/>
+  <circle cx="300" cy="85" r="6" fill="#bc8cff"/><circle cx="300" cy="85" r="14" fill="none" stroke="#bc8cff" opacity="0.5"/><circle cx="300" cy="85" r="24" fill="none" stroke="#bc8cff" opacity="0.3"/>
+  <text x="300" y="150" fill="#bc8cff" font-size="11" text-anchor="middle">สเปกตรัม 2D</text>
+  <text x="420" y="70" fill="#9aa7b4" font-size="10">กลาง=ความถี่ต่ำ</text>
+  <text x="420" y="100" fill="#9aa7b4" font-size="10">ขอบ=ความถี่สูง</text>
+</svg>
+</div>
+<p>ในสเปกตรัม 2D: ตรงกลาง = ความถี่ต่ำ (โครงสร้างใหญ่), ออกไปขอบ = ความถี่สูง (รายละเอียดเล็ก) · นี่คือรูปแบบที่ AFNO จะเข้าไป "แก้ไข" (3.2)</p>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. คุณสมบัติวิเศษ — convolution กลายเป็นการคูณ <span class="pin">★★</span></h2>
+<p>นี่คือเหตุผล<u>ที่แท้จริง</u>ว่าทำไม Fourier มีค่าต่อ deep learning · มีทฤษฎีบทชื่อ <b>Convolution Theorem</b>:</p>
+<div class="card center big" style="font-family:'Cambria Math',serif;font-size:17px">
+convolution ในโดเมนพื้นที่ &nbsp;=&nbsp; <b style="color:#3fb950">การคูณธรรมดา</b> ในโดเมนความถี่
+<div style="font-family:'Segoe UI';font-size:12.5px;color:var(--muted);margin-top:8px">f ∗ g &nbsp;⟷&nbsp; F̂ · Ĝ &nbsp;(คูณทีละความถี่)</div>
+</div>
+<p>จำ convolution จาก 0.5 (CNN) ได้ไหม? มันคือ "เลื่อน filter ทับทุกจุด" — แพงเมื่อ filter ใหญ่ · แต่ใน<b>โดเมนความถี่ มันกลายเป็นแค่การคูณ</b> (เร็วมาก) · ดังนั้น:</p>
+<div class="card center">
+ทำ convolution ใหญ่ ๆ = FFT → คูณ → iFFT &nbsp;<span class="muted">(เร็วกว่า convolve ตรง ๆ มาก)</span>
+</div>
+<div class="why"><b>ทำไมนี่สำคัญกับควันข้ามแดน:</b> CNN ธรรมดา (0.5) มี receptive field เล็ก — เห็นแค่บริเวณรอบ ๆ → ตามควันที่พัดไกลข้ามจังหวัด/ประเทศไม่ทัน (ต้องซ้อนหลายชั้น) · Fourier ทำ "convolution ขนาดเท่าทั้งภาพ" ได้ในก้าวเดียว → <b>มองเห็นความสัมพันธ์ระยะไกลทั้งแผนที่พร้อมกัน</b> (global receptive field) · เหมาะกับฟิสิกส์การพัดพาควันระยะไกลอย่างยิ่ง</div>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. ทำไมเชื่อมกับ HazeNet/AFNO <span class="pin">★★</span></h2>
+<p>AFNO (3.2) ใช้ Fourier เป็นหัวใจ · loop การทำงานคือ:</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 90" width="98%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a3" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker></defs>
+  <rect x="10" y="30" width="90" height="36" rx="6" fill="#1c2330" stroke="#58a6ff"/><text x="55" y="53" fill="#58a6ff" font-size="10.5" text-anchor="middle">แผนที่ (พื้นที่)</text>
+  <line x1="100" y1="48" x2="125" y2="48" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="127" y="30" width="70" height="36" rx="6" fill="#1c2330" stroke="#e3b341"/><text x="162" y="53" fill="#e3b341" font-size="11" text-anchor="middle">FFT</text>
+  <line x1="197" y1="48" x2="222" y2="48" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="224" y="26" width="120" height="44" rx="6" fill="#0f1f17" stroke="#3fb950" stroke-width="2"/><text x="284" y="44" fill="#3fb950" font-size="10.5" text-anchor="middle">เรียน "คูณ" ต่อความถี่</text><text x="284" y="60" fill="#9aa7b4" font-size="9" text-anchor="middle">(น้ำหนักที่เทรนได้)</text>
+  <line x1="344" y1="48" x2="369" y2="48" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="371" y="30" width="70" height="36" rx="6" fill="#1c2330" stroke="#e3b341"/><text x="406" y="53" fill="#e3b341" font-size="11" text-anchor="middle">iFFT</text>
+  <line x1="441" y1="48" x2="466" y2="48" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="468" y="30" width="84" height="36" rx="6" fill="#1c2330" stroke="#58a6ff"/><text x="510" y="53" fill="#58a6ff" font-size="10" text-anchor="middle">แผนที่ใหม่</text>
+</svg>
+</div>
+<ol>
+<li>เอาแผนที่อากาศ/ควัน → <b>FFT</b> ไปโดเมนความถี่</li>
+<li>นิวรอลเรียน "ตัวคูณ" ต่อแต่ละความถี่ (นี่คือ convolution ที่เรียนได้ + global)</li>
+<li><b>iFFT</b> กลับมาเป็นแผนที่</li>
+</ol>
+<div class="why"><b>บทบาทใน HazeNet:</b> AFNO เป็น backbone ที่<b>ทำนายสัมประสิทธิ์ g, D</b> (จาก 2.3/2.5) จากสนามอากาศ · เราเลือก AFNO เพราะ (1) global receptive field เหมาะกับการพัดพาระยะไกล, (2) เร็ว/ประหยัด GPU (สำคัญกับข้อจำกัด 1 GPU), (3) เป็น backbone ของ FourCastNet ที่พิสูจน์แล้วว่าเก่งเรื่องสนามอากาศ · <b>สำคัญ:</b> AFNO ทำงานกับ "อากาศ" เพื่อออกสัมประสิทธิ์ — ไม่ได้ทำ FFT บนตัว C โดยตรง (ถ้าทำจะพัง superposition เพราะ FFT+คูณ+nonlinearity บน C ไม่เชิงเส้น) · กฎทองจาก 2.5 ยังคุมอยู่</div>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. โค้ด torch.fft (ลองเล่นได้)</h2>
+<pre><code><span class="kw">import</span> torch
+
+<span class="cm"># สัญญาณ 1D: คลื่นช้า + คลื่นเร็ว</span>
+t = torch.linspace(<span class="nm">0</span>, <span class="nm">1</span>, <span class="nm">128</span>)
+signal = torch.sin(<span class="nm">2</span>*torch.pi*<span class="nm">3</span>*t) + <span class="nm">0.5</span>*torch.sin(<span class="nm">2</span>*torch.pi*<span class="nm">20</span>*t)
+
+spectrum = torch.fft.fft(signal)        <span class="cm"># ไปโดเมนความถี่</span>
+power = spectrum.abs()                   <span class="cm"># ความแรงแต่ละความถี่</span>
+<span class="cm"># power จะมียอดที่ index 3 และ 20 (= ความถี่ของสองคลื่น) ✓</span>
+
+back = torch.fft.ifft(spectrum).real    <span class="cm"># แปลงกลับ = signal เดิม</span>
+<span class="kw">print</span>(torch.allclose(signal, back, atol=<span class="nm">1e-5</span>))   <span class="out"># True (ไม่เสียข้อมูล)</span>
+
+<span class="cm"># 2D สำหรับแผนที่</span>
+fmap = torch.fft.fft2(dust_map)         <span class="cm"># (lat, lon) -> สเปกตรัม 2D</span>
+dust_back = torch.fft.ifft2(fmap).real  <span class="cm"># กลับ</span></code></pre>
+<div class="ex"><b>ลองเอง:</b> รันโค้ดนี้แล้วดู <code>power</code> — จะเห็นยอดพุ่งที่ตำแหน่ง 3 กับ 20 พอดี = Fourier "แยกคอร์ดออกเป็นโน้ต" ได้จริง · นี่คือ intuition ทั้งหมดของบทนี้ในโค้ด 5 บรรทัด</div>
+
+<!-- ============ cheat ============ -->
+<h2 id="cheat">9. Cheat sheet + แบบฝึกหัด</h2>
+<div class="card">
+<b>สรุปจำ:</b>
+<ul>
+<li><b>Fourier transform:</b> แยกสัญญาณเป็น "ผลรวมของคลื่นความถี่" (= แยกคอร์ดเป็นโน้ต)</li>
+<li><b>2 โดเมน:</b> เวลา/พื้นที่ (ค่าที่จุด) ↔ ความถี่ (มีคลื่นไหนแรงแค่ไหน) · แปลงกลับได้ ไม่เสียข้อมูล</li>
+<li><b>ความถี่ต่ำ</b>=ภาพรวมใหญ่ · <b>ความถี่สูง</b>=รายละเอียดเล็ก/ขอบคม</li>
+<li><b>FFT</b> = อัลกอริทึมคำนวณ Fourier เร็ว (N·logN แทน N²) · ใช้ <code>torch.fft</code></li>
+<li><b>2D FFT</b> = สำหรับภาพ/แผนที่ (lat×lon)</li>
+<li><b>★★ Convolution Theorem:</b> convolution พื้นที่ = การคูณในความถี่ → ทำ conv ใหญ่ได้เร็ว + global</li>
+<li><b>AFNO:</b> FFT → เรียนตัวคูณต่อความถี่ → iFFT · ให้ global receptive field (เหมาะการพัดพาไกล)</li>
+<li><b>กฎทอง (2.5):</b> AFNO ทำกับ "อากาศ" เพื่อออกสัมประสิทธิ์ g,D · ไม่ทำ FFT บน C เอง (จะพัง superposition)</li>
+</ul>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 1 — อธิบายด้วยอุปมา "คอร์ดเปียโน" ว่า Fourier transform ทำอะไร</p>
+<details><summary>เฉลย</summary>
+<p>คอร์ดเปียโน = เสียงรวมที่ซับซ้อน · Fourier transform = เครื่องที่ฟังคอร์ดแล้ว<b>แยกออกว่าเป็นโน้ตอะไรบ้าง (โด+มี+ซอล) แต่ละโน้ตดังแค่ไหน</b> · กับสัญญาณก็เหมือนกัน: รับสัญญาณซับซ้อน → บอกว่าประกอบด้วยคลื่นความถี่ไหนบ้าง แต่ละความถี่แรงเท่าไร · และแปลงกลับ (โน้ต→คอร์ด) ได้ด้วย ifft โดยไม่เสียข้อมูล</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 2 — ทำไม "convolution = การคูณในโดเมนความถี่" ถึงเป็นข้อได้เปรียบของ AFNO เหนือ CNN ธรรมดาในงานควันข้ามแดน?</p>
+<details><summary>เฉลย</summary>
+<p>CNN ธรรมดามี receptive field เล็ก (เห็นแค่รอบ ๆ) → ต้องซ้อนหลายชั้นกว่าจะ "เห็นไกล" และยังจำกัด · ส่วน convolution ขนาดเท่าทั้งภาพแพงมากถ้าทำตรง ๆ · แต่ผ่าน Convolution Theorem มันกลายเป็น<b>การคูณในโดเมนความถี่ (เร็ว)</b> → AFNO ทำ "convolution ทั่วทั้งแผนที่" ในก้าวเดียว = <b>global receptive field</b> → จับความสัมพันธ์ระยะไกล (ควันพม่า→เชียงใหม่) ได้โดยตรง เหมาะกับฟิสิกส์การพัดพาไกล</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 3 — ทำไม AFNO ถึงทำ FFT กับ "สนามอากาศเพื่อออกสัมประสิทธิ์ g,D" แทนที่จะทำ FFT กับ "ตัวความเข้มข้นควัน C" โดยตรง?</p>
+<details><summary>เฉลย</summary>
+<p>เพราะ FFT + เรียนตัวคูณ + nonlinearity เป็นกระบวนการ<b>ไม่เชิงเส้น</b> · ถ้าทำกับ C โดยตรง → <code>AFNO(C⁽¹⁾+C⁽²⁾) ≠ AFNO(C⁽¹⁾)+AFNO(C⁽²⁾)</code> → <b>ทำลาย superposition (2.5)</b> → แยกแหล่งไม่ได้ · ตามกฎทอง: ฟังก์ชันไม่เชิงเส้นทำได้เฉพาะกับ<b>สัมประสิทธิ์ (g,D ที่มาจากอากาศ)</b> · AFNO จึงรับ "อากาศ" (ไม่เชิงเส้นได้เต็มที่) ออก g,D แล้วเอา g,D ไปคูณ C แบบเชิงเส้น = conditionally-linear (3.5)</p>
+</details>
+</div>
+
+<div class="lead">
+<b>จบ 3.1 แล้วคุณควร:</b> เข้าใจว่า Fourier transform = แยกสัญญาณเป็นคลื่นความถี่ (แยกคอร์ดเป็นโน้ต), รู้จักโดเมนความถี่ (ต่ำ=ใหญ่/สูง=ละเอียด), FFT (เร็ว N·logN), 2D FFT สำหรับแผนที่, และที่สำคัญสุด — <b>Convolution Theorem</b> ที่ทำให้ทำ convolution global ได้เร็ว = รากฐานของ AFNO และเหตุผลที่มันเหมาะกับการพัดพาควันระยะไกล
+<br><br>
+<b>ขั้นต่อไปแนะนำ:</b> <b>3.2 Neural Operator + AFNO/FourCastNet</b> (🔴) — เอา Fourier บทนี้มาประกอบเป็นนิวรอลจริงที่เป็น backbone ℱθ ของเรา (ตัวทำนาย g, D) · บอกเลขถัดไปได้เลยครับ
+</div>
+
+</div>
+</body>
+</html>

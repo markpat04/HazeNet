@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.5 — Conditionally-Linear Operator (หัวใจ 3/3) (สอนละเอียด)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.6px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+  .pin.core{border-color:var(--amber);color:var(--amber)}
+  .pin.heart{border-color:var(--red);color:var(--red)}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+  .big{font-size:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>3.5 — Conditionally-Linear Operator <span class="pin core">⭐ CORE</span> <span class="pin heart">❤ หัวใจ 3/3 สุดท้าย</span></h1>
+<p class="tagline">บทไคลแมกซ์ — ที่ที่ฟิสิกส์ (1.2) + superposition (2.5) + AFNO (3.2) มาบรรจบเป็น "งานใหม่"</p>
+<p class="sub">ทุกบทใน 1.x–3.4 ปูทางมาที่นี่ · บทนี้คือ <b>สมการเดียวที่นิยามทั้ง HazeNet</b> และเหตุผลว่าทำไมเปเปอร์เราเป็นงานใหม่ระดับ A*</p>
+
+<div class="lead">
+<b>คำสัญญาของบทนี้:</b> เมื่อจบบทนี้คุณจะมองสมการแกนหนึ่งบรรทัด แล้ว<b>เห็นทั้งโปรเจกต์ในนั้น</b> — เห็นฟิสิกส์ (ADR), เห็นนิวรอล (AFNO), เห็น attribution (superposition), เห็นว่าทำไมความเร็ว/แม่นยำ/พิสูจน์ได้อยู่ในที่เดียวกัน · "conditionally-linear" คือชื่อสองคำที่<b>สรุปงานวิจัย C1</b> (Contribution 1: conditionally-linear neural transport emulator) ของเปเปอร์ · ก่อนหน้านี้เป็นจิ๊กซอว์ — บทนี้คือภาพรวม
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. ตั้งโจทย์: ความตึงเครียดที่ต้องคลี่</a><br>
+<a href="#p2">2. ทางออก: แยกบทบาท ★★</a><br>
+<a href="#p3">3. นิยาม "conditionally-linear" ★★</a><br>
+<a href="#p4">4. สมการแกนเต็มและการอ่าน ★★</a><br>
+<a href="#p5">5. ทำไมต้อง "เมื่อให้อากาศ"</a><br>
+<a href="#p6">6. คุณสมบัติ 5 ข้อที่ได้พร้อมกัน ★★</a><br>
+<a href="#p7">7. เทียบงานใกล้เคียง (PINN/PDE-Net/FNO ดิบ)</a><br>
+<a href="#p8">8. โค้ดรวบของจริง</a><br>
+<a href="#p9">9. ขีดเส้นที่ห้ามข้าม (ซื่อสัตย์)</a><br>
+<a href="#p10">10. นี่คือ "งานใหม่" ในประโยคเดียว ★★</a><br>
+<a href="#cheat">11. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. ตั้งโจทย์ — ความตึงเครียดที่ต้องคลี่</h2>
+<p>เรามีความต้องการ<b>ขัดแย้งกัน 2 ฝั่ง</b>:</p>
+<table>
+<tr><th>ฝั่ง ฟิสิกส์ / Attribution</th><th>ฝั่ง AI / Expressivity</th></tr>
+<tr><td>ต้อง<b>เชิงเส้นใน C</b> เพื่อ superposition (2.5) → attribution + counterfactual</td><td>ต้อง<b>ไม่เชิงเส้น</b>มากพอจะจับพลวัตซับซ้อนของบรรยากาศ (เคมี อากาศ ภูมิประเทศ)</td></tr>
+<tr><td>ต้องการ hard constraint (มวล/ไม่ลบ) จาก 2.4</td><td>ต้องการความยืดหยุ่นของนิวรอลที่เรียนจากข้อมูล</td></tr>
+<tr><td>ต้องเร็วพอใช้รายวัน</td><td>ต้องแม่นพอแข่ง CTM ได้</td></tr>
+</table>
+<p>ถ้าเลือกฝั่งเดียวจะได้อย่างเสียอย่าง: <b>เชิงเส้นล้วน → ไม่สามารถจับฟิสิกส์ซับซ้อน · ไม่เชิงเส้นล้วน → พัง superposition</b> · บทนี้คือทางออกที่เลือกได้<b>ทั้งคู่</b>ผ่านการ "แยกบทบาท"</p>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. ทางออก — แยกบทบาท <span class="pin">★★</span></h2>
+<p>กุญแจคือสังเกตว่า: ใน CTM จริง สิ่งที่ทำให้สมการ ADR ซับซ้อนคือ "<b>สัมประสิทธิ์</b>" (ลม K การปล่อย อัตราหาย ฯลฯ) ซึ่งขึ้นกับ<b>อากาศและภูมิประเทศ</b> · แต่<b>ตัวสมการเอง (operator) เป็นเชิงเส้นใน C</b> · ความซับซ้อนอยู่ที่ <u>"สัมประสิทธิ์เป็นอะไร"</u> ไม่ใช่ <u>"C ถูก operate ยังไง"</u></p>
+<div class="card center big" style="font-family:'Cambria Math',serif">
+ความซับซ้อนทั้งหมด ⇒ <b style="color:#bc8cff">สัมประสิทธิ์</b> &nbsp;|&nbsp; โครงสร้างที่กระทำต่อ C ⇒ <b style="color:#3fb950">เชิงเส้น</b>
+</div>
+<p>ดังนั้นเรา<b>แยกบทบาท</b>: ให้นิวรอลรับผิดชอบ "สัมประสิทธิ์" (จัดการความไม่เชิงเส้น) · ให้ฟิสิกส์รับผิดชอบ "กระทำต่อ C" (รักษาความเชิงเส้น)</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 210" width="98%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a5" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker></defs>
+  <!-- weather side -->
+  <text x="100" y="22" fill="#bc8cff" font-size="12" text-anchor="middle" font-weight="bold">ฝั่งอากาศ (ไม่เชิงเส้น OK)</text>
+  <rect x="20" y="35" width="160" height="40" rx="7" fill="#1c2330" stroke="#bc8cff"/><text x="100" y="60" fill="#bc8cff" font-size="11" text-anchor="middle">met, static (ลม,PBL,DEM)</text>
+  <line x1="100" y1="75" x2="100" y2="95" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#a5)"/>
+  <rect x="20" y="98" width="160" height="44" rx="7" fill="#0f1f17" stroke="#3fb950" stroke-width="2"/><text x="100" y="118" fill="#3fb950" font-size="11.5" text-anchor="middle">AFNO ℱθ</text><text x="100" y="134" fill="#9aa7b4" font-size="9" text-anchor="middle">(non-linear, deep)</text>
+  <line x1="100" y1="142" x2="100" y2="162" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#a5)"/>
+  <rect x="30" y="165" width="140" height="36" rx="7" fill="#1c2330" stroke="#e3b341"/><text x="100" y="187" fill="#e3b341" font-size="11" text-anchor="middle">g, D (สัมประสิทธิ์)</text>
+
+  <!-- merge -->
+  <line x1="180" y1="183" x2="240" y2="148" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#a5)"/>
+
+  <!-- physics side -->
+  <text x="430" y="22" fill="#58a6ff" font-size="12" text-anchor="middle" font-weight="bold">ฝั่ง C (ต้องเชิงเส้น!)</text>
+  <rect x="370" y="35" width="160" height="40" rx="7" fill="#1c2330" stroke="#58a6ff"/><text x="450" y="60" fill="#58a6ff" font-size="11" text-anchor="middle">C^t (ความเข้มข้นควัน)</text>
+  <line x1="450" y1="75" x2="450" y2="135" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#a5)"/>
+
+  <rect x="240" y="125" width="220" height="48" rx="7" fill="#0f1f17" stroke="#f85149" stroke-width="2"/><text x="350" y="148" fill="#f85149" font-size="12" text-anchor="middle" font-weight="bold">สมการแกน (เชิงเส้นใน C)</text><text x="350" y="165" fill="#9aa7b4" font-size="10" text-anchor="middle">C^{t+1} = 𝒜·C + g·E − D⊙C</text>
+</svg>
+</div>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. นิยาม "Conditionally-Linear" <span class="pin">★★</span></h2>
+<p>นี่คือคำสองคำที่ต้องเข้าใจให้เป๊ะ:</p>
+<div class="card center big">
+<b style="color:#3fb950">conditionally-linear</b> = "เชิงเส้น <b>เมื่อให้</b> สิ่งใดสิ่งหนึ่ง"
+</div>
+<p>ในงานเรา: operator ของเรา<b>ไม่เชิงเส้น</b>ในอินพุตรวม (อากาศ × C) แต่<b>เชิงเส้นใน C เมื่อกำหนดอากาศแล้ว</b> · แปลตรง ๆ:</p>
+<ul>
+<li>ถ้าคุณ<b>คงอากาศไว้</b> (ลม, ความชื้น, PBL... เหมือนเดิม) แล้วเปลี่ยนแค่ C → ผลตอบสนองเป็นเชิงเส้น</li>
+<li>ถ้าคุณ<b>เปลี่ยนอากาศ</b> → สัมประสิทธิ์ g, D เปลี่ยน → operator ก็เปลี่ยน (ไม่เชิงเส้นในอากาศ)</li>
+</ul>
+<div class="card center" style="font-family:'Cambria Math',serif;font-size:16px">
+ℒ<sub>met</sub>(C) = <span style="color:#3fb950">𝒜(u) C + g<sub>θ</sub>(met,static)·E − D<sub>θ</sub>(met,static)⊙C</span>
+<div style="font-family:'Segoe UI';font-size:12px;color:var(--muted);margin-top:8px">
+สัมประสิทธิ์ <span style="color:#bc8cff">𝒜(u), g(met), D(met)</span> = ฟังก์ชันของ "met" (ไม่เชิงเส้นได้) · แต่<b>ไม่ใช่ฟังก์ชันของ C</b><br>
+operator ℒ<sub>met</sub> <b style="color:#3fb950">เชิงเส้นใน C</b> (ทุกพจน์คูณ/บวก C เชิงเส้น)
+</div>
+</div>
+<div class="ex"><b>อุปมา:</b> เหมือนเครื่อง printing — "เปลี่ยน plate (อากาศ)" ทำได้ทุกแบบสร้างสรรค์ไม่มีข้อจำกัด · แต่เมื่อ plate ถูกตั้งแล้ว "การกดกระดาษ (C)" เป็น<b>การกระทำเชิงเส้น</b>เสมอ — กระดาษ 2 แผ่นกดผ่าน plate เดียวกัน = ผลของแต่ละแผ่นบวกกัน (superposition)</div>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. สมการแกนเต็ม — อ่านทีละสัญลักษณ์ <span class="pin">★★</span></h2>
+<div class="card center" style="font-family:'Cambria Math',serif;font-size:19px;padding:22px">
+<b style="color:#3fb950">C<sup>t+1</sup><sub>(s)</sub> &nbsp;=&nbsp; 𝒜<sub>mono</sub>(u<sub>t</sub>)&middot;C<sup>t</sup><sub>(s)</sub> &nbsp;+&nbsp; g<sub>θ</sub>(met<sub>t</sub>,static)&middot;E<sup>t</sup><sub>(s)</sub> &nbsp;−&nbsp; D<sub>θ</sub>(met<sub>t</sub>,static)⊙C<sup>t</sup><sub>(s)</sub></b>
+</div>
+<p>อ่านทีละชิ้น (เชื่อมทุกบทเก่า):</p>
+<table>
+<tr><th>สัญลักษณ์</th><th>คือ</th><th>มาจากบท</th></tr>
+<tr><td><code>C<sup>t</sup><sub>(s)</sub></code></td><td>ความเข้มข้นควัน "ตัวที่ติดป้ายแหล่ง s" ที่เวลา t</td><td>2.5 (superposition), 3.6</td></tr>
+<tr><td><code>𝒜<sub>mono</sub>(u)</code></td><td>operator เลื่อนตามลม monotone semi-Lagrangian (เชิงเส้นใน C, w≥0, Σw=1)</td><td>2.2, 2.4</td></tr>
+<tr><td><code>g<sub>θ</sub>(met,static)</code></td><td>สัมประสิทธิ์ปล่อย ทำนายโดย AFNO · ผ่าน softplus → ≥0</td><td>3.2, 2.4</td></tr>
+<tr><td><code>E<sup>t</sup><sub>(s)</sub></code></td><td>ฟลักซ์การปล่อยจากไฟในโซน s (FIRMS/FRP)</td><td>1.1, 1.4</td></tr>
+<tr><td><code>D<sub>θ</sub>(met,static)</code></td><td>อัตราสูญเสีย ทำนายโดย AFNO · ผ่าน sigmoid → 0..1</td><td>3.2, 2.4</td></tr>
+<tr><td>⊙</td><td>คูณรายช่อง (Hadamard) — เชิงเส้นใน C</td><td>0.1</td></tr>
+</table>
+<p>สังเกตรูปแบบ: ทุกพจน์<b>คูณหรือบวก C เชิงเส้น</b> · สัมประสิทธิ์ทั้งหมดมาจากนิวรอลที่กิน "met, static" — <b>ไม่กิน C</b> · นี่คือ conditionally-linear ที่เป็นจริงในโค้ดทุกบรรทัด</p>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. ทำไมต้อง "เมื่อให้อากาศ" (ไม่ใช่เชิงเส้นในอากาศ)</h2>
+<p>ทำไมเรายอมให้ไม่เชิงเส้นในอากาศได้? เพราะ<b>เราไม่ต้องทำ superposition กับอากาศ</b> · ปัญหาที่เราถาม:</p>
+<ul>
+<li>"ฝุ่นนี้มาจากแหล่งไหน?" → ทำ superposition กับ <b>E (แหล่ง)</b> → ต้องเชิงเส้นใน C ที่มาจาก E</li>
+<li>"ถ้าลดไฟ 50%?" → scale E → ต้องเชิงเส้นใน C</li>
+</ul>
+<p>เราไม่เคยถาม: "ฝุ่นนี้กี่ % มาจากลม 5 m/s vs ลม 8 m/s" — เพราะอากาศไม่ใช่ "แหล่ง" ที่ทำ attribution ได้ · ดังนั้น<b>ไม่จำเป็นต้องเชิงเส้นในอากาศ</b> → ปลดล็อกให้ AFNO ใช้ความยืดหยุ่นเต็มที่ในฝั่งอากาศ</p>
+<div class="why"><b>นี่คือทำไม "conditionally" ถึงทรงพลัง:</b> เรารักษาความเชิงเส้น<b>เฉพาะที่จำเป็น</b> (ใน C เพื่อ attribution) ไม่ทั้งหมด · ได้ทั้งสองโลก — physics-grounded ที่จำเป็น + AI flexibility ที่อยากได้ · ไม่ใช่การประนีประนอม แต่เป็นการ<b>ออกแบบให้ตรงกับธรรมชาติของปัญหา</b></div>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. คุณสมบัติ 5 ข้อที่ได้พร้อมกัน <span class="pin">★★</span></h2>
+<p>สมการแกนเดียวให้คุณสมบัติทั้ง 5 พร้อมกัน — ทั้งหมดมาฟรีจากการออกแบบ:</p>
+<div class="card">
+<table>
+<tr><th>#</th><th>คุณสมบัติ</th><th>มาจากกลไก</th><th>ทำให้ได้</th></tr>
+<tr><td>1</td><td><b style="color:#3fb950">เชิงเส้นใน C</b></td><td>ทุกพจน์คูณ/บวก C ไม่มี nonlinearity แตะ C</td><td>superposition (2.5) → attribution</td></tr>
+<tr><td>2</td><td><b style="color:#3fb950">Non-negativity</b></td><td>g=softplus, D=sigmoid, 𝒜 w≥0</td><td>C ≥ 0 พิสูจน์ได้ (2.4)</td></tr>
+<tr><td>3</td><td><b style="color:#3fb950">Mass conservation</b></td><td>𝒜 Σw=1</td><td>มวลไม่รั่วจาก advection (2.4)</td></tr>
+<tr><td>4</td><td><b style="color:#3fb950">Differentiable</b></td><td>ทุกบรรทัดเป็น op ของ PyTorch</td><td>adjoint ฟรี → counterfactual + inversion (3.7)</td></tr>
+<tr><td>5</td><td><b style="color:#3fb950">เร็ว (GPU-friendly)</b></td><td>tensor ops + Fourier (N·logN)</td><td>วินาที vs ชม. ของ WRF-Chem (1.5)</td></tr>
+</table>
+</div>
+<div class="danger"><b>นี่คือคำตอบ "ทำไมงานใหม่":</b> ไม่มีงานก่อนหน้าที่ให้ทั้ง 5 ข้อในสมการ<b>เดียว</b>กัน · CTM ดั้งเดิม (WRF-Chem) ได้ 1+2+3 แต่ขาด 4+5 · นิวรอลดิบ (PM2.5-GNN, ConvLSTM) ได้ 5 แต่ขาด 1+2+3 · PINN ผสมฟิสิกส์แต่ใช้ soft constraint (ไม่ได้ 1+2+3 แบบพิสูจน์) · <b>HazeNet = สถาปัตยกรรมแรก (สำหรับ PM2.5 ภูมิภาค) ที่ได้ครบ 5 ข้อ</b> ผ่านการออกแบบ conditionally-linear</div>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. เทียบงานใกล้เคียง — ทำไมไม่ใช่งานเก่า</h2>
+<table>
+<tr><th>วิธี</th><th>เชิงเส้นใน C?</th><th>Hard physics?</th><th>เร็ว?</th><th>Attribution?</th></tr>
+<tr><td>WRF-Chem (CTM ดั้งเดิม)</td><td>✅ (เป็นโดยธรรมชาติ)</td><td>✅</td><td>❌ ชม.</td><td>✅ tagged tracer ช้า</td></tr>
+<tr><td>PM2.5-GNN, ConvLSTM (นิวรอลดิบ)</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td></tr>
+<tr><td>PINN (Physics-Informed NN)</td><td>❌ (NN เต็มก้อน)</td><td>❌ soft (penalty)</td><td>✅</td><td>❌</td></tr>
+<tr><td>FNO/AFNO ดิบ (FourCastNet)</td><td>❌</td><td>❌</td><td>✅</td><td>❌</td></tr>
+<tr><td>PDE-Net (เรียน PDE coefficients)</td><td>บางส่วน</td><td>บางส่วน</td><td>✅</td><td>❌ (ไม่ tagged tracer)</td></tr>
+<tr><td><b style="color:#3fb950">HazeNet (เรา)</b></td><td><b>✅ ตามนิยาม</b></td><td><b>✅ hard</b></td><td><b>✅</b></td><td><b>✅ ฟรีจาก superposition</b></td></tr>
+</table>
+<div class="why"><b>ความแตกต่างหลักจาก PINN:</b> PINN ใส่ฟิสิกส์เป็น<b>penalty ใน loss</b> (soft) — ละเมิดได้ ไม่พิสูจน์ · HazeNet ใส่ฟิสิกส์เป็น<b>structure ของ operator</b> (hard) — ละเมิดไม่ได้โดยพีชคณิต · ความแตกต่างหลักจาก FNO ดิบ: FNO ทำ FFT บน C โดยตรง (ไม่เชิงเส้นใน C) · HazeNet ทำ FFT บน met เพื่อออกสัมประสิทธิ์ → คงเชิงเส้นใน C</div>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. โค้ดรวบของจริง (สมการนี้ในภาษา PyTorch)</h2>
+<pre><code><span class="kw">class</span> <span class="fn">HazeNetStep</span>(nn.Module):
+    <span class="st">"""หนึ่ง timestep ของ conditionally-linear operator"""</span>
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        super().__init__()
+        self.afno_g = AFNO(...)           <span class="cm"># สำหรับ g (emission coeff)</span>
+        self.afno_D = AFNO(...)           <span class="cm"># สำหรับ D (loss rate)</span>
+
+    <span class="kw">def</span> <span class="fn">forward</span>(self, C, wind, met, static, E):
+        <span class="cm"># shape: C, E = (S, lat, lon)  ; S=แหล่ง · met,static,wind = (..., lat, lon)</span>
+        <span class="cm"># ---- ฝั่งอากาศ (nonlinear OK) — ออกสัมประสิทธิ์ ----</span>
+        g = F.softplus(self.afno_g(met, static))    <span class="cm"># g ≥ 0    (2.4)</span>
+        D = torch.sigmoid(self.afno_D(met, static)) <span class="cm"># 0≤D≤1   (2.4)</span>
+        <span class="cm">#  ↑ AFNO ไม่เห็น C เลย ← นี่คือ "conditionally"</span>
+
+        <span class="cm"># ---- ฝั่ง C (เชิงเส้นล้วน) — สมการแกน ----</span>
+        C = advect_monotone(C, wind)        <span class="cm"># 𝒜·C  (2.2) — เชิงเส้น</span>
+        C = C + g.unsqueeze(<span class="nm">0</span>) * E        <span class="cm"># +g·E         — เชิงเส้น (broadcast S)</span>
+        C = C * (<span class="nm">1</span> - D).unsqueeze(<span class="nm">0</span>)     <span class="cm"># −D⊙C         — เชิงเส้น</span>
+        <span class="kw">return</span> C                        <span class="cm"># C^{t+1}_(s) ทุกแหล่งพร้อมกัน</span>
+
+<span class="cm"># การันตี: ทุก op ในฝั่ง C เป็น linear → ℒ_met(C^(1)+C^(2)) = ℒ_met(C^(1))+ℒ_met(C^(2))</span>
+<span class="cm">#         → superposition (2.5) เป็นจริงโดยพีชคณิต ไม่ใช่หวังว่าจะจริง</span></code></pre>
+<div class="ex"><b>อ่านโค้ดให้ออกข้อความนี้:</b> "AFNO ไม่เห็น C" คือบรรทัดที่ทำให้สมการเป็น conditionally-linear · ถ้าวันหนึ่งคุณเผลอเปลี่ยนเป็น <code>afno_g(met, static, C)</code> ทุกอย่างพังทันที — superposition พัง, attribution ผิด, ทฤษฎีบทใช้ไม่ได้ · บรรทัดนี้คือสัญญาทางคณิตศาสตร์ของทั้งโปรเจกต์</div>
+
+<!-- ============ 9 ============ -->
+<h2 id="p9">9. ขีดเส้นที่ห้ามข้าม (ซื่อสัตย์)</h2>
+<p>conditionally-linear ทรงพลังแต่<b>มีขอบเขต</b> · เพื่อให้เคลมตรงในเปเปอร์ A* ต้องชัดว่า:</p>
+<ul>
+<li><b>ไม่ครอบคลุมเคมีทุติยภูมิ (R_chem):</b> ฝุ่นทุติยภูมิ ไม่เชิงเส้น → ใส่ลงในโครงนี้ตรง ๆ ไม่ได้ · เรา<b>โฟกัส primary smoke</b> (สอดคล้องสัดส่วน PMF ~51% ชีวมวล ในภาคเหนือ จาก 1.4) · secondary จัดการเป็น residual หรือระบุเป็นข้อจำกัด</li>
+<li><b>"เมื่อให้อากาศ" = พึ่งคุณภาพอากาศ:</b> ถ้าลม ERA5 หยาบ/ผิด → สัมประสิทธิ์ผิด → C เพี้ยน · นี่คือ <code>ε_wind</code> ในการแยก error (master plan)</li>
+<li><b>Tracer หยาบ:</b> เราติดป้ายระดับประเทศ/ภูมิภาค ไม่ใช่รายแปลง → ตอบ "พม่ากี่%" ได้ แต่ "อำเภอไหนในพม่า" ไม่ได้</li>
+<li><b>เชิงเส้นไม่ได้แปลว่าง่าย:</b> 𝒜 และสัมประสิทธิ์ที่นิวรอลเรียนยังซับซ้อนมาก · เราแค่ "เชิงเส้นใน C" ไม่ใช่ "เชิงเส้นง่าย ๆ"</li>
+</ul>
+<div class="why"><b>ทำไม caveat คือจุดแข็ง:</b> ระดับ A* ไม่ตัดสินจาก "อ้างได้กว้างแค่ไหน" แต่จาก "<b>ขีดขอบเขตชัดแค่ไหน + พิสูจน์ในขอบเขตนั้นเข้มแค่ไหน</b>" · การยอมรับขอบเขต = น่าเชื่อถือมากขึ้น ไม่ใช่น้อยลง</div>
+
+<!-- ============ 10 ============ -->
+<h2 id="p10">10. นี่คือ "งานใหม่" ในประโยคเดียว <span class="pin">★★</span></h2>
+<div class="card center big" style="padding:24px;border:2px solid var(--green)">
+"HazeNet เป็น <b style="color:#3fb950">conditionally-linear neural transport emulator</b> สำหรับ PM2.5 ภูมิภาค<br>
+ที่<b style="color:#3fb950">รักษาความเชิงเส้นใน C โดยโครงสร้าง</b> (linearity-by-design)<br>
+จึงให้ <b style="color:#3fb950">attribution + counterfactual + adjoint</b> ในโมเดลเดียวกับ <b style="color:#3fb950">การพยากรณ์</b>"
+</div>
+<p>นี่คือประโยคที่จะวางในบทคัดย่อ · ทุกคำมีน้ำหนัก:</p>
+<ul>
+<li>"conditionally-linear" = ตอบทั้ง physics และ AI flexibility (ข้อ 2-3)</li>
+<li>"neural transport emulator" = แทน CTM (1.5) ด้วยนิวรอล (= contribution C1)</li>
+<li>"linearity-by-design" = ไม่ใช่ soft penalty ไม่ใช่หวังให้เรียนถูก = ต่างจาก PINN/นิวรอลดิบ</li>
+<li>"attribution + counterfactual + adjoint ในโมเดลเดียวกับการพยากรณ์" = ความเป็น "<b>unified framework</b>" ที่ของเก่าไม่มี (= contribution C2, C3 ตามลำดับ)</li>
+</ul>
+<div class="danger"><b>นี่คือเหตุผลที่ตีพิมพ์ A* ได้:</b> ไม่ใช่ "อีกหนึ่งโมเดลพยากรณ์ฝุ่น" · เป็น<b>กรอบใหม่</b>ที่ unify หลายงาน (forecast, attribution, source inversion, counterfactual) ด้วยการออกแบบ operator เดียว · กรอบนี้ทั่วไปกว่า PM2.5 ด้วย — ใช้กับ tracer transport อื่นได้ (เกสร อัลเลอร์เจน รังสี) เป็น "extension" ที่ระบุในเปเปอร์</div>
+
+<!-- ============ cheat ============ -->
+<h2 id="cheat">11. Cheat sheet + แบบฝึกหัด</h2>
+<div class="card">
+<b>สรุปจำ (ถ้าจำได้แค่หน้านี้ก็พอ):</b>
+<ul>
+<li><b>ความตึงเครียด:</b> physics ต้องเชิงเส้น (เพื่อ attribution) · AI ต้องไม่เชิงเส้น (เพื่อ expressivity)</li>
+<li><b>ทางออก:</b> แยกบทบาท — นิวรอลออก "สัมประสิทธิ์" · ฟิสิกส์ "กระทำต่อ C" เชิงเส้น</li>
+<li><b>★★ Conditionally-linear:</b> เชิงเส้นใน C <u>เมื่อให้</u>อากาศ · ไม่เชิงเส้นในอากาศได้เต็มที่</li>
+<li><b>สมการแกน:</b> <code>C^{t+1}_(s) = 𝒜(u)·C + g_θ(met)·E − D_θ(met)⊙C</code></li>
+<li><b>กฎเหล็ก:</b> AFNO ไม่กิน C · กิน met,static เท่านั้น → ออก g,D</li>
+<li><b>5 คุณสมบัติพร้อมกัน:</b> เชิงเส้น+nonneg+mass+diff+เร็ว → ของเก่าไม่มีครบ</li>
+<li><b>ต่างจาก:</b> WRF-Chem (ขาดเร็ว/adjoint), นิวรอลดิบ (ขาดฟิสิกส์), PINN (soft ไม่ hard), FNO ดิบ (FFT บน C)</li>
+<li><b>ขอบเขต:</b> primary smoke · ขึ้นกับคุณภาพ met (=ε_wind) · tracer ระดับประเทศ</li>
+<li><b>ประโยคเดียว:</b> "neural transport emulator ที่ linearity-by-design → unified forecast+attribution+counterfactual+adjoint"</li>
+</ul>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 1 — อธิบายให้เพื่อนใน 2 ประโยค: "conditionally-linear" คืออะไร และทำไมงานเราจึงได้ทั้ง physics rigor และ AI flexibility</p>
+<details><summary>เฉลย</summary>
+<p>(1) Conditionally-linear = สมการของเรา<b>เชิงเส้นใน C เมื่อกำหนดอากาศแล้ว</b> โดยให้นิวรอล (AFNO) รับผิดชอบ "สัมประสิทธิ์" g, D ที่ขึ้นกับอากาศเท่านั้น (ไม่กิน C) แล้วสมการแกนเอา g, D ไปประกอบกับ C เชิงเส้น · (2) เพราะนิวรอลทำงานในฝั่งอากาศได้ไม่จำกัด (AI flexibility) ในขณะที่ฝั่ง C ยังเชิงเส้นโดยโครงสร้าง (physics rigor → superposition, mass, non-neg) — ได้ทั้งคู่ผ่านการ<b>แยกบทบาท</b> ไม่ใช่ประนีประนอม</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 2 — เปรียบเทียบ HazeNet กับ PINN: ทั้งคู่อ้างว่าเป็น "physics-informed" · ต่างกันอย่างไรในเชิงคุณภาพการเคลม?</p>
+<details><summary>เฉลย</summary>
+<p><b>PINN:</b> ใส่ฟิสิกส์เป็น<b>penalty ใน loss</b> (soft constraint) — โมเดล "พยายาม" เคารพ PDE ระหว่างเทรน แต่<b>ละเมิดได้</b>ตอน inference โดยเฉพาะนอก distribution → เคลม "เคารพฟิสิกส์" อ่อน · <b>HazeNet:</b> ใส่ฟิสิกส์เป็น<b>structure ของ operator</b> (hard constraint) — superposition/non-neg/mass<b>เป็นจริงโดยพีชคณิต</b>ไม่ว่านิวรอลทำนายอะไร → เคลม "พิสูจน์ได้" · ต่างกันที่ "เกือบเสมอ" vs "เสมอ พิสูจน์ได้" ซึ่งเป็นความต่างเชิงคุณภาพที่ reviewer A* จับได้ทันที</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 3 — สมมติเพื่อนเสนอ "ให้ AFNO กิน C เพิ่มเข้าไปด้วย จะได้แม่นขึ้น" · ทำไมข้อเสนอนี้พังทั้งโปรเจกต์ และคำตอบของคุณคืออะไร?</p>
+<details><summary>เฉลย</summary>
+<p>ถ้า AFNO กิน C → g, D กลายเป็น<b>ฟังก์ชันของ C</b> → สมการเป็น <code>ℒ_met,C(C)</code> ไม่ใช่ ℒ_met(C) อีกต่อไป → <b>ไม่เชิงเส้นใน C</b> → <code>ℒ(C^(1)+C^(2)) ≠ ℒ(C^(1))+ℒ(C^(2))</code> → <b>superposition พัง</b> → <code>C ≠ ΣC^(s)</code> → <b>attribution ผิด</b>, counterfactual โดยการลบ tracer ใช้ไม่ได้, ทฤษฎีบท error bound ใช้ไม่ได้ → ทั้ง contribution C2 และ C3 ของเปเปอร์<b>ล่ม</b> · คำตอบ: "ความแม่นเพิ่มเล็กน้อยไม่คุ้มกับการสูญเสีย attribution ซึ่งเป็นจุดขายหลัก" · ถ้าอยากเพิ่มความแม่น ทำผ่านการขยาย AFNO ในฝั่ง met หรือเพิ่มตัวแปร met (ไม่ใช่ C)</p>
+</details>
+</div>
+
+<div class="lead big" style="border:2px solid var(--amber);padding:22px">
+<b>🎉🎉 จบ 3.5 = จบ "3 หัวใจ" ครบแล้ว!</b>
+<br><br>
+<b>✅ 1.2 ADR</b> (ฟิสิกส์รากฐาน — ทำไมเชิงเส้นเป็นไปได้) → <b>✅ 2.5 Superposition</b> (กุญแจคณิต — ทำไมเชิงเส้นทำให้แยกแหล่งได้) → <b>✅ 3.5 Conditionally-linear</b> (สถาปัตยกรรม — ทำให้ทั้งหมดเป็นจริงในนิวรอล)
+<br><br>
+ตอนนี้คุณ<b>เข้าใจ "ทำไมงานเราเป็นงานใหม่"</b>แล้วครับ · ตอบคำถาม reviewer ได้ครบทุกประเภท: ทำไมไม่ใช่ WRF-Chem (เร็ว+adjoint), ทำไมไม่ใช่นิวรอลดิบ (physics-grounded), ทำไมไม่ใช่ PINN (hard ไม่ soft), ทำไมไม่ใช่ FNO ดิบ (linearity in C)
+<br><br>
+<b>ขั้นต่อไป — เลือกได้ 2 เส้นทาง:</b>
+<ul style="font-size:15.5px">
+<li><b>เส้น "completeness ของ Module 3":</b> ไปต่อ <b>3.6 Tagged-tracer (Smoke Fingerprint)</b> ⭐ — รายละเอียดเทคนิคของการ implement attribution บน conditionally-linear ที่เพิ่งสร้าง</li>
+<li><b>เส้น "เริ่มเขียนโค้ด minimum set":</b> กระโดดไป <b>4.1 (data pipeline)</b> ตามลำดับ minimum-set ของ roadmap เพื่อเริ่ม implement จริงเร็วที่สุด</li>
+</ul>
+บอกเลขถัดไปได้เลยครับ
+</div>
+
+</div>
+</body>
+</html>

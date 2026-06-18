@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.5 — Error Decomposition / Oracle Substitution</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .green-box b{color:var(--green)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.4px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+  .pin.core{border-color:var(--cyan);background:rgba(86,212,221,.13)}
+  .pin.hard{border-color:var(--red);color:var(--red)}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+  a.ext{color:var(--blue)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>5.5 — Error Decomposition / Oracle Substitution <span class="pin core">⭐ CORE</span> <span class="pin hard">🔴 ยาก</span></h1>
+<p class="tagline">เวลาโมเดลผิด — ผิดเพราะอะไร? แยก error รวมว่ามาจาก "ข้อมูล / ลม / โมเดลเรา" ส่วนไหน</p>
+<p class="sub">เสาหลักของ rigor (ยกงานเป็นระดับวิจัย A*) · ตรงข้ามกับ 5.4 (ablation=พื้น / oracle=เพดาน) · โยง FastCTM modules · 1.3 (ลม) · 4.1 (emission) · 3.4 (rollout) · 6.1 (attribution error bound)</p>
+
+<div class="lead">
+<b>โจทย์ที่ตัวเลขเดียวตอบไม่ได้:</b> "RMSE = 12 μg/m³" บอกแค่ว่า <em>ผิดเท่าไร</em> ไม่ได้บอกว่า <em>ผิดเพราะอะไร</em> · ควรไปแก้ข้อมูลไฟ? แก้ลม? หรือแก้โมเดล? — ถ้าไม่รู้ จะเสียเวลา (และงบ A100) ปรับผิดที่<br><br>
+<b>2 เครื่องมือของบทนี้:</b><br>
+<b style="color:var(--blue)">① Error decomposition</b> — แตก error รวมเป็นชิ้น ๆ ตาม "ที่มา" (process / พื้นที่ / เวลา / regime)<br>
+<b style="color:var(--green)">② Oracle substitution</b> — แทนชิ้นหนึ่งด้วย "คำตอบจริง (perfect)" แล้วดูว่า error ลดเท่าไร → ชิ้นนั้นกำลังทำให้เราเสียเท่านั้น<br><br>
+<b class="k">ผลลัพธ์ที่ทรงพลัง:</b> เปลี่ยน "โมเดลเรา RMSE 12" เป็น <em>"ในนั้น ~5 มาจากความไม่แน่นอนของ emission, ~4 จากลมพยากรณ์ผิด, เหลือ ~3 เป็นของโมเดลเราเอง — แปลว่าโมเดลเกือบถึงเพดานแล้วเมื่อเทียบกับคุณภาพ input ที่มี"</em>
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. ทำไม "RMSE เดียว" ไม่พอ ★</a><br>
+<a href="#p2">2. โมเดล = ลูกโซ่ → error เข้าได้ทุกข้อ</a><br>
+<a href="#p3">3. Oracle Substitution คืออะไร ★</a><br>
+<a href="#p4">4. Oracle ของ HazeNet (ทำจริง) ★★</a><br>
+<a href="#p5">5. ลม-พยากรณ์-ผิด vs โมเดล-เรา-ผิด ★</a><br>
+<a href="#p6">6. แตก error 4 แบบ (process/พื้นที่/เวลา/regime)</a><br>
+<a href="#p7">7. Error budget = ผลพาดหัวระดับวิจัย ★</a><br>
+<a href="#p8">8. งบ A100 + กับดัก</a><br>
+<a href="#cheat">9. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- 1 -->
+<h2 id="p1">1. ทำไม "RMSE เดียว" ไม่พอ <span class="pin core">⭐</span></h2>
+<p>RMSE รวมคือ "อาการ" ไม่ใช่ "สาเหตุ" · เหมือนหมอบอก "คุณป่วย" โดยไม่บอกว่าเป็นอะไร · เราต้องวินิจฉัยว่า error ก้อนนั้น <b>มาจากไหน</b> ถึงจะรักษาถูกจุด</p>
+<div class="ex"><b>ทำไมสำคัญเชิงปฏิบัติ:</b> ถ้า error 60% มาจาก "emission ไฟไม่แม่น" แต่เราดันไปทุ่มเวลาปรับสถาปัตยกรรมโมเดล → เสียงบ A100 ไปกับสิ่งที่ขยับผลได้นิดเดียว · error decomposition คือ "แผนที่บอกว่าควรลงแรงตรงไหน" — มีค่ามหาศาลเมื่อทรัพยากรจำกัด</div>
+
+<!-- 2 -->
+<h2 id="p2">2. โมเดลเรา = ลูกโซ่ของ process → error เข้าได้ทุกข้อต่อ</h2>
+<p>HazeNet (เหมือน FastCTM) คือลูกโซ่: <b>emission → transport(ลม) → chemistry → deposition → ค่าออก</b> · error เข้ามาได้ที่ทุกข้อต่อ แล้ว <b>สะสมต่อกัน</b>:</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 640 130" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="ac" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker></defs>
+  <g font-size="11" text-anchor="middle">
+   <rect x="14" y="44" width="100" height="36" rx="7" fill="#1c2330" stroke="#ff9b54"/><text x="64" y="66" fill="#ff9b54">emission</text>
+   <rect x="142" y="44" width="100" height="36" rx="7" fill="#1c2330" stroke="#58a6ff"/><text x="192" y="66" fill="#58a6ff">transport(ลม)</text>
+   <rect x="270" y="44" width="100" height="36" rx="7" fill="#1c2330" stroke="#bc8cff"/><text x="320" y="66" fill="#bc8cff">chemistry</text>
+   <rect x="398" y="44" width="100" height="36" rx="7" fill="#1c2330" stroke="#56d4dd"/><text x="448" y="66" fill="#56d4dd">deposition</text>
+   <rect x="526" y="44" width="100" height="36" rx="7" fill="#0f2418" stroke="#3fb950"/><text x="576" y="66" fill="#3fb950">PM2.5 ออก</text>
+  </g>
+  <line x1="114" y1="62" x2="141" y2="62" stroke="#9aa7b4" marker-end="url(#ac)"/>
+  <line x1="242" y1="62" x2="269" y2="62" stroke="#9aa7b4" marker-end="url(#ac)"/>
+  <line x1="370" y1="62" x2="397" y2="62" stroke="#9aa7b4" marker-end="url(#ac)"/>
+  <line x1="498" y1="62" x2="525" y2="62" stroke="#9aa7b4" marker-end="url(#ac)"/>
+  <g font-size="16">
+   <text x="64" y="34" fill="#f85149" text-anchor="middle">↯</text><text x="192" y="34" fill="#f85149" text-anchor="middle">↯</text><text x="320" y="34" fill="#f85149" text-anchor="middle">↯</text><text x="448" y="34" fill="#f85149" text-anchor="middle">↯</text>
+  </g>
+  <text x="320" y="110" fill="#9aa7b4" font-size="10.5" text-anchor="middle">↯ = จุดที่ error เข้ามาได้ — เป้าหมาย: หาว่าจุดไหนปล่อย error มากสุด</text>
+</svg>
+</div>
+<div class="why"><b>กุญแจของวิธีคิด:</b> ถ้าเรา "เปลี่ยน input ของข้อต่อหนึ่งเป็นคำตอบจริง" แล้ว error รวมลดฮวบ → ข้อต่อนั้นคือตัวการ · ถ้าเปลี่ยนแล้วแทบไม่ขยับ → ข้อต่อนั้นไม่ใช่ปัญหา · นี่คือ logic ของ oracle substitution</div>
+
+<!-- 3 -->
+<h2 id="p3">3. Oracle Substitution — แทนชิ้นด้วย "คำตอบจริง" <span class="pin core">⭐</span></h2>
+<p><b>Oracle</b> = "ผู้รู้คำตอบที่สมบูรณ์แบบ" · วิธี: แทน input/ชิ้นส่วนหนึ่งด้วยค่าจริง (ground truth) แล้วรันโมเดลใหม่ · error ที่ <b>ลดลง</b> = "ส่วนที่ชิ้นนั้นกำลังทำให้เราเสียอยู่ตอนนี้"</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 150" width="92%" xmlns="http://www.w3.org/2000/svg">
+  <text x="280" y="16" fill="#e6edf3" font-size="12" text-anchor="middle">เส้นจำนวน error: ablation (พื้น) ←  โมเดลจริง  → oracle (เพดาน)</text>
+  <line x1="40" y1="80" x2="520" y2="80" stroke="#30363d" stroke-width="2"/>
+  <circle cx="120" cy="80" r="7" fill="#f85149"/><text x="120" y="62" fill="#f85149" font-size="11" text-anchor="middle">ตัดชิ้นออก</text><text x="120" y="106" fill="#9aa7b4" font-size="10" text-anchor="middle">error สูง (5.4)</text>
+  <circle cx="300" cy="80" r="7" fill="#e3b341"/><text x="300" y="62" fill="#e3b341" font-size="11" text-anchor="middle">โมเดลจริงของเรา</text><text x="300" y="106" fill="#9aa7b4" font-size="10" text-anchor="middle">RMSE = 12</text>
+  <circle cx="470" cy="80" r="7" fill="#3fb950"/><text x="470" y="62" fill="#3fb950" font-size="11" text-anchor="middle">ใส่คำตอบจริง</text><text x="470" y="106" fill="#9aa7b4" font-size="10" text-anchor="middle">error ต่ำสุด (oracle)</text>
+  <text x="385" y="132" fill="#56d4dd" font-size="10.5" text-anchor="middle">ช่องว่าง 12→oracle = "ยังพัฒนาชิ้นนี้ได้อีกเท่านี้"</text>
+</svg>
+</div>
+<p><b>คู่กับ ablation (5.4) ได้ภาพครบ:</b></p>
+<ul>
+<li><b>Ablation</b> = เอาชิ้นออก → error <em>พุ่ง</em> → บอก "พื้น" (ขาดชิ้นนี้แย่แค่ไหน)</li>
+<li><b>Oracle</b> = ทำชิ้นให้เป๊ะ → error <em>ลด</em> → บอก "เพดาน" (ชิ้นนี้ถ้าสมบูรณ์ดีได้แค่ไหน)</li>
+</ul>
+<div class="green-box"><b>ช่องว่างคือคำตอบ:</b> ระยะจาก "โมเดลจริง" ไป "oracle" = ศักยภาพที่เหลืออยู่ของชิ้นนั้น · ถ้า oracle emission ทำให้ error ลดจาก 12→7 แสดงว่า "ปรับปรุง emission ให้ดีขึ้น = ได้กำไรถึง 5 หน่วย" → คุ้มลงแรง · ถ้า oracle เกือบไม่ขยับ → ชิ้นนั้นไม่ใช่คอขวด อย่าเสียเวลา</div>
+
+<!-- 4 -->
+<h2 id="p4">4. Oracle ของ HazeNet — ทำจริงได้แบบไหนบ้าง <span class="pin core">⭐⭐</span></h2>
+<table>
+<tr><th>Oracle</th><th>แทนด้วย</th><th>ตอบคำถาม</th><th>ถ้า error ลดมาก แปลว่า</th></tr>
+<tr><td><b>Oracle emission</b></td><td>emission จริง/ดีที่สุดที่หาได้ (เช่น FINN ละเอียด) แทน FIRMS ดิบ</td><td>ข้อมูลไฟคือคอขวดไหม</td><td>ลงแรงปรับ emission (FINN, 4.1/8)</td></tr>
+<tr><td><b>Oracle meteorology</b></td><td>ลม/PBL จริง (ERA5 reanalysis) แทนลม "พยากรณ์"</td><td>error มาจาก "อากาศทายผิด" เท่าไร</td><td>ขีดจำกัดอยู่ที่ NWP ไม่ใช่โมเดลเรา (ดู §5)</td></tr>
+<tr><td><b>Oracle initial state</b></td><td>สภาพ PM2.5 จริงที่ t=0</td><td>error มาจาก "จุดเริ่มผิด" หรือ "สะสมระหว่างทาง"</td><td>ปัญหาอยู่ที่ initialization/assimilation</td></tr>
+<tr><td><b>Oracle boundary inflow</b></td><td>ค่าควันจริงที่ขอบโดเมน (ต้นทางข้ามแดน)</td><td>ควันเข้าจากนอกกรอบทำให้พลาดเท่าไร</td><td>ต้องขยายโดเมน/ปรับ boundary (โยง 1.4)</td></tr>
+</table>
+<div class="ex"><b>เคล็ดสำคัญเรื่องต้นทุน:</b> oracle หลายตัว <b>ไม่ต้องเทรนใหม่</b> — แค่ "สลับ input ตอน inference" แล้ววัดผล (เช่น ใส่ลม reanalysis แทนลมพยากรณ์) → <b>ถูกกว่า ablation มาก</b> (ablation ต้องเทรนใหม่) · oracle ที่เปลี่ยนแค่ขา input คือการทดลองที่คุ้มงบ A100 ที่สุดในโมดูล 5</div>
+
+<!-- 5 -->
+<h2 id="p5">5. แยก "ลมพยากรณ์ผิด" ออกจาก "โมเดลเราผิด" — insight ที่เปลี่ยนเกม <span class="pin core">⭐</span></h2>
+<p>นี่คือ oracle ที่สำคัญที่สุดของงานพยากรณ์อากาศ/มลพิษ · เวลาเราพยากรณ์ PM2.5 ล่วงหน้า เราต้องใช้ <b>"ลมที่พยากรณ์ไว้"</b> (ซึ่งก็ผิดของมันเอง) · ดังนั้น error รวมของเรา = error ของเรา <b>+</b> error ที่สืบทอดมาจากลมที่ทายผิด</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 520 120" width="88%" xmlns="http://www.w3.org/2000/svg">
+  <text x="260" y="16" fill="#e6edf3" font-size="12" text-anchor="middle">error รวม = (โมเดลเรา) + (สืบทอดจากลมพยากรณ์ผิด)</text>
+  <rect x="60" y="40" width="400" height="34" rx="6" fill="#1c2330" stroke="#30363d"/>
+  <rect x="60" y="40" width="150" height="34" fill="rgba(63,185,80,.5)"/><text x="135" y="62" fill="#06210f" font-size="11" text-anchor="middle" font-weight="bold">โมเดลเรา (oracle met)</text>
+  <rect x="210" y="40" width="250" height="34" fill="rgba(88,166,255,.4)"/><text x="335" y="62" fill="#fff" font-size="11" text-anchor="middle">ส่วนเพิ่มจากลมพยากรณ์ผิด</text>
+  <text x="260" y="98" fill="#9aa7b4" font-size="10.5" text-anchor="middle">วัดส่วนเขียวด้วย oracle met · ส่วนน้ำเงิน = error รวม − ส่วนเขียว</text>
+</svg>
+</div>
+<div class="danger"><b>ทำไมนี่เปลี่ยนเกม:</b> สมมุติ error รวม = 12 แต่พอใส่ <b>ลม reanalysis (oracle)</b> error ลดเหลือ 5 · แปลว่า <b>7 ใน 12 เป็นเพราะ "พยากรณ์ลมผิด" ไม่ใช่เพราะโมเดลเราห่วย</b> · โมเดลเราจริง ๆ ทำได้ดีระดับ error 5 · <b>นี่คือการแก้ต่างที่ทรงพลังต่อกรรมการ</b>: "ความผิดพลาดส่วนใหญ่สืบทอดจากขีดจำกัดของการพยากรณ์อากาศ (NWP) ซึ่งอยู่นอกเหนืองานเรา — โมเดลเราเองเกือบถึงเพดาน"</div>
+<div class="why"><b>โยง NeuralGCM/3.4:</b> error ที่สืบทอดจากลมจะ <b>โตขึ้นตามระยะพยากรณ์</b> (ลมยิ่งทายไกลยิ่งผิด) — สอดคล้องกับเส้น skill-vs-leadtime (5.1) · oracle met ช่วยแยกว่าการตกของ skill เป็นเพราะ "ลมหรือโมเดล" ตามแต่ละ lead time</div>
+
+<!-- 6 -->
+<h2 id="p6">6. แตก error 4 แบบ — มองหลายมุม</h2>
+<table>
+<tr><th>แบบ</th><th>แตกตาม</th><th>เผยอะไร</th></tr>
+<tr><td>① by process</td><td>emission/met/chem/... (oracle ข้างบน)</td><td>คอขวดอยู่ขั้นไหนของลูกโซ่</td></tr>
+<tr><td>② by space</td><td>แผนที่ error รายพื้นที่</td><td>แย่ตรงไหน — เมือง? แอ่ง? ต้นทางข้ามแดน?</td></tr>
+<tr><td>③ by time / lead</td><td>error vs ชั่วโมงข้างหน้า</td><td>การสะสม error ของ rollout (3.4)</td></tr>
+<tr><td>④ by regime</td><td>วันวิกฤต vs วันปกติ</td><td>พลาดที่ "หาง" หรือไม่ (โยง 5.1)</td></tr>
+</table>
+<div class="ex"><b>ตัวอย่างที่ทรงคุณค่า (by space + by regime ร่วมกัน):</b> ทำแผนที่ error <b>เฉพาะวันวิกฤต</b> → อาจพบว่าโมเดลแม่นทั่วประเทศแต่ "แย่เป็นพิเศษในแอ่งภาคเหนือช่วงพีค" → ชี้เป้าตรงว่าต้องปรับ physics การกักในแอ่ง (DEM, inversion) · การแตก error หลายมุมพร้อมกันคือที่มาของ insight ที่ลึกที่สุด</div>
+
+<!-- 7 -->
+<h2 id="p7">7. Error Budget — งบประมาณความผิดพลาด (ผลพาดหัวระดับวิจัย) <span class="pin core">⭐</span></h2>
+<p>รวมผล oracle ทั้งหมดเป็น "งบ error" ก้อนเดียว — แสดงว่า error รวมแบ่งเป็นสัดส่วนของแต่ละสาเหตุ:</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 520 110" width="90%" xmlns="http://www.w3.org/2000/svg">
+  <text x="260" y="18" fill="#e6edf3" font-size="12" text-anchor="middle">Error Budget (สมมุติ): RMSE 12 มาจากไหนบ้าง</text>
+  <rect x="40" y="34" width="440" height="40" rx="6" fill="#1c2330" stroke="#30363d"/>
+  <rect x="40"  y="34" width="180" height="40" fill="rgba(255,155,84,.55)"/><text x="130" y="59" fill="#06210f" font-size="11" text-anchor="middle" font-weight="bold">emission ~5</text>
+  <rect x="220" y="34" width="150" height="40" fill="rgba(88,166,255,.5)"/><text x="295" y="59" fill="#fff" font-size="11" text-anchor="middle">met forecast ~4</text>
+  <rect x="370" y="34" width="110" height="40" fill="rgba(63,185,80,.5)"/><text x="425" y="59" fill="#06210f" font-size="11" text-anchor="middle" font-weight="bold">โมเดลเรา ~3</text>
+  <text x="260" y="96" fill="#9aa7b4" font-size="10" text-anchor="middle">(ผลรวมแบบ indicative — ไม่ใช่บัญชีเป๊ะ เพราะมี interaction)</text>
+</svg>
+</div>
+<div class="green-box"><b>ทำไมนี่คือสิ่งที่ยกงานเป็น A*:</b> งานนักศึกษาทั่วไปจบที่ "RMSE 12, ดีกว่า baseline" · งานระดับวิจัยจะพูดต่อได้ว่า <b>"ในจำนวนนี้ ~3 เป็นของโมเดลเรา ที่เหลือเป็นขีดจำกัดของ input — งานอนาคตควรลงทุนที่ emission ก่อน"</b> · นี่คือการวิเคราะห์ที่ทำให้ reviewer เชื่อว่าเราเข้าใจระบบจริง ไม่ใช่แค่จูนตัวเลข · และมันคือ <b>ฝาแฝดเชิงประจักษ์ของ "attribution error bound" (ทฤษฎี 6.1)</b></div>
+
+<!-- 8 -->
+<h2 id="p8">8. งบ A100 + กับดักที่ต้องระวัง</h2>
+<h4>งบ — oracle ถูกกว่า ablation</h4>
+<p>oracle ที่เปลี่ยนแค่ขา input (เช่น oracle met/emission/boundary) <b>ไม่ต้องเทรนใหม่</b> → รัน inference ซ้ำเท่านั้น = ถูกมาก · ทำได้หลายตัวในงบน้อย · oracle ที่ต้องเทรนใหม่ (เช่น oracle ที่เปลี่ยนโครงสร้าง) จัดทีหลัง</p>
+<div class="danger"><b>กับดัก (ต้องเขียน caveat):</b>
+<ul>
+<li><b>"คำตอบจริง" ก็ไม่เป๊ะ:</b> reanalysis ไม่ใช่ความจริงสมบูรณ์ · oracle จึงให้ "เพดานโดยประมาณ" ไม่ใช่ค่าสัมบูรณ์</li>
+<li><b>ความไม่สอดคล้อง:</b> ใส่ลมจริงแต่ emission ยังเป็นค่าประมาณ → สร้างสภาพที่ไม่เคยเกิด อาจให้ผลแปลก</li>
+<li><b>ไม่ใช่บวกตรง ๆ:</b> error จากแต่ละสาเหตุ <b>ไม่บวกเป็นเส้นตรง</b> (มี interaction) → error budget เป็น "เชิงชี้นำ" ไม่ใช่บัญชีปิดยอดเป๊ะ · ต้องระบุข้อนี้</li>
+</ul></div>
+
+<!-- cheat -->
+<h2 id="cheat">9. Cheat sheet + แบบฝึกหัด</h2>
+<div class="card">
+<h4>Cheat sheet</h4>
+<ul>
+<li>RMSE เดียว = อาการ · decomposition = วินิจฉัยสาเหตุ</li>
+<li>โมเดล = ลูกโซ่ (emission→ลม→chem→depo) · error เข้าทุกข้อ + สะสม</li>
+<li><b>Oracle</b> = แทนชิ้นด้วยคำตอบจริง → error ลดเท่าไร = ชิ้นนั้นเสียเท่านั้น</li>
+<li><b>ablation=พื้น · oracle=เพดาน</b> · ช่องว่าง = ศักยภาพที่เหลือ</li>
+<li><b>oracle met</b> แยก "ลมพยากรณ์ผิด" ออกจาก "โมเดลเราผิด" — แก้ต่างทรงพลัง</li>
+<li>แตก error 4 แบบ: process / space / time / regime</li>
+<li><b>error budget</b> = ผลพาดหัวระดับวิจัย (ชี้ว่าควรลงแรงตรงไหน)</li>
+<li>oracle ขา input ไม่ต้องเทรนใหม่ = ถูก · "คำตอบจริง" ก็ไม่เป๊ะ (caveat)</li>
+</ul>
+</div>
+<div class="chk">
+<p class="q">❓ แบบฝึกหัด</p>
+<ol>
+<li>oracle substitution ต่างจาก ablation (5.4) ยังไง? วัดอะไรคนละด้าน?</li>
+<li>oracle met ทำให้ error ลดจาก 12→5 — ตีความว่าอย่างไร และใช้แก้ต่างกรรมการยังไง?</li>
+<li>ทำไม oracle หลายตัวถึงถูกกว่า ablation ในแง่งบ A100?</li>
+<li>error budget เป็น "บัญชีปิดยอดเป๊ะ" ได้ไหม เพราะอะไร?</li>
+<li>ถ้า oracle emission แทบไม่ลด error ควรสรุปอะไร?</li>
+</ol>
+<details><summary>เฉลย</summary>
+<ol>
+<li>ablation=เอาชิ้นออก→error พุ่ง→"พื้น" · oracle=ทำชิ้นเป๊ะ→error ลด→"เพดาน" · ช่องว่างระหว่างกัน=ศักยภาพชิ้นนั้น</li>
+<li>7 ใน 12 มาจากลมพยากรณ์ผิด ไม่ใช่โมเดลเรา · แก้ต่าง: "error ส่วนใหญ่สืบทอดจากขีดจำกัด NWP นอกงานเรา โมเดลเราเองเกือบถึงเพดาน"</li>
+<li>oracle ที่เปลี่ยนแค่ input ไม่ต้องเทรนใหม่ — แค่ inference ซ้ำ · ablation ต้องเทรนใหม่ทุก variant</li>
+<li>ไม่ได้ — error แต่ละสาเหตุไม่บวกเป็นเส้นตรง (interaction) + "คำตอบจริง" เองก็ไม่เป๊ะ → เป็นเชิงชี้นำ</li>
+<li>emission ไม่ใช่คอขวด → อย่าเสียเวลาปรับ FINN/emission ไปลงแรงที่สาเหตุอื่นแทน</li>
+</ol>
+</details>
+</div>
+<div class="chk">
+<p class="q">✅ เช็กลิสต์ก่อนไป 5.6</p>
+<ul>
+<li>☐ มอง pipeline เป็นลูกโซ่ ระบุจุดที่ error เข้าได้</li>
+<li>☐ ทำ oracle met (แยกลมพยากรณ์ผิด) — สำคัญสุด</li>
+<li>☐ ทำ oracle emission / initial / boundary ตามงบ</li>
+<li>☐ แตก error เชิงพื้นที่ + เชิง regime (วันวิกฤต)</li>
+<li>☐ ประกอบเป็น error budget + เขียน caveat (ไม่ใช่บัญชีเป๊ะ)</li>
+</ul>
+</div>
+
+<hr>
+<p class="center muted">5.5 — Error Decomposition / Oracle Substitution · โมดูล 5 · ต่อไป: <b style="color:var(--cyan)">5.6 Statistical Significance</b> (bootstrap CI, paired test) — เคลม "ดีกว่า" อย่างมีหลักฐาน กันความบังเอิญ</p>
+
+</div>
+</body>
+</html>

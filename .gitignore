@@ -1,0 +1,30 @@
+# environment
+.venv/
+__pycache__/
+*.pyc
+
+# secrets (API keys) - อย่า commit เด็ดขาด
+src/.keys
+.cdsapirc
+
+# ข้อมูลใหญ่ - ดึงใหม่ผ่าน pipeline แทน (regenerable)
+data/raw/
+data/raw_m2/
+data/raw_big/
+data/processed/
+data/processed_m2/
+data/processed_hn/
+data/processed_big/
+*.nc
+*.tif
+*.zarr/
+
+# model artifacts + outputs (ใหญ่/regenerable — เทรนใหม่ได้)
+models/
+figures/
+logs/
+hazenet_dashboard/runs/
+hazenet_dashboard/logs/
+*.pt
+*.pkl
+*.gif

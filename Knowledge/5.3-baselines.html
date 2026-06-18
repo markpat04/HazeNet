@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.3 — Baselines (Persistence · ConvLSTM · PM2.5-GNN · AirPhyNet)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .green-box b{color:var(--green)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.4px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--amber);color:var(--amber);margin-left:6px}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+  a.ext{color:var(--blue)}
+  .yes{color:var(--green);font-weight:bold}.no{color:var(--red)}.part{color:var(--amber)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>5.3 — Baselines: สิ่งที่ต้องเอาชนะ <span class="pin">🟡 กลาง</span></h1>
+<p class="tagline">Persistence · Climatology · ConvLSTM · PM2.5-GNN · AirPhyNet — แต่ละตัวพิสูจน์ว่า "ความซับซ้อนที่เราเพิ่มเข้าไป จำเป็นจริงไหม"</p>
+<p class="sub">ต่อจาก 5.1 (skill score ต้องเทียบ baseline) + 5.2 (เทียบบน split เดียวกัน) · ต่างจาก 5.4 (ablation = ตัดชิ้นส่วนของ "เรา" / baseline = "โมเดลอื่น") · โยง 3.5/1.2 (ฟิสิกส์เรา) · 3.6 (attribution = จุดต่าง)</p>
+
+<div class="lead">
+<b>โจทย์:</b> 5.1 บอกว่า "ตัวเลขดิบไร้ความหมายถ้าไม่เทียบ" · บทนี้คือการเลือก "ตัวเทียบ" ให้ถูกและยุติธรรม<br><br>
+<b>หัวใจ — บันได baseline:</b> เรียง baseline จากง่าย→ยาก · การที่เรา "ชนะแต่ละขั้น" ตอบคำถามต่างกัน:<br>
+ชนะ <b style="color:var(--muted)">persistence</b> → จำเป็นต้องพยากรณ์เลยไหม? · ชนะ <b style="color:var(--blue)">ConvLSTM</b> → ฟิสิกส์ช่วยจริงไหม? · เทียบ <b style="color:var(--green)">AirPhyNet</b> → สูตรฟิสิกส์+ความสามารถของเราดีกว่าไหม?<br><br>
+<b class="k">กฎเหล็กของความซื่อสัตย์:</b> เทียบกับ baseline ที่ <em>แข็งแกร่งที่สุด</em> ที่เกี่ยวข้อง ไม่ใช่หุ่นฟาง (strawman) ที่ตั้งมาให้ตัวเองชนะ
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. ทำไมต้องมี baseline (และต้องแข็ง) ★</a><br>
+<a href="#p2">2. บันได baseline ง่าย→ยาก</a><br>
+<a href="#p3">3. Persistence — บาร์แรกที่ลวงตา</a><br>
+<a href="#p4">4. Climatology — บาร์ระยะยาว</a><br>
+<a href="#p5">5. ConvLSTM — DL ไร้ฟิสิกส์</a><br>
+<a href="#p6">6. PM2.5-GNN — SOTA สายกราฟ</a><br>
+<a href="#p7">7. AirPhyNet — คู่เทียบที่สำคัญสุด ★</a><br>
+<a href="#p8">8. กติกาเทียบให้ยุติธรรม ★</a><br>
+<a href="#p9">9. แผนทำจริง + จุดต่างของเรา</a><br>
+<a href="#cheat">10. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- 1 -->
+<h2 id="p1">1. ทำไมต้องมี baseline — และทำไมต้องแข็ง <span class="pin">★</span></h2>
+<p>baseline คือ "เส้นมาตรฐานที่ต้องข้าม" · ถ้าโมเดลซับซ้อนของเราเอาชนะวิธีง่าย ๆ ไม่ได้ → ความซับซ้อนนั้นไม่คุ้ม · กรรมการ/reviewer ทุกคนจะถามคำถามเดียวกัน: <em>"แล้วมันดีกว่าอะไรล่ะ?"</em></p>
+<div class="danger"><b>กับดักหุ่นฟาง (strawman):</b> นักวิจัยอ่อนชอบเทียบกับ baseline ที่จงใจทำให้อ่อน (เช่น linear regression ที่ไม่จูน) แล้วเคลมชัยชนะ · reviewer มือฉมังจับได้ทันทีแล้ว reject · <b>การเลือก baseline ที่แข็งแล้วยังชนะ (หรืออธิบายได้ว่าทำไมเสมอแต่มีค่าเพิ่ม) คือสิ่งที่ทำให้งานน่าเชื่อถือ</b></div>
+
+<!-- 2 -->
+<h2 id="p2">2. บันได baseline — แต่ละขั้นพิสูจน์อะไร</h2>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 230" width="96%" xmlns="http://www.w3.org/2000/svg">
+  <text x="280" y="16" fill="#e6edf3" font-size="12" text-anchor="middle">ยิ่งสูง = ยิ่งแข็ง · ชนะขั้นไหน = พิสูจน์ข้อนั้น</text>
+  <g font-size="11">
+  <rect x="40" y="186" width="480" height="28" fill="rgba(155,167,180,.18)" stroke="#9aa7b4"/><text x="52" y="204" fill="#9aa7b4">Persistence — "พรุ่งนี้เหมือนวันนี้"</text><text x="515" y="204" fill="#9aa7b4" font-size="9.5" text-anchor="end">ต้องพยากรณ์ไหม?</text>
+  <rect x="60" y="152" width="460" height="28" fill="rgba(88,166,255,.12)" stroke="#9aa7b4"/><text x="72" y="170" fill="#9aa7b4">Climatology — "ค่าเฉลี่ยตามฤดู/เวลา"</text><text x="515" y="170" fill="#9aa7b4" font-size="9.5" text-anchor="end">เกินรู้ฤดูกาลไหม?</text>
+  <rect x="80" y="118" width="440" height="28" fill="rgba(227,179,65,.12)" stroke="#e3b341"/><text x="92" y="136" fill="#e3b341">สถิติ/ML ตื้น (LinReg, GBT)</text><text x="515" y="136" fill="#9aa7b4" font-size="9.5" text-anchor="end">ต้อง deep learning ไหม?</text>
+  <rect x="100" y="84" width="420" height="28" fill="rgba(88,166,255,.18)" stroke="#58a6ff"/><text x="112" y="102" fill="#58a6ff">ConvLSTM (DL ไร้ฟิสิกส์)</text><text x="515" y="102" fill="#9aa7b4" font-size="9.5" text-anchor="end">ฟิสิกส์ช่วยไหม?</text>
+  <rect x="120" y="50" width="400" height="28" fill="rgba(188,140,255,.18)" stroke="#bc8cff"/><text x="132" y="68" fill="#bc8cff">PM2.5-GNN (SOTA สายกราฟ)</text><text x="515" y="68" fill="#9aa7b4" font-size="9.5" text-anchor="end">ชนะ SOTA โดเมนไหม?</text>
+  <rect x="140" y="22" width="380" height="24" fill="rgba(63,185,80,.22)" stroke="#3fb950"/><text x="152" y="38" fill="#3fb950">AirPhyNet (physics-informed)</text><text x="515" y="38" fill="#9aa7b4" font-size="9.5" text-anchor="end">ฟิสิกส์+ความสามารถดีกว่าไหม?</text>
+  </g>
+</svg>
+</div>
+<div class="why"><b>ตรรกะแบบ ablation ภายนอก:</b> บันไดนี้คือการ "ลอกเปลือกความซับซ้อนทีละชั้น" จากภายนอก · ถ้าชนะ ConvLSTM (DL แต่ไม่มีฟิสิกส์) ได้ = หลักฐานว่า "การใส่ฟิสิกส์ของเรา" คือสิ่งที่สร้างความต่าง ไม่ใช่แค่ "ใช้ deep learning เฉย ๆ"</div>
+
+<!-- 3 -->
+<h2 id="p3">3. Persistence — บาร์แรกที่ลวงตาว่าง่าย</h2>
+<p><b>กฎ:</b> ทำนาย t+h = ค่าที่สังเกตล่าสุด (PM2.5 ตอนนี้) · ไม่ต้องเทรน ฟรี 100%</p>
+<div class="danger"><b>อย่าดูถูก:</b> สำหรับระยะสั้น (ไม่กี่ชั่วโมง) persistence <b>แข็งมาก</b> — เพราะ PM2.5 เปลี่ยนช้า ค่าตอนนี้ทำนายอีก 3 ชม.ข้างหน้าได้ดีอยู่แล้ว · โมเดลซับซ้อนจำนวนมากในงานวิจัย AQ "แพ้ persistence ที่ระยะสั้น" โดยไม่รู้ตัว · <b>ถ้าชนะ persistence ไม่ได้ที่ t+3 = สัญญาณว่ามีบั๊กหรือโมเดลไม่ได้เรียนรู้อะไรเลย</b></div>
+<pre><code><span class="cm"># persistence: ทำนายเท่าค่าล่าสุด — ใช้เป็นเส้นอ้างอิงทุก lead time</span>
+pred_persist = pm25_now.<span class="fn">broadcast_to</span>((H,) + pm25_now.shape)</code></pre>
+
+<!-- 4 -->
+<h2 id="p4">4. Climatology — บาร์ของระยะยาว</h2>
+<p><b>กฎ:</b> ทำนายด้วย "ค่าเฉลี่ยในอดีต" ตามฤดูกาล/ชั่วโมงของวัน (เช่น ค่าเฉลี่ย PM2.5 ของ "15 มี.ค. 14:00 น." จากหลายปี)</p>
+<p>persistence เก่งระยะสั้นแต่พังระยะยาว · climatology กลับกัน — เสถียรที่ระยะยาว (จับ "หน้าแล้งฝุ่นเยอะ") · ทั้งคู่คือ baseline ที่ <b>ไม่ต้องเทรน → ทำก่อนเลยฟรี ๆ</b></p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 480 180" width="80%" xmlns="http://www.w3.org/2000/svg">
+  <line x1="50" y1="150" x2="450" y2="150" stroke="#30363d"/><line x1="50" y1="20" x2="50" y2="150" stroke="#30363d"/>
+  <text x="250" y="172" fill="#9aa7b4" font-size="11" text-anchor="middle">ระยะพยากรณ์ →</text>
+  <text x="22" y="85" fill="#9aa7b4" font-size="11" text-anchor="middle" transform="rotate(-90 22 85)">error</text>
+  <path d="M50,45 Q150,60 280,120 T450,150" fill="none" stroke="#9aa7b4" stroke-width="2.2"/>
+  <text x="90" y="42" fill="#9aa7b4" font-size="10.5">persistence (ดีสั้น)</text>
+  <path d="M50,110 L450,110" stroke="#58a6ff" stroke-width="2.2" stroke-dasharray="5 4"/>
+  <text x="350" y="103" fill="#58a6ff" font-size="10.5">climatology (คงที่)</text>
+  <path d="M50,60 Q200,80 450,118" fill="none" stroke="#3fb950" stroke-width="2.5"/>
+  <text x="300" y="78" fill="#3fb950" font-size="10.5">เป้า: ต่ำกว่าทั้งคู่ทุกระยะ</text>
+</svg>
+</div>
+<div class="why"><b>เป้าที่ชัดเจน:</b> โมเดลเราต้อง <b>error ต่ำกว่าทั้ง persistence และ climatology พร้อมกันทุกระยะ</b> · จุดที่ persistence ตัดกับ climatology คือ "ระยะที่ยากที่สุด" — โชว์ว่าเราชนะตรงนั้นได้คือหลักฐานแกร่ง</div>
+
+<!-- 5 -->
+<h2 id="p5">5. ConvLSTM — Deep Learning แต่ "ไม่มีฟิสิกส์"</h2>
+<p><b>ConvLSTM</b> = รวม CNN (เห็นเชิงพื้นที่) + LSTM (จำเชิงเวลา) · เป็น baseline DL มาตรฐานสำหรับพยากรณ์ spatiotemporal (เดิมใช้พยากรณ์ฝนจากเรดาร์) · มันเรียนจากข้อมูลล้วน ๆ <b>ไม่รู้สมการ ADR</b></p>
+<div class="green-box"><b>ทำไม ConvLSTM คือ baseline ที่สำคัญเชิงแนวคิด:</b> ถ้าเราชนะมันได้ → พิสูจน์ว่า "ส่วนที่ชนะ" มาจาก <b>การใส่ฟิสิกส์ (1.2, 3.5)</b> ไม่ใช่แค่ "ใช้ neural net ใหญ่ ๆ" · นี่คือคู่เทียบที่ตอบคำถาม "physics-informed คุ้มไหม" โดยตรง · เป็น baseline DL ที่เรา <b>ควรลงมือสร้าง/เทรนเอง</b> (ใช้งบ A100 ส่วนหนึ่ง)</div>
+
+<!-- 6 -->
+<h2 id="p6">6. PM2.5-GNN — SOTA เฉพาะโดเมนสายกราฟ</h2>
+<p><b>PM2.5-GNN</b> มอง <b>สถานีเป็นโหนดในกราฟ</b> เชื่อมกันด้วยระยะทาง/ลม แล้วส่งข้อมูลระหว่างสถานี (message passing) · เป็นแนวทางยอดนิยมและแข็งสำหรับพยากรณ์ PM2.5 แบบ "ราย-สถานี"</p>
+<div class="ex"><b>จุดที่ต่างจากเราเชิงโครงสร้าง:</b> GNN ทำงานบน "กราฟของสถานี" (จุด) → เก่งทำนาย <b>ที่สถานีที่มีอยู่</b> · แต่ <b>ผลิต field เต็มกริดตรงที่ไม่มีสถานีได้ยาก</b> (โยง leave-stations-out, 5.2) · ขณะที่ HazeNet ทำงานบนกริด → ผลิตแผนที่เต็มได้ตามธรรมชาติ · นี่เป็นคู่เทียบที่ดีในการโชว์ข้อได้เปรียบ "การให้ field" ของเรา</div>
+<p class="muted">ถ้ามีโค้ดสาธารณะ → รันเทียบบนข้อมูลเดียวกันได้ · ถ้าไม่มีเวลาพอ → อ้างอิงตัวเลขจากเปเปอร์อย่างระมัดระวัง (คนละ dataset เทียบตรงไม่ได้ ต้องระบุ)</p>
+
+<!-- 7 -->
+<h2 id="p7">7. AirPhyNet — คู่เทียบที่สำคัญที่สุด <span class="pin">★</span></h2>
+<p><b>AirPhyNet</b> เป็น physics-informed NN สำหรับพยากรณ์อากาศที่ฝัง <b>advection-diffusion</b> (สมการเดียวกับ 1.2!) เข้ากับ neural network · นี่คือ baseline ที่ <b>ใกล้จิตวิญญาณของ HazeNet ที่สุด</b> — ทั้งคู่คือ "ฟิสิกส์ + AI"</p>
+<div class="danger"><b>ทำไมนี่คือคู่เทียบที่ "ต้องมี":</b> ชนะ persistence/ConvLSTM ได้ ยังไม่พอพิสูจน์ว่างานเรา "ใหม่" — เพราะ AirPhyNet ก็ใส่ฟิสิกส์เหมือนกัน · <b>การวางตำแหน่งของเราเทียบ AirPhyNet คือหัวใจของ contribution</b> · เราต้องตอบให้ได้ว่า HazeNet ต่าง/ดีกว่าตรงไหน:</div>
+<table>
+<tr><th>มิติ</th><th>AirPhyNet</th><th>HazeNet (ของเรา)</th></tr>
+<tr><td>ฟิสิกส์ที่ฝัง</td><td>advection-diffusion</td><td>ADR เต็ม + conditionally-linear operator (3.5)</td></tr>
+<tr><td>โครงสร้างผลลัพธ์</td><td>เน้นราย-สถานี/กราฟ</td><td>field เต็มกริด (เติมที่ไม่มีสถานี)</td></tr>
+<tr><td><b>Source attribution (3.6)</b></td><td class="no">✗ ไม่มี</td><td class="yes">✓ tagged-tracer แยกแหล่งได้</td></tr>
+<tr><td><b>Source inversion (3.7)</b></td><td class="no">✗</td><td class="yes">✓ ย้อนหาแหล่งด้วย adjoint</td></tr>
+<tr><td>Transboundary focus</td><td class="part">ทั่วไป</td><td class="yes">ออกแบบเพื่อควันข้ามแดน SEA</td></tr>
+</table>
+<div class="green-box"><b>จุดยืนสำคัญ:</b> แม้ skill การพยากรณ์จะ "เสมอ" AirPhyNet — HazeNet ยังมีค่าเพิ่มที่มันทำไม่ได้: <b>attribution + inversion</b> (ตอบ "ฝุ่นมาจากไหน" และ "ถ้าดับไฟตรงนี้จะลดเท่าไร") · contribution ไม่จำเป็นต้องเป็น "แม่นกว่า" เสมอไป — "ทำสิ่งที่มันทำไม่ได้ โดยแม่นไม่แพ้กัน" ก็คือ contribution ที่แข็งแรง</div>
+
+<!-- 8 -->
+<h2 id="p8">8. กติกาเทียบให้ "ยุติธรรม" — ไม่งั้นโดนยำ <span class="pin">★</span></h2>
+<table>
+<tr><th>กติกา</th><th>เหตุผล</th></tr>
+<tr><td>ข้อมูล + split เดียวกัน (5.2)</td><td>ต่าง split = เทียบไม่ได้</td></tr>
+<tr><td>metric เดียวกัน (5.1)</td><td>ต้องวัดด้วยไม้บรรทัดเดียวกัน</td></tr>
+<tr><td>จูน baseline อย่างเป็นธรรม</td><td>ห้ามทำให้ baseline อ่อนโดยตั้งใจ (ไม่จูน LR/architecture)</td></tr>
+<tr><td>input เดียวกันเท่าที่ทำได้</td><td>ถ้าเราได้ ERA5+DEM ต้องให้ baseline ได้ด้วย</td></tr>
+<tr><td>รายงาน mean±std ข้าม fold</td><td>ความต่างต้องเกิน noise (โยง 5.6)</td></tr>
+</table>
+<div class="warn"><b>หลุมพรางที่พบบ่อย:</b> เทียบกับ "ตัวเลขในเปเปอร์อื่น" ที่รันคนละ dataset/คนละพื้นที่/คนละช่วงเวลา → <b>เทียบกันไม่ได้โดยตรง</b> · ทางที่ถูกคือรัน baseline เองบนข้อมูลเดียวกับเรา · ถ้าทำไม่ได้จริง ๆ ให้ระบุชัดว่าเป็นการอ้างอิงเชิงบริบท ไม่ใช่การเทียบหัวต่อหัว</div>
+
+<!-- 9 -->
+<h2 id="p9">9. แผนทำจริง (งบ 2 เดือน) + จุดต่างของเรา</h2>
+<table>
+<tr><th>Baseline</th><th>ต้นทุน</th><th>ทำในเฟสแรก?</th></tr>
+<tr><td>Persistence</td><td>ฟรี (ไม่เทรน)</td><td class="yes">✓ ทำเลย — บังคับ</td></tr>
+<tr><td>Climatology</td><td>ฟรี (ไม่เทรน)</td><td class="yes">✓ ทำเลย — บังคับ</td></tr>
+<tr><td>สถิติตื้น (GBT/LinReg)</td><td>ถูก (CPU)</td><td class="yes">✓ ทำเลย — พิสูจน์ "ต้อง DL"</td></tr>
+<tr><td>ConvLSTM</td><td>ปานกลาง (เทรน A100)</td><td class="part">◐ ทำ — คู่เทียบ "ฟิสิกส์คุ้มไหม"</td></tr>
+<tr><td>PM2.5-GNN / AirPhyNet</td><td>สูง (โค้ด+เทรน)</td><td class="part">◐ ถ้ามีโค้ด/เวลา — โดยเฉพาะ AirPhyNet</td></tr>
+</table>
+<div class="ex"><b>คำแนะนำจัดลำดับ:</b> <b>3 baseline ฟรี (persistence/climatology/สถิติตื้น) คือขั้นต่ำที่ขาดไม่ได้</b> ทำก่อนเลยตั้งแต่ก่อนมีโมเดลด้วยซ้ำ (เป็นเส้นอ้างอิง) · <b>ConvLSTM</b> คือ baseline DL ที่ควรลงทุนเทรน (ตอบคำถามฟิสิกส์) · <b>AirPhyNet</b> มีค่าสูงสุดเชิงวิชาการถ้าโค้ดรันได้ — แต่ถ้าเวลาไม่พอ ให้เน้น "อธิบายความต่างเชิงความสามารถ (attribution/inversion)" แทนการเทียบตัวเลขหัวต่อหัว</div>
+
+<!-- cheat -->
+<h2 id="cheat">10. Cheat sheet + แบบฝึกหัด</h2>
+<div class="card">
+<h4>Cheat sheet — แต่ละ baseline พิสูจน์อะไร</h4>
+<ul>
+<li><b>Persistence</b> ("เหมือนเมื่อวาน") — แข็งระยะสั้น · แพ้ไม่ได้ที่ t+3</li>
+<li><b>Climatology</b> ("เฉลี่ยตามฤดู") — แข็งระยะยาว · เป้า: ต่ำกว่าทั้งคู่ทุกระยะ</li>
+<li><b>สถิติตื้น</b> — พิสูจน์ "ต้อง deep learning ไหม"</li>
+<li><b>ConvLSTM</b> — DL ไร้ฟิสิกส์ → ชนะ = "ฟิสิกส์ช่วยจริง"</li>
+<li><b>PM2.5-GNN</b> — SOTA สายกราฟ (เก่งที่สถานี อ่อนเติม field)</li>
+<li><b>AirPhyNet</b> — physics+AI ใกล้เราสุด → จุดต่าง = attribution/inversion</li>
+<li><b>เสมอ:</b> baseline แข็ง + split/metric เดียวกัน + จูนเป็นธรรม</li>
+</ul>
+</div>
+<div class="chk">
+<p class="q">❓ แบบฝึกหัด</p>
+<ol>
+<li>ทำไม persistence ถึงเป็น baseline ที่ "ลวงตาว่าง่าย"?</li>
+<li>ชนะ ConvLSTM พิสูจน์อะไรที่ชนะ persistence ไม่ได้พิสูจน์?</li>
+<li>AirPhyNet สำคัญกว่าคู่เทียบอื่นยังไง และเราต่างจากมันตรงไหน?</li>
+<li>ยกตัวอย่างการเทียบแบบ "ไม่ยุติธรรม" 1 อย่าง</li>
+<li>ถ้า forecast skill เราเสมอ AirPhyNet ยังเคลม contribution ได้ไหม?</li>
+</ol>
+<details><summary>เฉลย</summary>
+<ol>
+<li>PM2.5 เปลี่ยนช้า → ค่าตอนนี้ทำนายระยะสั้นได้ดีมาก โมเดลซับซ้อนหลายตัวแพ้มันที่ t สั้นโดยไม่รู้ตัว</li>
+<li>ชนะ persistence = "เรียนรู้อะไรบ้าง" · ชนะ ConvLSTM (DL ไร้ฟิสิกส์) = "ฟิสิกส์ที่เราใส่คือสิ่งที่สร้างความต่าง" ไม่ใช่แค่ใช้ DL</li>
+<li>มันคือ physics+AI เหมือนเรา → ใกล้สุด · เราต่างที่ ADR เต็ม+conditionally-linear, field เต็มกริด, และ attribution/inversion ที่มันไม่มี</li>
+<li>จูนของเราเต็มที่แต่ปล่อย baseline ไม่จูน / ให้ input เราเยอะกว่า / เทียบคนละ split</li>
+<li>ได้ — "ทำ attribution+inversion ได้ โดยแม่นไม่แพ้กัน" คือ contribution (ทำสิ่งที่มันทำไม่ได้)</li>
+</ol>
+</details>
+</div>
+<div class="chk">
+<p class="q">✅ เช็กลิสต์ก่อนไป 5.4</p>
+<ul>
+<li>☐ มี persistence + climatology + สถิติตื้น เป็นเส้นอ้างอิง (ฟรี)</li>
+<li>☐ เทรน ConvLSTM บน split เดียวกัน</li>
+<li>☐ วางแผน AirPhyNet/PM2.5-GNN (รันเอง หรือระบุว่าอ้างอิงเชิงบริบท)</li>
+<li>☐ ทุก baseline ใช้ data/split/metric เดียวกัน + จูนเป็นธรรม</li>
+<li>☐ เตรียมตารางจุดต่าง (โดยเฉพาะ attribution/inversion vs AirPhyNet)</li>
+</ul>
+</div>
+
+<hr>
+<p class="center muted">5.3 — Baselines · โมดูล 5 · ต่อไป: <b style="color:var(--cyan)">5.4 Ablation Study</b> — ตัดชิ้นส่วนของ "เราเอง" ทีละชิ้น เพื่อพิสูจน์ว่าแต่ละองค์ประกอบจำเป็นจริง</p>
+
+</div>
+</body>
+</html>

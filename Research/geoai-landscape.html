@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ภาพรวมงาน AI + Geospatial (GeoAI) ฉบับเข้าใจง่าย — 2026</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#ffffff; --ink:#1d2733; --muted:#5a6b7b;
+    --line:#e2e8f0; --blue:#2563eb; --blue-soft:#eaf1ff; --green:#0f9d58;
+    --green-soft:#e6f5ec; --orange:#e8710a; --orange-soft:#fdeede;
+    --purple:#7c3aed; --purple-soft:#f1eafe; --red:#d93025; --red-soft:#fdeceb;
+    --teal:#0891b2; --teal-soft:#e3f5f9;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Segoe UI","Sarabun","Tahoma",sans-serif; line-height:1.7;
+    font-size:16px;
+  }
+  header.hero{
+    background:linear-gradient(135deg,#0b1b3a,#16386b); color:#fff;
+    padding:46px 22px 38px;
+  }
+  .wrap{max-width:1040px; margin:0 auto; padding:0 18px;}
+  header.hero h1{margin:0 0 8px; font-size:30px; line-height:1.3;}
+  header.hero p{margin:4px 0; color:#cdd9ee; font-size:16px;}
+  .tagline{display:inline-block; margin-top:14px; background:rgba(255,255,255,.12);
+    padding:6px 14px; border-radius:20px; font-size:14px;}
+  nav.toc{
+    position:sticky; top:0; z-index:20; background:#fff; border-bottom:1px solid var(--line);
+    box-shadow:0 1px 4px rgba(0,0,0,.04);
+  }
+  nav.toc .wrap{display:flex; flex-wrap:wrap; gap:6px; padding:10px 18px;}
+  nav.toc a{
+    text-decoration:none; color:var(--muted); font-size:13.5px; padding:5px 11px;
+    border-radius:7px; white-space:nowrap;
+  }
+  nav.toc a:hover{background:var(--blue-soft); color:var(--blue);}
+  section{padding:34px 0 8px;}
+  h2{font-size:23px; margin:0 0 6px; display:flex; align-items:center; gap:10px;}
+  h2 .num{background:var(--blue); color:#fff; width:34px; height:34px; border-radius:9px;
+    display:inline-flex; align-items:center; justify-content:center; font-size:16px; flex:none;}
+  h3{font-size:18px; margin:24px 0 6px; color:#13294a;}
+  p{margin:8px 0;}
+  .lead{color:var(--muted); font-size:16.5px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:20px 22px; margin:16px 0;}
+  .grid{display:grid; gap:14px;}
+  .g2{grid-template-columns:1fr 1fr;}
+  .g3{grid-template-columns:1fr 1fr 1fr;}
+  @media(max-width:760px){.g2,.g3{grid-template-columns:1fr;}}
+  .pill{display:inline-block; font-size:12.5px; padding:3px 9px; border-radius:20px;
+    margin:2px 4px 2px 0; background:var(--blue-soft); color:var(--blue);}
+  .tech{background:#eef2f6; color:#41576b;}
+  table{border-collapse:collapse; width:100%; font-size:14.5px; margin:10px 0;}
+  th,td{border:1px solid var(--line); padding:9px 11px; text-align:left; vertical-align:top;}
+  th{background:#f0f4f8; font-weight:600;}
+  .note{background:var(--blue-soft); border-left:4px solid var(--blue); padding:12px 16px;
+    border-radius:8px; margin:14px 0;}
+  .key{background:var(--green-soft); border-left:4px solid var(--green);}
+  .warn{background:var(--orange-soft); border-left:4px solid var(--orange);}
+  .label{font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--muted); margin-bottom:4px;}
+  ul{margin:8px 0; padding-left:22px;} li{margin:4px 0;}
+  .catbar{height:6px; border-radius:6px; margin:-20px -22px 14px; border-top-left-radius:13px;
+    border-top-right-radius:13px;}
+  .src{font-size:13px; color:var(--muted);}
+  .src a{color:var(--blue);}
+  svg{max-width:100%; height:auto; display:block; margin:6px auto;}
+  .flow-cap{text-align:center; color:var(--muted); font-size:13.5px; margin-top:-2px;}
+  .emoji{font-size:20px;}
+  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:0;}
+  @media(max-width:760px){.two-col{grid-template-columns:1fr;}}
+  .tag-good{color:var(--green); font-weight:600;}
+  .tag-bad{color:var(--red); font-weight:600;}
+  footer{padding:30px 18px 50px; color:var(--muted); font-size:13.5px;}
+  .anchor{scroll-margin-top:60px;}
+  .miniflow{display:flex; align-items:stretch; gap:8px; flex-wrap:wrap; margin:12px 0;}
+  .step{background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 13px;
+    flex:1; min-width:120px; text-align:center; font-size:14px;}
+  .step b{display:block; font-size:13px; color:var(--blue); margin-bottom:3px;}
+  .arrow{display:flex; align-items:center; color:var(--muted); font-size:20px;}
+  @media(max-width:600px){.arrow{transform:rotate(90deg);}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>🛰️ ภาพรวมงาน AI + Geospatial (GeoAI)</h1>
+    <p>คู่มือเข้าใจทั้งฟิลด์ตั้งแต่ศูนย์ — เน้น Climate Change &amp; Disaster Management</p>
+    <p>อัปเดตเทคโนโลยี State-of-the-Art ปี 2025–2026</p>
+    <span class="tagline">เขียนสำหรับคนที่ไม่เคยทำงาน Geo มาก่อน • อ่านจบเห็นภาพรวมทั้งหมด</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <div class="wrap">
+    <a href="#intro">0 · GeoAI คืออะไร</a>
+    <a href="#data">1 · ข้อมูล &amp; เซนเซอร์</a>
+    <a href="#map">2 · แผนที่ฟิลด์</a>
+    <a href="#cat-cv">A · Computer Vision</a>
+    <a href="#cat-fm">B · Foundation Models</a>
+    <a href="#cat-forecast">C · พยากรณ์เวลา</a>
+    <a href="#cat-disaster">D · ภัยพิบัติ</a>
+    <a href="#cat-climate">E · สิ่งแวดล้อม</a>
+    <a href="#cat-llm">F · GeoLLM / Agent</a>
+    <a href="#cat-twin">G · Digital Twin</a>
+    <a href="#glossary">ศัพท์ต้องรู้</a>
+    <a href="#project">ไอเดียโปรเจกต์</a>
+    <a href="#sources">แหล่งอ้างอิง</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<!-- ===================== INTRO ===================== -->
+<section id="intro" class="anchor">
+  <h2><span class="num">0</span> GeoAI คืออะไร และทำไมถึงสำคัญ</h2>
+  <p class="lead">GeoAI = <b>Geospatial</b> (ข้อมูลที่ผูกกับตำแหน่งบนโลก เช่น พิกัด ภาพถ่ายดาวเทียม แผนที่)
+  + <b>Artificial Intelligence</b> (โมเดลเรียนรู้รูปแบบจากข้อมูลจำนวนมหาศาล)</p>
+
+  <div class="card">
+    <p>หัวใจของมันคือ: โลกถูกถ่ายภาพและวัดค่าตลอดเวลาจากดาวเทียมหลายร้อยดวง โดรน เซนเซอร์ภาคพื้น
+    ทำให้เกิด <b>ข้อมูลมหาศาลเกินกว่าคนจะดูไหว</b> เราจึงใช้ AI มาช่วย "อ่านโลก" แบบอัตโนมัติ —
+    เช่น น้ำท่วมตรงไหน ป่าหายไปเท่าไหร่ พรุ่งนี้พายุจะแรงแค่ไหน ตึกไหนพังหลังแผ่นดินไหว</p>
+
+    <div class="note key">
+      <b>เชื่อมโยงกับงานของคุณโดยตรง:</b> ทั้ง Climate Change (ติดตามการปล่อยคาร์บอน ป่าไม้ ความร้อน)
+      และ Disaster Management (น้ำท่วม ไฟป่า แผ่นดินทรุด พายุ) ล้วนเป็น "ปัญหาเชิงพื้นที่-เวลา"
+      ที่ GeoAI ออกแบบมาแก้โดยเฉพาะ
+    </div>
+  </div>
+
+  <h3>ทำไมงานนี้ "ยากและพิเศษ" กว่า AI ทั่วไป</h3>
+  <div class="grid g2">
+    <div class="card">
+      <div class="label">ภาพถ่ายดาวเทียมไม่ใช่รูปธรรมดา</div>
+      รูปมือถือมี 3 ช่อง (R,G,B) แต่ภาพดาวเทียมมี <b>10–200+ ช่องสัญญาณ (bands)</b> รวมแสงที่ตามองไม่เห็น
+      เช่น อินฟราเรด ที่บอก "สุขภาพพืช" และ "ความชื้น" ได้
+    </div>
+    <div class="card">
+      <div class="label">มีมิติเวลาเสมอ</div>
+      ที่เดิมถูกถ่ายซ้ำทุก 5–16 วัน เกิดเป็น "วิดีโอของโลก" ต้องวิเคราะห์ทั้ง<b>พื้นที่และการเปลี่ยนแปลงตามเวลา</b>พร้อมกัน
+    </div>
+    <div class="card">
+      <div class="label">สเกลใหญ่มหาศาล</div>
+      ภาพเดียวครอบคลุมหลายร้อยกิโลเมตร คลังข้อมูลระดับ <b>เพตะไบต์ (PB)</b> ต้องใช้ cloud computing
+    </div>
+    <div class="card">
+      <div class="label">ป้ายกำกับ (labels) หายาก &amp; แพง</div>
+      การบอกว่า "พิกเซลนี้คือนาข้าว" ต้องลงพื้นที่จริง ทำให้ข้อมูลมี label น้อย → เป็นเหตุผลที่
+      <b>Foundation Models</b> มาแรงมาก (เรียนเองโดยไม่ต้องใช้ label)
+    </div>
+  </div>
+</section>
+
+<!-- ===================== DATA LAYER ===================== -->
+<section id="data" class="anchor">
+  <h2><span class="num">1</span> รากฐานที่ต้องเข้าใจก่อน: ข้อมูลและเซนเซอร์</h2>
+  <p class="lead">ก่อนเข้าใจ "งาน" ต้องเข้าใจ "วัตถุดิบ" ก่อน เพราะ AI ทุกตัวกินข้อมูลพวกนี้</p>
+
+  <h3>ประเภทเซนเซอร์หลัก (เลือกตามปัญหา)</h3>
+  <table>
+    <tr><th>ชนิด</th><th>มันวัดอะไร</th><th>จุดเด่น</th><th>ตัวอย่างดาวเทียม</th><th>ใช้กับงาน</th></tr>
+    <tr>
+      <td><b>Optical</b><br>(แสงที่ตามองเห็น+อินฟราเรด)</td>
+      <td>แสงสะท้อนจากพื้นผิว</td>
+      <td>ดูง่าย ความละเอียดสีดี ราคาถูก</td>
+      <td>Sentinel-2, Landsat</td>
+      <td>ป่าไม้ พืชผล เมือง</td>
+    </tr>
+    <tr>
+      <td><b>SAR / Radar</b><br>(เรดาร์)</td>
+      <td>ยิงคลื่นไมโครเวฟแล้ววัดที่สะท้อนกลับ</td>
+      <td><span class="tag-good">ทะลุเมฆ + กลางคืนได้</span> สำคัญมากตอนภัยพิบัติ</td>
+      <td>Sentinel-1</td>
+      <td>น้ำท่วม แผ่นดินทรุด เรือ</td>
+    </tr>
+    <tr>
+      <td><b>Hyperspectral</b></td>
+      <td>แยกแสงเป็นหลายร้อยช่องละเอียด</td>
+      <td>บอก "ชนิดวัสดุ/แร่/พืช" ได้แม่น</td>
+      <td>PRISMA, EnMAP</td>
+      <td>เกษตร แร่ มลพิษ</td>
+    </tr>
+    <tr>
+      <td><b>Thermal</b></td>
+      <td>อุณหภูมิพื้นผิว</td>
+      <td>วัดความร้อนเมือง ไฟป่า</td>
+      <td>Landsat TIRS, ECOSTRESS</td>
+      <td>Heat island ไฟ</td>
+    </tr>
+    <tr>
+      <td><b>LiDAR / DEM</b></td>
+      <td>ความสูง/รูปทรง 3 มิติ</td>
+      <td>ได้ภูมิประเทศ ความสูงตึก/ต้นไม้</td>
+      <td>ICESat-2, โดรน</td>
+      <td>น้ำท่วม ป่า เมือง 3D</td>
+    </tr>
+  </table>
+
+  <div class="note">
+    <b>กฎทองที่มืออาชีพใช้:</b> งานภัยพิบัติเร่งด่วน (น้ำท่วม/พายุ) มัก <b>เริ่มจาก SAR</b> เพราะถ่ายผ่านเมฆได้
+    ส่วนงานติดตามระยะยาว (ป่า/เกษตร) มัก <b>เริ่มจาก Optical</b> และที่ดีที่สุดคือ <b>ผสมหลายเซนเซอร์ (data fusion)</b>
+  </div>
+
+  <h3>เส้นทางข้อมูลจากอวกาศ → โมเดล (Data Pipeline)</h3>
+  <div class="miniflow">
+    <div class="step"><b>1. เซนเซอร์</b>ดาวเทียม/โดรน<br>ถ่ายภาพดิบ</div>
+    <div class="arrow">→</div>
+    <div class="step"><b>2. ARD</b>แก้เมฆ/แสง/พิกัด<br>เป็น Analysis-Ready Data</div>
+    <div class="arrow">→</div>
+    <div class="step"><b>3. Data Cube</b>จัดเก็บเป็นก้อน<br>พื้นที่ × เวลา × bands</div>
+    <div class="arrow">→</div>
+    <div class="step"><b>4. AI Model</b>เรียนรู้ &amp; ทำนาย</div>
+    <div class="arrow">→</div>
+    <div class="step"><b>5. Insight</b>แผนที่/แจ้งเตือน<br>/การตัดสินใจ</div>
+  </div>
+
+  <div class="grid g3">
+    <div class="card">
+      <div class="label">แพลตฟอร์มต้องรู้</div>
+      <span class="pill tech">Google Earth Engine</span>
+      <span class="pill tech">Microsoft Planetary Computer</span>
+      <span class="pill tech">AWS Open Data</span>
+      <p class="src">คลังข้อมูลระดับเพตะไบต์ + ประมวลผลบนคลาวด์ ไม่ต้องโหลดมาเครื่องตัวเอง</p>
+    </div>
+    <div class="card">
+      <div class="label">มาตรฐานจัดข้อมูล</div>
+      <span class="pill tech">STAC</span>
+      <span class="pill tech">Data Cube / xarray</span>
+      <span class="pill tech">COG (Cloud-Optimized GeoTIFF)</span>
+      <p class="src">STAC = แคตตาล็อกค้นภาพตามพิกัด+เวลา เหมือน "Google ของภาพดาวเทียม"</p>
+    </div>
+    <div class="card">
+      <div class="label">เครื่องมือโค้ด</div>
+      <span class="pill tech">Python</span>
+      <span class="pill tech">rasterio / GDAL</span>
+      <span class="pill tech">PyTorch</span>
+      <span class="pill tech">TorchGeo</span>
+      <span class="pill tech">QGIS</span>
+      <p class="src">TorchGeo คือ library ที่ทำให้เทรน deep learning กับข้อมูล geo ได้ง่าย</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FIELD MAP ===================== -->
+<section id="map" class="anchor">
+  <h2><span class="num">2</span> แผนที่ทั้งฟิลด์: งาน GeoAI แบ่งเป็น 7 กลุ่ม</h2>
+  <p class="lead">ผมจัดกลุ่มจากงานวิจัย SOTA ปัจจุบันให้เห็นภาพเดียวจบ — แต่ละกลุ่มมีรายละเอียดด้านล่าง</p>
+
+  <svg viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,Sarabun,sans-serif">
+    <!-- base -->
+    <rect x="300" y="20" width="300" height="56" rx="10" fill="#0b1b3a"/>
+    <text x="450" y="44" text-anchor="middle" fill="#fff" font-size="16" font-weight="bold">ข้อมูลโลก (ดาวเทียม/โดรน/เซนเซอร์)</text>
+    <text x="450" y="63" text-anchor="middle" fill="#9fb4d6" font-size="12">Optical · SAR · Hyperspectral · LiDAR · Climate</text>
+
+    <!-- arrow down -->
+    <line x1="450" y1="76" x2="450" y2="104" stroke="#94a3b8" stroke-width="2"/>
+    <polygon points="450,112 445,102 455,102" fill="#94a3b8"/>
+
+    <!-- foundation layer -->
+    <rect x="230" y="114" width="440" height="50" rx="10" fill="#7c3aed"/>
+    <text x="450" y="136" text-anchor="middle" fill="#fff" font-size="15" font-weight="bold">B · Geospatial Foundation Models (ชั้นฐานราก)</text>
+    <text x="450" y="153" text-anchor="middle" fill="#e6dbff" font-size="11.5">Prithvi · Clay · AlphaEarth — เรียนรู้เองจากข้อมูลมหาศาล แล้วส่งต่อให้งานอื่น</text>
+
+    <!-- task boxes row 1 -->
+    <g>
+      <rect x="40" y="210" width="190" height="78" rx="10" fill="#eaf1ff" stroke="#2563eb"/>
+      <text x="135" y="234" text-anchor="middle" fill="#1d4ed8" font-size="13.5" font-weight="bold">A · Computer Vision</text>
+      <text x="135" y="254" text-anchor="middle" fill="#33506e" font-size="11">จำแนก · แบ่งส่วน · ตรวจวัตถุ</text>
+      <text x="135" y="270" text-anchor="middle" fill="#33506e" font-size="11">ตรวจการเปลี่ยนแปลง</text>
+    </g>
+    <g>
+      <rect x="250" y="210" width="190" height="78" rx="10" fill="#e3f5f9" stroke="#0891b2"/>
+      <text x="345" y="234" text-anchor="middle" fill="#0e7490" font-size="13.5" font-weight="bold">C · Spatiotemporal</text>
+      <text x="345" y="254" text-anchor="middle" fill="#2b5563" font-size="11">พยากรณ์อากาศ/ภูมิอากาศ</text>
+      <text x="345" y="270" text-anchor="middle" fill="#2b5563" font-size="11">GraphCast · Aurora</text>
+    </g>
+    <g>
+      <rect x="460" y="210" width="190" height="78" rx="10" fill="#fdeceb" stroke="#d93025"/>
+      <text x="555" y="234" text-anchor="middle" fill="#b3271e" font-size="13.5" font-weight="bold">D · Disaster Mgmt</text>
+      <text x="555" y="254" text-anchor="middle" fill="#6b2a26" font-size="11">น้ำท่วม · ไฟป่า · แผ่นดินทรุด</text>
+      <text x="555" y="270" text-anchor="middle" fill="#6b2a26" font-size="11">ประเมินความเสียหาย</text>
+    </g>
+    <g>
+      <rect x="670" y="210" width="190" height="78" rx="10" fill="#e6f5ec" stroke="#0f9d58"/>
+      <text x="765" y="234" text-anchor="middle" fill="#0b7a43" font-size="13.5" font-weight="bold">E · Climate/Env</text>
+      <text x="765" y="254" text-anchor="middle" fill="#2a5e42" font-size="11">คาร์บอน · ป่าไม้ · ความร้อน</text>
+      <text x="765" y="270" text-anchor="middle" fill="#2a5e42" font-size="11">ความหลากหลายชีวภาพ</text>
+    </g>
+
+    <!-- row 2 -->
+    <g>
+      <rect x="200" y="320" width="220" height="74" rx="10" fill="#f1eafe" stroke="#7c3aed"/>
+      <text x="310" y="344" text-anchor="middle" fill="#6d28d9" font-size="13.5" font-weight="bold">F · GeoLLM / Agents</text>
+      <text x="310" y="364" text-anchor="middle" fill="#4a3b6b" font-size="11">ถาม-ตอบแผนที่ · บรรยายภาพ</text>
+      <text x="310" y="380" text-anchor="middle" fill="#4a3b6b" font-size="11">GIS Agent อัตโนมัติ</text>
+    </g>
+    <g>
+      <rect x="480" y="320" width="220" height="74" rx="10" fill="#fdeede" stroke="#e8710a"/>
+      <text x="590" y="344" text-anchor="middle" fill="#c25e09" font-size="13.5" font-weight="bold">G · Digital Twin Earth</text>
+      <text x="590" y="364" text-anchor="middle" fill="#6e4216" font-size="11">จำลองโลกเสมือน</text>
+      <text x="590" y="380" text-anchor="middle" fill="#6e4216" font-size="11">Earth-2 · Destination Earth</text>
+    </g>
+
+    <!-- connectors from foundation to tasks -->
+    <g stroke="#c4b5fd" stroke-width="2" fill="none">
+      <path d="M350,164 C250,185 160,190 135,208"/>
+      <path d="M410,164 C390,185 360,190 345,208"/>
+      <path d="M500,164 C520,185 545,190 555,208"/>
+      <path d="M560,164 C660,185 740,190 765,208"/>
+    </g>
+
+    <!-- bottom label -->
+    <rect x="250" y="430" width="400" height="44" rx="10" fill="#0b1b3a"/>
+    <text x="450" y="450" text-anchor="middle" fill="#fff" font-size="13.5" font-weight="bold">ตัวช่วยทุกกลุ่ม: Explainable AI (XAI) — อธิบายว่าทำไมโมเดลทำนายแบบนั้น</text>
+    <text x="450" y="467" text-anchor="middle" fill="#9fb4d6" font-size="11">สำคัญมากในงานภัยพิบัติ/นโยบาย ที่ต้องสร้างความเชื่อมั่น</text>
+  </svg>
+  <p class="flow-cap">ภาพรวม: ข้อมูล → Foundation Model เป็นฐาน → แตกเป็นงาน 7 กลุ่ม</p>
+</section>
+
+<!-- ===================== A. CV ===================== -->
+<section id="cat-cv" class="anchor">
+  <h2><span class="num">A</span> งาน Computer Vision บนภาพถ่ายดาวเทียม</h2>
+  <div class="card">
+    <div class="catbar" style="background:var(--blue)"></div>
+    <p><b>ทำอะไร:</b> สอน AI ให้ "มองภาพดาวเทียมแล้วเข้าใจ" เหมือนตาคน แต่ทำกับพื้นที่นับล้านตารางกิโลเมตร
+    นี่คือกลุ่มงานพื้นฐานที่สุด งานกลุ่มอื่นมักต่อยอดจากตรงนี้</p>
+
+    <h3>4 งานย่อยที่ต้องแยกให้ออก</h3>
+    <table>
+      <tr><th>งาน</th><th>คำถามที่ตอบ</th><th>ผลลัพธ์</th><th>โมเดลยอดนิยม</th></tr>
+      <tr><td><b>Classification</b><br>(จำแนกภาพ)</td><td>"ภาพนี้คืออะไร?"</td><td>1 ป้ายต่อภาพ เช่น "ป่า"</td><td>CNN, ViT</td></tr>
+      <tr><td><b>Semantic Segmentation</b><br>(แบ่งส่วน)</td><td>"แต่ละพิกเซลคืออะไร?"</td><td>ระบายสีทุกพิกเซล เช่น แผนที่การใช้ที่ดิน (LULC)</td><td><b>U-Net</b>, SegFormer</td></tr>
+      <tr><td><b>Object Detection</b><br>(ตรวจวัตถุ)</td><td>"มีอะไร อยู่ตรงไหน?"</td><td>กล่องล้อมรอบ เช่น ตึก เรือ รถ</td><td>YOLO, DETR</td></tr>
+      <tr><td><b>Change Detection</b><br>(ตรวจการเปลี่ยนแปลง)</td><td>"ระหว่าง 2 ช่วงเวลาอะไรเปลี่ยน?"</td><td>แผนที่จุดที่เปลี่ยน เช่น ป่าหาย เมืองโต</td><td>Siamese U-Net, Transformer CD</td></tr>
+    </table>
+
+    <h3>U-Net ทำงานยังไง (อธิบายแบบเห็นภาพ)</h3>
+    <p>U-Net คือสถาปัตยกรรมที่ใช้บ่อยที่สุดในงาน segmentation ภาพดาวเทียม รูปร่างเหมือนตัว "U"</p>
+    <svg viewBox="0 0 760 230" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,Sarabun,sans-serif">
+      <!-- input -->
+      <rect x="20" y="30" width="90" height="60" rx="6" fill="#eaf1ff" stroke="#2563eb"/>
+      <text x="65" y="56" text-anchor="middle" font-size="11" fill="#1d4ed8">ภาพเข้า</text>
+      <text x="65" y="72" text-anchor="middle" font-size="10" fill="#33506e">หลาย bands</text>
+      <!-- encoder -->
+      <rect x="150" y="40" width="70" height="50" rx="6" fill="#dbe6f5" stroke="#2563eb"/>
+      <text x="185" y="68" text-anchor="middle" font-size="10" fill="#1d4ed8">ย่อ ↓</text>
+      <rect x="240" y="55" width="60" height="40" rx="6" fill="#c7d6ec" stroke="#2563eb"/>
+      <text x="270" y="79" text-anchor="middle" font-size="10" fill="#1d4ed8">ย่อ ↓</text>
+      <rect x="320" y="70" width="55" height="30" rx="6" fill="#7c3aed"/>
+      <text x="347" y="89" text-anchor="middle" font-size="9.5" fill="#fff">แก่นความหมาย</text>
+      <!-- decoder -->
+      <rect x="395" y="55" width="60" height="40" rx="6" fill="#c8ecd8" stroke="#0f9d58"/>
+      <text x="425" y="79" text-anchor="middle" font-size="10" fill="#0b7a43">ขยาย ↑</text>
+      <rect x="475" y="40" width="70" height="50" rx="6" fill="#d6f0e2" stroke="#0f9d58"/>
+      <text x="510" y="68" text-anchor="middle" font-size="10" fill="#0b7a43">ขยาย ↑</text>
+      <!-- output -->
+      <rect x="575" y="30" width="90" height="60" rx="6" fill="#e6f5ec" stroke="#0f9d58"/>
+      <text x="620" y="56" text-anchor="middle" font-size="11" fill="#0b7a43">แผนที่ผล</text>
+      <text x="620" y="72" text-anchor="middle" font-size="10" fill="#2a5e42">ระบายทุกพิกเซล</text>
+      <!-- arrows -->
+      <g stroke="#94a3b8" stroke-width="1.5" fill="none">
+        <line x1="110" y1="60" x2="148" y2="60"/><line x1="220" y1="65" x2="238" y2="70"/>
+        <line x1="300" y1="78" x2="318" y2="82"/><line x1="375" y1="82" x2="393" y2="78"/>
+        <line x1="455" y1="72" x2="473" y2="68"/><line x1="545" y1="62" x2="573" y2="60"/>
+      </g>
+      <!-- skip connections -->
+      <g stroke="#e8710a" stroke-width="1.5" stroke-dasharray="4 3" fill="none">
+        <path d="M185,40 C260,12 440,12 510,40"/>
+        <path d="M270,55 C320,30 380,30 425,55"/>
+      </g>
+      <text x="350" y="14" text-anchor="middle" font-size="10.5" fill="#c25e09">เส้นประส้ม = Skip connection (ส่งรายละเอียดข้ามไป ช่วยให้ขอบคม)</text>
+      <text x="120" y="120" font-size="11" fill="#5a6b7b">ฝั่งซ้าย (Encoder): "บีบ" ภาพเพื่อเข้าใจว่ามีอะไรบ้าง</text>
+      <text x="430" y="120" font-size="11" fill="#5a6b7b">ฝั่งขวา (Decoder): "คืนรูป" เป็นแผนที่ละเอียดเท่าภาพเดิม</text>
+      <text x="380" y="155" text-anchor="middle" font-size="12" fill="#1d2733" font-weight="bold">ผลลัพธ์: ภาพเข้า 1 รูป → แผนที่ที่ระบายสีบอกชนิดของทุกพิกเซล</text>
+    </svg>
+
+    <div class="label">เทรนด์ SOTA ปัจจุบัน</div>
+    <span class="pill">Attention-Residual U-Net</span>
+    <span class="pill">Transformer-based Change Detection</span>
+    <span class="pill">3D-CNN สำหรับ time series</span>
+    <span class="pill">Deep Learning Ensembles</span>
+    <p class="src">ปี 2025 งานตรวจป่าหาย/เมืองโต นิยมใส่ <b>attention</b> ลง U-Net และใช้ <b>transformer</b> เทียบภาพ 2 ช่วงเวลา</p>
+  </div>
+</section>
+
+<!-- ===================== B. FOUNDATION MODELS ===================== -->
+<section id="cat-fm" class="anchor">
+  <h2><span class="num">B</span> Geospatial Foundation Models — "หัวใจ" ของยุคนี้</h2>
+  <div class="card">
+    <div class="catbar" style="background:var(--purple)"></div>
+    <p><b>ปัญหาที่มันแก้:</b> จำได้ไหมว่า label หายากและแพง? ปกติถ้าจะทำงานใหม่ต้องเก็บ label เป็นแสน ๆ จุด
+    <b>Foundation Model พลิกเกมตรงนี้</b></p>
+
+    <div class="note key">
+      <b>แนวคิดหลัก (สำคัญที่สุดในเอกสารนี้):</b> เอาภาพดาวเทียมทั้งโลกหลายปี (ไม่ต้องมี label เลย)
+      มาให้โมเดลขนาดยักษ์ "เรียนรู้รูปแบบของโลกด้วยตัวเอง" ก่อน → ได้โมเดลที่ "เข้าใจโลก" แล้ว
+      → จากนั้นเอาไปปรับ (fine-tune) กับงานเฉพาะด้วย label <b>แค่หลักร้อย-พัน</b> ก็ได้ผลดี
+    </div>
+
+    <h3>มันเรียนรู้เองได้ยังไง? (Self-Supervised Learning)</h3>
+    <p>เทคนิคยอดฮิตชื่อ <b>Masked Autoencoder (MAE)</b> — คล้ายเกมเติมคำในช่องว่าง แต่ทำกับภาพ</p>
+    <div class="miniflow">
+      <div class="step"><b>1</b> เอาภาพดาวเทียมมา ปิดบัง (mask) ไป 75% แบบสุ่ม</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>2</b> ให้โมเดลทายว่าส่วนที่ถูกปิดหน้าตาเป็นยังไง</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>3</b> ทายผิด → ปรับตัวเอง ทำซ้ำเป็นล้านรอบ</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>4</b> สุดท้ายโมเดล "เข้าใจ" พื้นผิวโลกโดยไม่มีใครสอน label</div>
+    </div>
+
+    <h3>โมเดลสำคัญที่ต้องรู้จัก (2025)</h3>
+    <table>
+      <tr><th>โมเดล</th><th>ใคร</th><th>จุดเด่น</th><th>ใช้กับ</th></tr>
+      <tr><td><b>Prithvi-EO 2.0</b></td><td>NASA + IBM</td><td>เทรนจากภาพ Landsat/Sentinel-2 กว่า 7 ปี มี temporal + location embedding</td><td>น้ำท่วม, รอยไฟไหม้, พืชผล</td></tr>
+      <tr><td><b>Prithvi-WxC</b></td><td>NASA + IBM</td><td>โฟกัสอากาศ/ภูมิอากาศ เทรนจากข้อมูล 40 ปี (MERRA-2)</td><td>สภาพอากาศสุดขั้ว</td></tr>
+      <tr><td><b>Clay</b></td><td>Open-source</td><td>รวม optical + SAR + climate ในตัวเดียว ยืดหยุ่นหลาย resolution</td><td>LULC ทั่วไป</td></tr>
+      <tr><td><b>SkySense++</b></td><td>วิจัย</td><td>รับ optical/SAR/hyperspectral ในแกนเดียว ใช้ label น้อยลง 10 เท่า</td><td>งานหลากหลาย</td></tr>
+      <tr><td><b>AlphaEarth Foundations</b></td><td>Google DeepMind</td><td><b>ของใหม่ล่าสุด</b> บีบข้อมูล 1 ปีทุกแหล่งให้เป็น "embedding 64 มิติ" ต่อพิกเซล 10 ม. ทั่วโลก</td><td>ทำแผนที่อะไรก็ได้ด้วย label น้อยมาก</td></tr>
+    </table>
+
+    <div class="note">
+      <b>AlphaEarth น่าสนใจเป็นพิเศษ:</b> Google แปลงทั้งโลกเป็น "ตารางตัวเลข" สำเร็จรูป (analysis-ready embeddings)
+      คุณแค่เอา embedding ไปต่อโมเดลเล็ก ๆ ก็ทำแผนที่ป่า/น้ำ/พืชได้เลย — เหมือนมี "พิกเซลที่ฉลาดอยู่แล้ว"
+      เปิดให้ใช้ฟรีบน Google Earth Engine ตั้งแต่ ก.ค. 2025
+    </div>
+  </div>
+</section>
+
+<!-- ===================== C. FORECASTING ===================== -->
+<section id="cat-forecast" class="anchor">
+  <h2><span class="num">C</span> Spatiotemporal Forecasting — พยากรณ์อนาคตเชิงพื้นที่-เวลา</h2>
+  <div class="card">
+    <div class="catbar" style="background:var(--teal)"></div>
+    <p><b>ทำอะไร:</b> ไม่ใช่แค่ "อ่านปัจจุบัน" แต่ "ทำนายอนาคต" — พรุ่งนี้ฝนตกตรงไหน อุณหภูมิทะเลเปลี่ยนยังไง
+    แผ่นดินจะทรุดต่ออีกเท่าไหร่ นี่คือกลุ่มที่ <b>สั่นสะเทือนวงการพยากรณ์อากาศ</b> ที่สุดในรอบ 2 ปี</p>
+
+    <h3>การปฏิวัติ: AI แทนที่ซูเปอร์คอมพิวเตอร์พยากรณ์อากาศ</h3>
+    <p>เดิมพยากรณ์อากาศใช้ <b>สมการฟิสิกส์ (NWP)</b> รันบนซูเปอร์คอมพิวเตอร์ ใช้เวลาเป็นชั่วโมง
+    ตอนนี้โมเดล AI ทำได้ <b>แม่นพอ ๆ กันหรือดีกว่า ในเวลาไม่กี่นาทีบน GPU ตัวเดียว</b></p>
+
+    <table>
+      <tr><th>โมเดล</th><th>ใคร</th><th>จุดเด่น</th></tr>
+      <tr><td><b>GraphCast</b></td><td>Google DeepMind</td><td>SOTA พยากรณ์ 10 วันใน ~60 วินาที ใช้ Graph Neural Network</td></tr>
+      <tr><td><b>Pangu-Weather</b></td><td>Huawei</td><td>ใช้ 3D network จับมิติแนวดิ่งของบรรยากาศ</td></tr>
+      <tr><td><b>FourCastNet</b></td><td>NVIDIA</td><td>ใช้ Fourier Neural Operator เร็วมาก</td></tr>
+      <tr><td><b>Aurora</b></td><td>Microsoft</td><td><b>Foundation model</b> เทรนจากข้อมูลหลากหลาย ทำได้ทั้งอากาศ คุณภาพอากาศ คลื่นทะเล — จับพายุ Ciarán ได้ที่ตัวอื่นพลาด</td></tr>
+    </table>
+
+    <h3>ทำไม Graph Neural Network (GNN) ถึงเหมาะกับงานนี้</h3>
+    <p>โลกไม่ใช่ตารางสี่เหลี่ยมเรียบ ๆ จุดวัดอากาศกระจายไม่สม่ำเสมอ GNN มอง "จุด" เป็น <b>node</b>
+    และ "อิทธิพลระหว่างจุด" เป็น <b>เส้นเชื่อม (edge)</b> — เหมาะกับการส่งต่อข้อมูลแบบ "ลมที่นี่กระทบที่นั่น"</p>
+    <svg viewBox="0 0 720 180" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,Sarabun,sans-serif">
+      <text x="160" y="20" text-anchor="middle" font-size="12" fill="#0e7490" font-weight="bold">มองโลกเป็นกราฟของจุดวัด</text>
+      <g stroke="#94c9d6" stroke-width="1.5">
+        <line x1="80" y1="60" x2="160" y2="50"/><line x1="160" y1="50" x2="240" y2="80"/>
+        <line x1="80" y1="60" x2="120" y2="120"/><line x1="160" y1="50" x2="120" y2="120"/>
+        <line x1="240" y1="80" x2="200" y2="130"/><line x1="120" y1="120" x2="200" y2="130"/>
+      </g>
+      <g fill="#0891b2">
+        <circle cx="80" cy="60" r="9"/><circle cx="160" cy="50" r="9"/><circle cx="240" cy="80" r="9"/>
+        <circle cx="120" cy="120" r="9"/><circle cx="200" cy="130" r="9"/>
+      </g>
+      <line x1="300" y1="90" x2="360" y2="90" stroke="#94a3b8" stroke-width="2"/>
+      <polygon points="368,90 358,85 358,95" fill="#94a3b8"/>
+      <rect x="390" y="40" width="300" height="100" rx="10" fill="#e3f5f9" stroke="#0891b2"/>
+      <text x="540" y="70" text-anchor="middle" font-size="12.5" fill="#0e7490" font-weight="bold">แต่ละจุด "แลกข้อมูล" กับเพื่อนบ้าน</text>
+      <text x="540" y="92" text-anchor="middle" font-size="11.5" fill="#2b5563">ทำซ้ำหลายชั้น → เข้าใจการไหลของบรรยากาศ</text>
+      <text x="540" y="114" text-anchor="middle" font-size="11.5" fill="#2b5563">→ ทำนายสถานะถัดไป (พื้นที่ + เวลา)</text>
+    </svg>
+
+    <div class="label">เทคนิคในกลุ่มนี้</div>
+    <span class="pill tech">GNN / STGNN</span>
+    <span class="pill tech">ConvLSTM</span>
+    <span class="pill tech">Transformer</span>
+    <span class="pill tech">Fourier Neural Operator</span>
+    <span class="pill tech">Dynamic adjacency graph</span>
+    <p class="src">นอกจากอากาศ ยังใช้พยากรณ์ <b>การทรุดตัวของแผ่นดิน (InSAR)</b> โดยแปลงจุดวัดเบาบางเป็น tensor หนาแน่นแล้วใช้โมเดลภาพทำนายต่อ</p>
+  </div>
+</section>
+
+<!-- ===================== D. DISASTER ===================== -->
+<section id="cat-disaster" class="anchor">
+  <h2><span class="num">D</span> Disaster Management — งานที่ตรงกับภารกิจคุณที่สุด</h2>
+  <div class="card">
+    <div class="catbar" style="background:var(--red)"></div>
+    <p><b>ทำอะไร:</b> ใช้ GeoAI ครบวงจรของภัยพิบัติ — ตั้งแต่ <b>ก่อนเกิด</b> (ทำนายความเสี่ยง)
+    <b>ขณะเกิด</b> (แมปพื้นที่กระทบเรียลไทม์) ถึง <b>หลังเกิด</b> (ประเมินความเสียหาย วางแผนฟื้นฟู)</p>
+
+    <h3>วงจรการจัดการภัยพิบัติด้วย GeoAI</h3>
+    <svg viewBox="0 0 760 200" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI,Sarabun,sans-serif">
+      <rect x="20" y="60" width="160" height="80" rx="10" fill="#fff3cd" stroke="#e8710a"/>
+      <text x="100" y="86" text-anchor="middle" font-size="13" font-weight="bold" fill="#c25e09">ก่อนเกิด</text>
+      <text x="100" y="106" text-anchor="middle" font-size="11" fill="#6e4216">ทำนายความเสี่ยง</text>
+      <text x="100" y="122" text-anchor="middle" font-size="11" fill="#6e4216">แผนที่พื้นที่เปราะบาง</text>
+
+      <rect x="300" y="60" width="160" height="80" rx="10" fill="#fdeceb" stroke="#d93025"/>
+      <text x="380" y="86" text-anchor="middle" font-size="13" font-weight="bold" fill="#b3271e">ขณะเกิด</text>
+      <text x="380" y="106" text-anchor="middle" font-size="11" fill="#6b2a26">แมปพื้นที่กระทบ (SAR)</text>
+      <text x="380" y="122" text-anchor="middle" font-size="11" fill="#6b2a26">แจ้งเตือนเรียลไทม์</text>
+
+      <rect x="580" y="60" width="160" height="80" rx="10" fill="#e6f5ec" stroke="#0f9d58"/>
+      <text x="660" y="86" text-anchor="middle" font-size="13" font-weight="bold" fill="#0b7a43">หลังเกิด</text>
+      <text x="660" y="106" text-anchor="middle" font-size="11" fill="#2a5e42">ประเมินตึกพัง</text>
+      <text x="660" y="122" text-anchor="middle" font-size="11" fill="#2a5e42">วางแผนฟื้นฟู</text>
+
+      <g stroke="#94a3b8" stroke-width="2" fill="none">
+        <line x1="180" y1="100" x2="298" y2="100"/><polygon points="306,100 296,95 296,105" fill="#94a3b8"/>
+        <line x1="460" y1="100" x2="578" y2="100"/><polygon points="586,100 576,95 576,105" fill="#94a3b8"/>
+      </g>
+      <path d="M660,140 C660,180 100,180 100,142" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="5 4" fill="none"/>
+      <text x="380" y="178" text-anchor="middle" font-size="10.5" fill="#94a3b8">เรียนรู้จากเหตุการณ์ → ปรับปรุงการทำนายรอบหน้า</text>
+    </svg>
+
+    <h3>ตัวอย่างระบบจริงที่ใช้งานอยู่</h3>
+    <div class="grid g2">
+      <div class="card">
+        <div class="label">💧 น้ำท่วม</div>
+        <b>FloodAI (UNOSAT)</b> — ระบบครบวงจร: ดึงภาพ SAR อัตโนมัติ → โมเดล deep learning ทำแผนที่น้ำท่วม
+        → อัปเดตเรียลไทม์ ส่วน <b>Prithvi</b> ก็มีรุ่น fine-tune สำหรับ flood inundation
+      </div>
+      <div class="card">
+        <div class="label">🔥 ไฟป่า</div>
+        <b>NASA Wildfire Digital Twin</b> — รวมข้อมูลภาคพื้น+อากาศยาน+ดาวเทียม ทำนายเส้นทางไฟเรียลไทม์
+        ละเอียด 10–30 ม./พิกเซล (เดิม 10 กม.!) ใช้ AI + data assimilation
+      </div>
+      <div class="card">
+        <div class="label">🏚️ ประเมินความเสียหาย</div>
+        เทียบภาพ <b>ก่อน-หลัง</b> ภัยพิบัติ จัดระดับตึก (ไม่เสียหาย/เล็กน้อย/หนัก/พังราบ)
+        มาตรฐานวิจัยคือ dataset <b>xBD / xView2</b> ใช้ Siamese network
+      </div>
+      <div class="card">
+        <div class="label">⛰️ ดินถล่ม / แผ่นดินทรุด</div>
+        ใช้ <b>InSAR</b> (เรดาร์วัดการขยับของพื้นมิลลิเมตร) + deep learning (U-Net หา boundary, LSTM ทำนายต่อ,
+        YOLO หาแอ่งทรุด) เตือนก่อนถล่ม
+      </div>
+    </div>
+
+    <h3>โครงสร้าง pipeline ภัยพิบัติแบบเรียลไทม์</h3>
+    <div class="miniflow">
+      <div class="step"><b>Trigger</b> มีเหตุ (เช่น ฝนหนัก)</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>Auto-fetch</b> ดึงภาพ SAR/Optical ล่าสุด</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>AI Model</b> แมปพื้นที่กระทบ + ผสมข้อมูลภูมิประเทศ/ประชากร</div>
+      <div class="arrow">→</div>
+      <div class="step"><b>Output</b> แผนที่ + แจ้งหน่วยกู้ภัย</div>
+    </div>
+    <p class="src">หัวใจคือ "ผสมข้อมูลหลายชั้น" (multisource): ภาพดาวเทียม + ภูมิประเทศ + การใช้ที่ดิน + โซเชียลมีเดีย → ได้ความเข้าใจเชิงลึก</p>
+  </div>
+</section>
+
+<!-- ===================== E. CLIMATE ===================== -->
+<section id="cat-climate" class="anchor">
+  <h2><span class="num">E</span> Climate &amp; Environmental Monitoring</h2>
+  <div class="card">
+    <div class="catbar" style="background:var(--green)"></div>
+    <p><b>ทำอะไร:</b> ใช้ GeoAI เฝ้าระวังสุขภาพของโลกระยะยาว เพื่อสนับสนุนนโยบายและการลดโลกร้อน</p>
+    <div class="grid g2">
+      <div class="card">
+        <div class="label">🌫️ ติดตามก๊าซเรือนกระจก</div>
+        ดาวเทียม <b>Sentinel-5P</b> และภารกิจใหม่ <b>CO₂M</b> (2025–2026) วัดความเข้มข้น CO₂/CH₄
+        → AI แปลงเป็นแผนที่การปล่อยมลพิษที่ "ตรวจสอบได้โปร่งใส" (ใช้จับโรงงาน/ประเทศที่ปล่อยเกิน)
+      </div>
+      <div class="card">
+        <div class="label">🌳 ป่าไม้ &amp; คาร์บอน</div>
+        ตรวจการตัดไม้ทำลายป่า (deforestation) แบบเกือบเรียลไทม์ ประเมินมวลชีวภาพ/คาร์บอนที่ป่ากักเก็บ
+        — ใช้ Sentinel-1/2 + transformer change detection
+      </div>
+      <div class="card">
+        <div class="label">🌡️ ความร้อน &amp; สุขภาพ</div>
+        ทำแผนที่ <b>Urban Heat Island</b> ละเอียด เชื่อมกับข้อมูลประชากร/สาธารณสุข
+        ทำนาย "ความเสี่ยงต่อสุขภาพจากความร้อน" รายพื้นที่ (ใช้ foundation model + XAI)
+      </div>
+      <div class="card">
+        <div class="label">🐾 ความหลากหลายชีวภาพ &amp; พลังงาน</div>
+        ทำแผนที่ที่อยู่อาศัยของสิ่งมีชีวิต เลือกจุดติดตั้งโซลาร์/กังหันลมที่เหมาะสม
+        จัดการน้ำและทรัพยากร
+      </div>
+    </div>
+    <div class="note warn">
+      <b>ช่องว่าง (= โอกาสทำโปรเจกต์):</b> งานวิจัยชี้ว่าโซลูชันส่วนใหญ่ยัง <b>"เฉพาะเมือง เฉพาะงาน เฉพาะกิจ"</b>
+      ต้องเทรนใหม่ทุกพื้นที่ — การทำให้ <b>generalize ข้ามพื้นที่/scale ได้</b> (ด้วย foundation model) คือทิศที่กำลังร้อนแรง
+    </div>
+  </div>
+</section>
+
+<!-- ===================== F. GeoLLM ===================== -->
+<section id="cat-llm" class="anchor">
+  <h2><span class="num">F</span> GeoLLM / Multimodal / GIS Agents — ขอบเขตใหม่สุด</h2>
+  <div class="card">
+    <div class="catbar" style="background:var(--purple)"></div>
+    <p><b>ทำอะไร:</b> เอาพลัง LLM (แบบ ChatGPT) มารวมกับข้อมูลเชิงพื้นที่ ทำให้ "คุยกับแผนที่/ภาพดาวเทียมเป็นภาษาคน" ได้
+    และให้ AI "ทำงาน GIS เองอัตโนมัติ"</p>
+    <h3>3 รูปแบบสถาปัตยกรรม</h3>
+    <table>
+      <tr><th>แบบ</th><th>หลักการ</th><th>เหมาะกับ</th></tr>
+      <tr><td>Frozen vision encoder + language adapter</td><td>ต่อ "ตาที่มองภาพดาวเทียม" เข้ากับ "ปากที่พูดภาษา"</td><td>บรรยายภาพ, ถาม-ตอบ (VQA)</td></tr>
+      <tr><td>End-to-end multimodal transformer</td><td>เทรนภาพ+ข้อความรวมกันตั้งแต่ต้น (เช่น OmniGeo)</td><td>งานที่ต้องเข้าใจลึก</td></tr>
+      <tr><td>Retrieval / symbolic hybrid (Agent)</td><td>LLM วางแผน + เรียกเครื่องมือ GIS จริง (เขียนโค้ด, ดึงข้อมูล)</td><td>วิเคราะห์เชิงพื้นที่อัตโนมัติ</td></tr>
+    </table>
+    <h3>ตัวอย่างความสามารถ</h3>
+    <div class="grid g3">
+      <div class="card"><b>🗣️ Image Captioning / VQA</b><p class="src">"ในภาพนี้มีน้ำท่วมพื้นที่เกษตรกี่ไร่?" แล้วตอบเป็นภาษาคน</p></div>
+      <div class="card"><b>🤖 Autonomous GIS Agent</b><p class="src">บอกเป้าหมาย → agent ไปหาข้อมูล เขียนโค้ด รันวิเคราะห์ ส่งแผนที่กลับมาเอง</p></div>
+      <div class="card"><b>🧭 Map Reasoning</b><p class="src">ให้ AI "สำรวจ-จำ-ใช้เหตุผล" บนแผนที่ เช่น วางแผนเส้นทางอพยพ</p></div>
+    </div>
+    <div class="note warn">
+      <b>ข้อจำกัดปัจจุบัน (สำคัญ):</b> โมเดลเก่งงาน "จำ" (นี่ที่ไหน ภาพนี้คืออะไร) แต่ยัง <b>อ่อนงาน "ใช้เหตุผลเชิงพื้นที่ซับซ้อน"</b>
+      (เช่น อนุมานผลกระทบต่อเนื่อง) — นี่คือโจทย์วิจัยที่เปิดกว้างมาก
+    </div>
+  </div>
+</section>
+
+<!-- ===================== G. DIGITAL TWIN ===================== -->
+<section id="cat-twin" class="anchor">
+  <h2><span class="num">G</span> Digital Twin Earth — โลกเสมือนความละเอียดสูง</h2>
+  <div class="card">
+    <div class="catbar" style="background:var(--orange)"></div>
+    <p><b>ทำอะไร:</b> สร้าง "ฝาแฝดดิจิทัลของโลก" ที่อัปเดตด้วยข้อมูลจริงตลอดเวลา เพื่อ <b>จำลองสถานการณ์ "ถ้า...แล้วจะเป็นยังไง"</b>
+    เช่น ถ้าปล่อยคาร์บอนเท่านี้ น้ำทะเลจะขึ้นแค่ไหน ถ้าไฟเริ่มตรงนี้จะลามไปทางไหน</p>
+    <div class="grid g3">
+      <div class="card"><b>Destination Earth (ESA/EU)</b><p class="src">เฝ้าโลกความละเอียดสูงต่อเนื่องจาก Copernicus + เซนเซอร์ภาคพื้น</p></div>
+      <div class="card"><b>NVIDIA Earth-2</b><p class="src">จำลองภูมิอากาศ ทำนายสภาพอากาศสุดขั้วความละเอียดสูงมาก</p></div>
+      <div class="card"><b>NASA Wildfire / Earth Twins</b><p class="src">รวมมหาสมุทร บรรยากาศ ชีวมณฑล กิจกรรมมนุษย์ + AI streaming data</p></div>
+    </div>
+    <p>เทคโนโลยีเบื้องหลังคือการ <b>ผสาน (assimilate)</b> ข้อมูลดาวเทียมเข้ากับโมเดลฟิสิกส์ + AI
+    และมักต่อยอดจากกลุ่ม C (forecasting) และ B (foundation models)</p>
+  </div>
+</section>
+
+<!-- ===================== GLOSSARY ===================== -->
+<section id="glossary" class="anchor">
+  <h2><span class="num">★</span> ศัพท์ 12 คำที่ต้องรู้ (ติดตัวไว้)</h2>
+  <div class="grid g2">
+    <div class="card"><b>Remote Sensing</b><br><span class="src">การสำรวจระยะไกล = วัดสิ่งต่าง ๆ โดยไม่ต้องสัมผัส (ผ่านดาวเทียม/โดรน)</span></div>
+    <div class="card"><b>Band / ช่องสัญญาณ</b><br><span class="src">ภาพดาวเทียมแยกเป็นหลายช่องของแสง แต่ละช่องบอกข้อมูลต่างกัน</span></div>
+    <div class="card"><b>Resolution</b><br><span class="src">ความละเอียด: เชิงพื้นที่ (เมตร/พิกเซล), เชิงเวลา (กี่วันถ่ายซ้ำ), เชิงสเปกตรัม (กี่ band)</span></div>
+    <div class="card"><b>LULC</b><br><span class="src">Land Use / Land Cover = การจำแนกว่าพื้นที่นั้นเป็นป่า/นา/เมือง/น้ำ</span></div>
+    <div class="card"><b>NDVI</b><br><span class="src">ดัชนีคำนวณจาก band บอก "ความเขียว/สุขภาพพืช" — คลาสสิกแต่ใช้เยอะมาก</span></div>
+    <div class="card"><b>SAR</b><br><span class="src">เรดาร์ถ่ายภาพ ทะลุเมฆ/กลางคืนได้ พระเอกของงานภัยพิบัติ</span></div>
+    <div class="card"><b>InSAR</b><br><span class="src">เทคนิคเทียบเฟส SAR วัดการขยับของพื้นดินระดับมิลลิเมตร</span></div>
+    <div class="card"><b>DEM</b><br><span class="src">Digital Elevation Model = แผนที่ความสูงภูมิประเทศ</span></div>
+    <div class="card"><b>Fine-tuning</b><br><span class="src">เอาโมเดลที่เรียนมาแล้วมาปรับนิดหน่อยให้เก่งงานเฉพาะของเรา</span></div>
+    <div class="card"><b>Embedding</b><br><span class="src">การแปลงข้อมูลซับซ้อนเป็น "เวกเตอร์ตัวเลข" ที่จับความหมายไว้</span></div>
+    <div class="card"><b>Data Fusion</b><br><span class="src">รวมข้อมูลหลายเซนเซอร์/แหล่งเข้าด้วยกันให้ได้ภาพที่สมบูรณ์ขึ้น</span></div>
+    <div class="card"><b>XAI</b><br><span class="src">Explainable AI = อธิบายเหตุผลของโมเดล สำคัญมากในงานนโยบาย/ภัยพิบัติ</span></div>
+  </div>
+</section>
+
+<!-- ===================== PROJECT IDEAS ===================== -->
+<section id="project" class="anchor">
+  <h2><span class="num">→</span> ต่อยอด: เลือกโปรเจกต์ที่ "โดดเด่น" ยังไง</h2>
+  <div class="card">
+    <p class="lead">โจทย์คุณคือหาโปรเจกต์ที่ <b>impact จริง · pain point ชัด · ยาก/ซับซ้อน · ใช้เทคนิคใหม่ · ผสมหลายศาสตร์</b>
+    นี่คือสูตรที่ผมกลั่นจากงาน SOTA ทั้งหมดข้างบน</p>
+
+    <h3>4 ทิศทางที่ "ใหม่และมีช่องว่าง" (เหมาะกับการสร้างของใหม่)</h3>
+    <div class="grid g2">
+      <div class="card" style="border-left:4px solid var(--purple)">
+        <div class="label">1 · ผสาน Foundation Model + ภัยพิบัติ</div>
+        เอา <b>Prithvi/Clay/AlphaEarth</b> มา fine-tune กับภัยพิบัติเฉพาะของไทย (เช่น น้ำท่วมภาคเหนือ ดินถล่ม)
+        จุดขาย: ใช้ label น้อย แต่ generalize ข้ามพื้นที่ได้ + วัดผลเทียบ baseline เดิมอย่างเป็นระบบ
+      </div>
+      <div class="card" style="border-left:4px solid var(--teal)">
+        <div class="label">2 · พยากรณ์เชิงเวลาแบบ multi-hazard</div>
+        ต่อยอด GNN/forecasting ทำนายความเสี่ยงล่วงหน้า (เช่น ดินทรุดจาก InSAR + ฝน) แทนแค่ตรวจหลังเกิด
+        จุดขาย: ย้ายจาก "Prediction → Prevention"
+      </div>
+      <div class="card" style="border-left:4px solid var(--red)">
+        <div class="label">3 · GeoAI Agent ช่วยตัดสินใจภัยพิบัติ</div>
+        สร้าง agent ที่รับคำถามภาษาคน → ดึงภาพดาวเทียม รันโมเดล สร้างแผนที่ ตอบกู้ภัย
+        จุดขาย: รวม GeoLLM + CV + pipeline จริง (ยังเป็นพื้นที่เปิดมาก)
+      </div>
+      <div class="card" style="border-left:4px solid var(--green)">
+        <div class="label">4 · Explainable Climate Risk Mapping</div>
+        แผนที่ความเสี่ยง (ความร้อน/น้ำท่วม) ที่ generalize ข้ามเมือง + อธิบายได้ด้วย XAI
+        จุดขาย: แก้ช่องว่าง "เฉพาะเมือง/เฉพาะงาน" ที่งานวิจัยชี้ว่ายังเป็นปัญหา
+      </div>
+    </div>
+
+    <h3>เกณฑ์ประเมินว่าโปรเจกต์ "แข็งแรง"</h3>
+    <table>
+      <tr><th>มิติ</th><th>คำถามที่ต้องตอบได้</th></tr>
+      <tr><td><b>Pain point</b></td><td>ใครเดือดร้อน? มีสถิติ/ความสูญเสียยืนยันไหม? (เช่น ความเสียหายน้ำท่วม X ล้านบาท/ปี)</td></tr>
+      <tr><td><b>Data พร้อมไหม</b></td><td>มีภาพดาวเทียมฟรี (Sentinel/Landsat) + label พอเริ่มไหม?</td></tr>
+      <tr><td><b>เทคนิคใหม่</b></td><td>ใช้ foundation model / GNN / agent ไม่ใช่แค่ CNN ธรรมดาปี 2018</td></tr>
+      <tr><td><b>วัดผลได้</b></td><td>มี baseline เทียบ + metric ชัด (IoU, F1, RMSE) ทำ systematic experiment</td></tr>
+      <tr><td><b>ผสมศาสตร์</b></td><td>รวมหลายเซนเซอร์ / หลายโดเมน (เช่น geo + สาธารณสุข + เศรษฐศาสตร์)</td></tr>
+    </table>
+
+    <div class="note key">
+      <b>คำแนะนำเริ่มต้นสำหรับคนไม่มีพื้น geo:</b> เริ่มจากเล่น <b>Google Earth Engine</b> (ฟรี ไม่ต้องลงโปรแกรม)
+      ลองทำ segmentation ง่าย ๆ ด้วย <b>TorchGeo + Prithvi</b> บน 1 พื้นที่เล็ก ๆ ก่อน
+      แล้วค่อยขยาย — เรียนจากการลงมือทำจริงเร็วที่สุด
+    </div>
+  </div>
+</section>
+
+<!-- ===================== SOURCES ===================== -->
+<section id="sources" class="anchor">
+  <h2><span class="num">#</span> แหล่งอ้างอิง (เลือกที่น่าเชื่อถือ)</h2>
+  <div class="card src">
+    <p><b>Foundation Models</b></p>
+    <ul>
+      <li><a href="https://research.ibm.com/publications/prithvi-eo-an-open-access-geospatial-foundation-model-advancing-earth-science-through-global-collaboration">Prithvi-EO 2.0 — IBM Research / NASA</a></li>
+      <li><a href="https://deepmind.google/blog/alphaearth-foundations-helps-map-our-planet-in-unprecedented-detail/">AlphaEarth Foundations — Google DeepMind</a> · <a href="https://arxiv.org/html/2507.22291v1">(arXiv paper)</a></li>
+      <li><a href="https://www.earthdata.nasa.gov/news/blog/nasa-ibm-research-apply-ai-weather-climate">Prithvi-WxC — NASA Earthdata</a></li>
+      <li><a href="https://kili-technology.com/blog/a-guide-to-geospatial-foundation-models-transforming-earth-observation-through-ai">Guide to Geospatial Foundation Models</a></li>
+    </ul>
+    <p><b>Forecasting / Weather</b></p>
+    <ul>
+      <li><a href="https://arxiv.org/pdf/2405.13063">Aurora: A Foundation Model for the Earth System — Microsoft</a></li>
+      <li><a href="https://pdpspectra.com/blog/ai-weather-forecasting-graphcast-pangu/">เปรียบเทียบ GraphCast / Pangu / FourCastNet</a></li>
+      <li><a href="https://www.tandfonline.com/doi/full/10.1080/17538947.2024.2391952">Deep learning for spatiotemporal forecasting in Earth system science (review)</a></li>
+    </ul>
+    <p><b>Disaster Management</b></p>
+    <ul>
+      <li><a href="https://arxiv.org/html/2504.02214v1">GeoAI for Satellite-based Flood Extent Mapping (review)</a></li>
+      <li><a href="https://www.esri.com/about/newsroom/arcuser/pretrained-geospatial-ai-models-can-streamline-disaster-response">Pretrained Geospatial AI for Disaster Response — Esri</a></li>
+      <li><a href="https://science.nasa.gov/science-research/science-enabling-technology/nasa-wildfire-digital-twin-pioneers-new-ai-models-and-streaming-data-techniques-for-forecasting-fire-and-smoke/">NASA Wildfire Digital Twin</a></li>
+      <li><a href="https://arxiv.org/pdf/2509.18176">Spatio-Temporal Forecasting of InSAR Ground Deformation</a></li>
+      <li><a href="https://onlinelibrary.wiley.com/doi/10.1002/sd.70772">Explainable GeoAI for Flood Susceptibility</a></li>
+    </ul>
+    <p><b>GeoLLM / Agents &amp; Climate</b></p>
+    <ul>
+      <li><a href="https://arxiv.org/abs/2503.16326">OmniGeo: Multimodal LLM for GeoAI</a></li>
+      <li><a href="https://arxiv.org/pdf/2510.18318">Earth AI: Geospatial Insights with Foundation Models &amp; Cross-Modal Reasoning</a></li>
+      <li><a href="https://arxiv.org/pdf/2407.21024">An Autonomous GIS Agent Framework</a></li>
+      <li><a href="https://www.sciencedirect.com/science/article/pii/S1877050925011901">AI &amp; Geospatial Tech for Climate Change Mitigation</a></li>
+      <li><a href="https://www.frontiersin.org/journals/environmental-science/articles/10.3389/fenvs.2026.1770260/full">Foundation-model GeoAI for Heat &amp; Health Risk Mapping</a></li>
+    </ul>
+    <p><b>Data Ecosystem</b></p>
+    <ul>
+      <li><a href="https://developers.google.com/earth-engine/datasets">Google Earth Engine Data Catalog</a></li>
+      <li><a href="https://stacspec.org/en/about/datasets/">STAC Specification</a></li>
+      <li><a href="https://github.com/satellite-image-deep-learning/techniques">Satellite Image Deep Learning — Techniques (รวมเทคนิคครบ)</a></li>
+    </ul>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    เอกสารนี้สังเคราะห์จากงานวิจัย state-of-the-art ปี 2025–2026 เพื่อปูพื้นภาพรวมฟิลด์ GeoAI สำหรับผู้เริ่มต้น ·
+    จัดทำเป็นจุดตั้งต้น แนะนำให้อ่านแหล่งอ้างอิงต้นทางประกอบเมื่อเจาะลึกแต่ละหัวข้อ
+  </div>
+</footer>
+
+</body>
+</html>

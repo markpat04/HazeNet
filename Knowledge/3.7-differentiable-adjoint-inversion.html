@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.7 — Differentiable Programming → Adjoint → Source Inversion 🔴</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .pink-box{border-left:4px solid var(--pink);background:rgba(247,120,186,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.6px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+  .pin.hard{border-color:var(--red);color:var(--red)}
+  .pin.stretch{border-color:var(--pink);color:var(--pink)}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+  @media(max-width:680px){.compare{grid-template-columns:1fr}}
+  .compare-box{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+  .compare-box .label{font-size:12px;font-weight:bold;margin-bottom:8px;padding:2px 8px;border-radius:12px;display:inline-block}
+  .label-old{background:rgba(248,81,73,.15);color:var(--red);border:1px solid var(--red)}
+  .label-new{background:rgba(63,185,80,.15);color:var(--green);border:1px solid var(--green)}
+  .arrow-flow{text-align:center;padding:8px;font-size:22px;color:var(--muted)}
+  .highlight-eq{background:var(--panel2);border:1px solid var(--purple);border-radius:8px;padding:14px 20px;margin:14px 0;font-size:16px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>3.7 — Differentiable Programming → Adjoint → Source Inversion <span class="pin hard">🔴 ยาก</span> <span class="pin stretch">A* Stretch</span></h1>
+<p class="tagline">ใช้ .backward() ย้อนกลับจากฝุ่นที่วัดได้ → หาว่าไฟต้องอยู่ที่ไหนเท่าไหร่</p>
+<p class="sub">ต้องเข้าใจก่อน: 0.2 PyTorch autograd · 3.5 Conditionally-Linear · 3.6 Tagged-Tracer</p>
+
+<div class="lead">
+<b>คำสัญญาของบทนี้:</b> ตอนเรียน 0.2 คุณเห็นว่า <code>.backward()</code> อัปเดต weight ของโมเดล<br>
+บทนี้จะแสดงให้เห็นว่า <b>กลไกเดียวกันทุกอย่าง</b> ใช้ย้อนกลับจาก "ฝุ่นที่สถานีวัดได้" ไปหา "ไฟที่ต้องเป็นสาเหตุ" ได้โดยไม่เขียนโค้ดเพิ่มแม้แต่บรรทัดเดียว<br>
+นี่คือ <b>Differentiable Programming</b> — เทคนิคที่ใช้เวลาทีม WRF-Chem เป็น <em>ปี</em> ในการสร้าง adjoint code แต่ HazeNet ได้มา<b>ฟรีจาก PyTorch</b>
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. ทบทวน 3.6 และตั้งโจทย์ใหม่</a><br>
+<a href="#p2">2. Inverse Problem คืออะไร</a><br>
+<a href="#p3">3. ทำไมถึงยาก — Ill-posed</a><br>
+<a href="#p4">4. Differentiable Programming</a><br>
+<a href="#p5">5. Adjoint Method — คณิตศาสตร์</a><br>
+<a href="#p6">6. ความลับ: Adjoint = .backward()</a><br>
+<a href="#p7">7. Source Inversion = Train Q ไม่ใช่ Train W</a><br>
+<a href="#p8">8. โค้ดเต็มของ Inversion Loop</a><br>
+<a href="#p9">9. Regularization — ควบคุม ill-posedness</a><br>
+<a href="#p10">10. Sensitivity Map</a><br>
+<a href="#p11">11. HazeNet vs CTM Adjoint</a><br>
+<a href="#p12">12. ข้อจำกัดซื่อสัตย์</a><br>
+<a href="#chk">13. แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. ทบทวน 3.6 และตั้งโจทย์ใหม่</h2>
+
+<p>ใน 3.6 เราแก้ <b>Forward Problem</b>: รู้แหล่งไฟแล้ว → ตามว่าฝุ่นไปถึงไหน</p>
+
+<div class="compare">
+<div class="compare-box">
+  <span class="label label-old">3.6 Forward</span>
+  <p><b>รู้:</b> ไฟอยู่ที่พม่า ลาว ไทย</p>
+  <p><b>หา:</b> ฝุ่นจะไปถึงสถานีไหนเท่าไหร่</p>
+  <p style="color:var(--muted);font-size:14px">Q (emissions) → HazeNet → C (concentrations)</p>
+</div>
+<div class="compare-box">
+  <span class="label label-new">3.7 Inverse</span>
+  <p><b>รู้:</b> สถานีวัด PM2.5 ได้ค่านี้</p>
+  <p><b>หา:</b> ไฟต้องอยู่ที่ไหน ปริมาณเท่าไหร่?</p>
+  <p style="color:var(--muted);font-size:14px">C_obs (measured) → ??? → Q* (estimated)</p>
+</div>
+</div>
+
+<div class="card">
+<p><b>ตัวอย่างโจทย์จริง:</b></p>
+<ul>
+  <li>สถานีวัด 8 แห่งทั่วภาคเหนือไทยรายงาน PM2.5 ณ เวลา t</li>
+  <li>ดาวเทียม MODIS มีเมฆปกคลุม 60% → ไม่เห็น FRP ตรงๆ</li>
+  <li>คำถาม: ไฟต้องมีอยู่ที่พิกัดไหน ปล่อยควันเท่าไหร่ จึงทำให้ค่าสถานีเป็นแบบนี้?</li>
+</ul>
+<p class="muted">→ Source Inversion: ย้อนกลับจากการวัดไปหาแหล่ง</p>
+</div>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. Inverse Problem คืออะไร — นิยามอย่างเป็นทางการ</h2>
+
+<h3>2.1 สัญลักษณ์</h3>
+
+<div class="card">
+<table>
+<tr><th>สัญลักษณ์</th><th>ความหมาย</th><th>ขนาด (ตัวอย่าง)</th></tr>
+<tr><td><code>Q(x,t)</code></td><td>Emission field — ปริมาณฝุ่นที่ปล่อยจากแต่ละจุด</td><td>(H×W) = 128×128</td></tr>
+<tr><td><code>C(x,t)</code></td><td>Concentration field — ฝุ่นสะสมทั่ว domain</td><td>(H×W×T)</td></tr>
+<tr><td><code>M</code></td><td>Observation operator — เลือกค่าที่ตำแหน่งสถานีวัด</td><td>(n_stations × H×W)</td></tr>
+<tr><td><code>y_obs</code></td><td>ค่าที่วัดได้จริง + noise</td><td>(n_stations × T)</td></tr>
+<tr><td><code>HazeNet(Q)</code></td><td>Forward model — Q → C</td><td>ฟังก์ชันที่ frozen</td></tr>
+</table>
+</div>
+
+<h3>2.2 สูตรปัญหา</h3>
+
+<div class="highlight-eq">
+<b>Forward:</b> y_obs = M · HazeNet(Q) + ε<br>
+<b>Inverse:</b> หา Q* = argmin<sub>Q</sub> J(Q)
+</div>
+
+<p>โดย cost function J(Q) คือ:</p>
+
+<pre><code>J(Q) = ||M · HazeNet(Q) - y_obs||²  +  λ·R(Q)
+          ↑                                ↑
+       Data fit term                  Regularization term
+    (prediction ใกล้ observation)     (Q ต้องสมเหตุสมผล)</code></pre>
+
+<div class="why">
+<b>ทำไม minimize แทนที่จะ solve ตรงๆ:</b> เพราะ y_obs มี noise + ระบบ underdetermined (สถานีน้อยกว่า pixel มาก) → ไม่มี unique solution → แทนที่หาคำตอบเดียว เราหาคำตอบที่ "ดีที่สุด" ตาม criteria ที่กำหนด
+</div>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. ทำไมถึงยาก — Ill-posed Problem</h2>
+
+<h3>3.1 Ill-posed คืออะไร</h3>
+
+<p>ปัญหาเรียกว่า <b>well-posed</b> ถ้า (1) มีคำตอบ (2) คำตอบ unique (3) stable ต่อ noise<br>
+Inverse problem ฝุ่นมักเป็น <b>ill-posed</b> — ล้มเหลวทั้ง 3 ข้อ:</p>
+
+<div class="card">
+<table>
+<tr><th>เงื่อนไข</th><th>ปัญหาในงานเรา</th><th>ผลที่ตามมา</th></tr>
+<tr><td><b>มีคำตอบ</b></td><td>ถ้า y_obs มี measurement error มาก → อาจไม่มี Q ใดที่ fit ได้พอดี</td><td>ต้องผ่อนจาก = เป็น ≈</td></tr>
+<tr><td><b>Unique solution</b></td><td>128×128 = 16,384 unknowns · แต่สถานีแค่ 8 แห่ง → severely underdetermined</td><td>หลาย Q ให้ y_obs เหมือนกัน</td></tr>
+<tr><td><b>Stable</b></td><td>noise เล็กน้อยใน y_obs → Q* เปลี่ยนมาก ("butterfly effect ย้อนกลับ")</td><td>ต้องการ regularization</td></tr>
+</table>
+</div>
+
+<h3>3.2 อุปมา: ถอดเสียงจากการสะท้อน</h3>
+
+<div class="card">
+<p>จินตนาการห้องมีลำโพง 5 ตัว (แหล่ง Q) และไมค์ 3 ตัว (สถานีวัด)<br>
+ไมค์ได้ยินเสียงผสมของลำโพงทุกตัว — แต่จะ decode ได้ไหมว่าลำโพงแต่ละตัวเล่นอะไร?</p>
+<ul>
+  <li>ลำโพง 5 ตัว > ไมค์ 3 ตัว → underdetermined → หลายคำตอบเป็นไปได้</li>
+  <li>เพิ่มข้อสมมติ: "เสียงต้องเป็นคำพูดภาษาไทย" → ลด solution space ลง (regularization!)</li>
+  <li>ยิ่งมีไมค์มาก (สถานีมาก) → ยิ่งแก้ได้แม่นขึ้น</li>
+</ul>
+</div>
+
+<h3>3.3 ตัวเลขจริงที่ทำให้เห็นภาพ</h3>
+
+<pre><code><span class="cm"># ปัญหาของเรา</span>
+n_unknowns = <span class="nm">128</span> * <span class="nm">128</span>   <span class="cm"># = 16,384 pixel emissions ที่ต้องหา</span>
+n_stations = <span class="nm">8</span>            <span class="cm"># สถานีวัดจริงในภาคเหนือไทย</span>
+n_timesteps = <span class="nm">24</span>          <span class="cm"># 24 ชั่วโมงที่มีข้อมูล</span>
+
+n_observations = n_stations * n_timesteps  <span class="cm"># = 192</span>
+ratio = n_unknowns / n_observations         <span class="cm"># = 16,384/192 ≈ 85×</span>
+
+<span class="out">print(f"Unknowns/Observations = {ratio:.0f}×")  # → 85× underdetermined!</span>
+<span class="cm"># สถานีวัดน้อยกว่า unknowns 85 เท่า → จำเป็นต้องมี regularization อย่างมาก</span></code></pre>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. Differentiable Programming — โปรแกรมที่ differentiate ได้ทั้งหมด</h2>
+
+<h3>4.1 แนวคิด</h3>
+
+<p>ปกติ เวลาเราเขียนโปรแกรม เราคิดว่า: "รับ input → ประมวลผล → ได้ output"<br>
+<b>Differentiable Programming</b> เพิ่มความสามารถ: "<b>หาว่า output เปลี่ยนยังไงถ้า input เปลี่ยนนิดเดียว</b>"</p>
+
+<div class="card">
+<p>กล่าวได้ว่า โปรแกรมทุกขั้นตอนถูก build เป็น computation graph อัตโนมัติ (จาก 0.2!)<br>
+ดังนั้นเราสามารถ <code>.backward()</code> ผ่าน <em>ทุกอย่าง</em> ที่โปรแกรมทำ — ไม่ใช่แค่ neural network แต่รวม:</p>
+<ul>
+  <li>สมการฟิสิกส์ (advection, diffusion)</li>
+  <li>การ interpolate ข้อมูล</li>
+  <li>การ select ค่าที่สถานีวัด</li>
+  <li>การคำนวณ loss</li>
+</ul>
+<p>ทุกขั้นตอนรวมกันเป็น "ท่อ gradient" ต่อเนื่อง</p>
+</div>
+
+<h3>4.2 เทียบกับ Traditional Approach</h3>
+
+<div class="compare">
+<div class="compare-box">
+  <span class="label label-old">วิธีเก่า (Classical Adjoint)</span>
+  <p><b>ขั้นตอน:</b></p>
+  <ol>
+    <li>เขียน forward model (เช่น WRF-Chem)</li>
+    <li>เขียน adjoint code แยก (transpose ของ forward)</li>
+    <li>ตรวจสอบ adjoint ด้วยมือ</li>
+    <li>Compile และ test</li>
+  </ol>
+  <p class="muted">ใช้เวลา 1–3 ปี ต่อ 1 โมเดล · ทีม 5+ คน</p>
+</div>
+<div class="compare-box">
+  <span class="label label-new">Differentiable Programming</span>
+  <p><b>ขั้นตอน:</b></p>
+  <ol>
+    <li>เขียน forward model ใน PyTorch</li>
+    <li>เรียก <code>.backward()</code></li>
+  </ol>
+  <p>&nbsp;</p>
+  <p>&nbsp;</p>
+  <p class="muted">ใช้เวลา 0 วัน เพิ่ม · ได้ adjoint ฟรีทันที</p>
+</div>
+</div>
+
+<div class="why">
+<b>ทำไม HazeNet ถึงทำได้:</b> เราเขียน HazeNet ใน PyTorch ตั้งแต่ต้น → ทุก operation ถูก track ใน computation graph → <code>.backward()</code> ทะลุผ่านฟิสิกส์ (Semi-Lagrangian, diffusion) และ neural network ได้ในครั้งเดียว
+</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. Adjoint Method — คณิตศาสตร์ (ที่ PyTorch ทำให้เราไม่ต้องเขียน)</h2>
+
+<p class="sub">ส่วนนี้อธิบายว่า "adjoint" คืออะไรในทางคณิตศาสตร์ เพื่อให้เข้าใจว่า .backward() ทำอะไร — ไม่ต้องจำสูตร แค่เข้าใจแนวคิด</p>
+
+<h3>5.1 Forward Model เป็น Chain</h3>
+
+<p>HazeNet rollout 48 ชั่วโมงคือการทำซ้ำ:</p>
+<pre><code>C(0) ──F──→ C(1) ──F──→ C(2) ──F──→ … ──F──→ C(T)
+  ↑                                              ↓
+emission Q                               y = M·C(T)
+                                         loss = ||y - y_obs||²</code></pre>
+
+<h3>5.2 Adjoint = Backward ผ่าน Chain</h3>
+
+<p>ต้องการหา ∂loss/∂Q ซึ่งต้องใช้ chain rule ผ่าน T ขั้น:</p>
+
+<pre><code>∂loss/∂Q = ∂loss/∂C(T) · ∂C(T)/∂C(T-1) · … · ∂C(1)/∂C(0) · ∂C(0)/∂Q
+               ↑              ↑                      ↑              ↑
+           เริ่มที่นี่       adjoint                adjoint       ผลลัพธ์
+                           variable λ(T-1)         variable λ(0)</code></pre>
+
+<p>ใน classical method ต้องกำหนด <b>adjoint variable λ(t)</b> และแก้สมการ adjoint ย้อนเวลา:</p>
+
+<pre><code>λ(T) = M^T · (M·C(T) - y_obs)       ← เริ่มจาก loss gradient
+λ(t) = F^T(t+1) · λ(t+1)            ← propagate ย้อนเวลา
+∂loss/∂Q = G^T · λ(0)               ← sensitivity ต่อ emission</code></pre>
+
+<h3>5.3 ทำไม F^T (Transpose) คือปัญหา</h3>
+
+<div class="danger">
+<b>ความยากของ Classical Adjoint:</b><br>
+ถ้า F คือ Semi-Lagrangian advection (2.2) + AFNO neural operator (3.2) + chemistry<br>
+→ F^T ต้องคำนวณ transpose ของแต่ละ operation ทั้งหมด → เขียนใหม่ทั้งหมดจากศูนย์<br>
+→ ทีม ECMWF ใช้เวลา <b>7 ปี</b> เขียน adjoint ของ IFS (Integrated Forecast System)
+</div>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. ความลับ — Adjoint = .backward() ทุกประการ</h2>
+
+<div class="pink-box">
+<b>Insight สำคัญที่สุดในบทนี้:</b><br><br>
+Adjoint method ที่นักวิทยาศาสตร์บรรยากาศพัฒนาทศวรรษ <b>คือสิ่งเดียวกัน</b> กับ backpropagation ที่ deep learning community พัฒนาแยกกัน<br><br>
+ทั้งคู่คือ <b>chain rule ย้อนกลับผ่าน computation graph</b><br><br>
+<code>λ(t) = F^T · λ(t+1)</code> ← classical adjoint<br>
+<code>loss.backward()</code> ← PyTorch autograd<br><br>
+<b>คณิตศาสตร์เหมือนกัน 100%</b> — ต่างกันแค่ใครเขียนโค้ด
+</div>
+
+<h3>6.1 สรุปด้วยตาราง</h3>
+
+<table>
+<tr><th>ภาษา Classical Adjoint</th><th>ภาษา PyTorch</th><th>ความหมาย</th></tr>
+<tr><td>adjoint variable λ(t)</td><td><code>tensor.grad</code> ระหว่าง backward</td><td>gradient ที่ไหลย้อนเวลา</td></tr>
+<tr><td>F^T (transpose Jacobian)</td><td>backward pass ผ่าน F</td><td>chain rule ผ่านแต่ละ step</td></tr>
+<tr><td>∂J/∂Q = G^T·λ(0)</td><td><code>Q.grad</code> หลัง backward</td><td>sensitivity ต่อ emission</td></tr>
+<tr><td>เขียน adjoint code แยก</td><td><code>.backward()</code> 1 บรรทัด</td><td>วิธีได้ gradient</td></tr>
+<tr><td>ใช้เวลา 1–7 ปี</td><td>ได้ทันทีถ้า forward เขียนใน PyTorch</td><td>ต้นทุน development</td></tr>
+</table>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. Source Inversion = "Train Q ไม่ใช่ Train W"</h2>
+
+<h3>7.1 เทียบกับการ Train Neural Network (0.2)</h3>
+
+<p>จำจาก 0.2: training loop คือการปรับ <b>weight W</b> ให้ loss ลด<br>
+Source Inversion คือการปรับ <b>emission Q</b> ให้ loss ลด — กลไกเหมือนกันทุกอย่าง:</p>
+
+<div class="compare">
+<div class="compare-box">
+  <span class="label label-old">Neural Network Training (0.2)</span>
+<pre style="font-size:12px;margin:8px 0"><code><span class="cm"># W คือสิ่งที่ optimize</span>
+model = <span class="fn">TinyNet</span>()
+opt = <span class="fn">Adam</span>(model.<span class="fn">parameters</span>(), lr=<span class="nm">1e-3</span>)
+
+<span class="kw">for</span> epoch <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">1000</span>):
+    y_pred = <span class="fn">model</span>(x_train)     <span class="cm"># forward</span>
+    loss = <span class="fn">criterion</span>(y_pred, y_train)
+    opt.<span class="fn">zero_grad</span>()
+    loss.<span class="fn">backward</span>()            <span class="cm"># ∂loss/∂W</span>
+    opt.<span class="fn">step</span>()                  <span class="cm"># update W</span></code></pre>
+  <p class="muted" style="font-size:13px">→ W เปลี่ยน · model(x) → y_train ได้ดีขึ้น</p>
+</div>
+<div class="compare-box">
+  <span class="label label-new">Source Inversion (3.7)</span>
+<pre style="font-size:12px;margin:8px 0"><code><span class="cm"># Q คือสิ่งที่ optimize, W frozen</span>
+Q = torch.<span class="fn">zeros</span>(H, W, requires_grad=<span class="kw">True</span>)
+opt = <span class="fn">Adam</span>([Q], lr=<span class="nm">1e-2</span>)
+
+<span class="kw">for</span> iteration <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">1000</span>):
+    C_pred = <span class="fn">hazenet</span>(Q, met)    <span class="cm"># forward</span>
+    loss = <span class="fn">obs_loss</span>(C_pred, y_obs)
+    opt.<span class="fn">zero_grad</span>()
+    loss.<span class="fn">backward</span>()            <span class="cm"># ∂loss/∂Q  ← adjoint!</span>
+    opt.<span class="fn">step</span>()                  <span class="cm"># update Q</span></code></pre>
+  <p class="muted" style="font-size:13px">→ Q เปลี่ยน · hazenet(Q) → y_obs ได้ดีขึ้น</p>
+</div>
+</div>
+
+<div class="green-box">
+<b>สิ่งที่ต่างกันเพียงอย่างเดียว:</b><br>
+ใน training: <code>requires_grad=True</code> ที่ <code>model.parameters()</code><br>
+ใน inversion: <code>requires_grad=True</code> ที่ <code>Q</code> (input)<br><br>
+PyTorch ไม่สนว่า gradient ไหลไปหาอะไร — มันแค่ทำ chain rule ย้อนกลับ
+</div>
+
+<h3>7.2 สิ่งสำคัญ: Freeze โมเดลก่อน</h3>
+
+<pre><code><span class="cm"># สำคัญมาก: ต้อง freeze HazeNet weights ไม่ให้เปลี่ยน</span>
+<span class="kw">for</span> param <span class="kw">in</span> hazenet.<span class="fn">parameters</span>():
+    param.requires_grad = <span class="kw">False</span>
+
+<span class="cm"># แค่ Q ที่ optimize</span>
+Q = torch.<span class="fn">zeros</span>(H, W, requires_grad=<span class="kw">True</span>)
+opt = torch.optim.<span class="fn">Adam</span>([Q], lr=<span class="nm">1e-2</span>)
+
+<span class="cm"># ตรวจสอบ</span>
+<span class="fn">print</span>(<span class="st">"Trainable params:"</span>, <span class="fn">sum</span>(p.requires_grad <span class="kw">for</span> p <span class="kw">in</span> hazenet.<span class="fn">parameters</span>()))
+<span class="out"># → Trainable params: 0  (HazeNet frozen ✓)</span></code></pre>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. โค้ดเต็มของ Source Inversion Loop</h2>
+
+<h3>8.1 Observation Operator M</h3>
+
+<pre><code><span class="kw">import</span> torch
+<span class="kw">import</span> torch.nn <span class="kw">as</span> nn
+
+<span class="kw">def</span> <span class="fn">observation_operator</span>(C_field, station_coords):
+    <span class="cm">"""
+    C_field: (H, W) — concentration field ทั้ง domain
+    station_coords: list of (lat_idx, lon_idx) — ตำแหน่งสถานีวัด
+    returns: (n_stations,) — ค่าที่สถานีแต่ละแห่ง
+    """</span>
+    values = []
+    <span class="kw">for</span> (i, j) <span class="kw">in</span> station_coords:
+        values.<span class="fn">append</span>(C_field[i, j])
+    <span class="kw">return</span> torch.<span class="fn">stack</span>(values)
+
+<span class="cm"># ตำแหน่งสถานีวัด 8 แห่งในภาคเหนือไทย (row, col บน 128×128 grid)</span>
+stations = [(45, 32), (48, 35), (52, 30), (55, 38),
+            (43, 41), (60, 33), (50, 27), (46, 44)]</code></pre>
+
+<h3>8.2 Loss Function รวม Regularization</h3>
+
+<pre><code><span class="kw">def</span> <span class="fn">inversion_loss</span>(Q, hazenet, met_sequence, y_obs, lambda_reg=<span class="nm">1e-3</span>):
+    <span class="cm">"""
+    Q:            (H, W) — emission field ที่ optimize
+    hazenet:      frozen model
+    met_sequence: (T, n_met, H, W) — อุตุนิยมแต่ละชั่วโมง
+    y_obs:        (T, n_stations) — ค่าวัดจริง
+    lambda_reg:   น้ำหนัก regularization
+    """</span>
+    T = met_sequence.shape[<span class="nm">0</span>]
+    C = Q.<span class="fn">clamp</span>(min=<span class="nm">0</span>)  <span class="cm"># physical constraint: emission ≥ 0</span>
+
+    total_obs_loss = torch.<span class="fn">tensor</span>(<span class="nm">0.0</span>)
+
+    <span class="cm"># Rollout forward model</span>
+    <span class="kw">for</span> t <span class="kw">in</span> <span class="fn">range</span>(T):
+        C = hazenet(C, met_sequence[t])
+        y_pred = <span class="fn">observation_operator</span>(C, stations)  <span class="cm"># (n_stations,)</span>
+        total_obs_loss += <span class="fn">nn.functional.mse_loss</span>(y_pred, y_obs[t])
+
+    <span class="cm"># Regularization: L2 → smooth emission field</span>
+    reg_loss = lambda_reg * (Q ** <span class="nm">2</span>).<span class="fn">sum</span>()
+
+    <span class="kw">return</span> total_obs_loss + reg_loss, total_obs_loss.<span class="fn">item</span>()</code></pre>
+
+<h3>8.3 Inversion Loop หลัก</h3>
+
+<pre><code><span class="cm"># === Setup ===</span>
+H, W = <span class="nm">128</span>, <span class="nm">128</span>
+
+<span class="cm"># Q เริ่มต้น: ใช้ FRP จากดาวเทียมเป็น initial guess (ถ้ามี) หรือ zeros</span>
+Q_init = frp_satellite.clone() * <span class="nm">0.01</span>  <span class="cm"># μg/m² แปลงจาก MW</span>
+Q = nn.Parameter(Q_init)  <span class="cm"># nn.Parameter ทำให้ requires_grad=True อัตโนมัติ</span>
+
+<span class="cm"># Freeze HazeNet</span>
+hazenet.<span class="fn">eval</span>()
+<span class="kw">for</span> p <span class="kw">in</span> hazenet.<span class="fn">parameters</span>(): p.requires_grad = <span class="kw">False</span>
+
+<span class="cm"># Optimizer สำหรับ Q</span>
+optimizer = torch.optim.<span class="fn">Adam</span>([Q], lr=<span class="nm">5e-3</span>)
+scheduler = torch.optim.lr_scheduler.<span class="fn">CosineAnnealingLR</span>(optimizer, T_max=<span class="nm">500</span>)
+
+<span class="cm"># === Inversion Loop ===</span>
+history_loss = []
+<span class="kw">for</span> iteration <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">500</span>):
+    optimizer.<span class="fn">zero_grad</span>()
+
+    loss, obs_loss = <span class="fn">inversion_loss</span>(Q, hazenet, met_seq, y_obs, lambda_reg=<span class="nm">1e-3</span>)
+
+    loss.<span class="fn">backward</span>()    <span class="cm"># ← ADJOINT: ∂loss/∂Q ผ่าน HazeNet ทั้งหมด</span>
+    optimizer.<span class="fn">step</span>()   <span class="cm"># ← update Q ให้ fit observation ดีขึ้น</span>
+    scheduler.<span class="fn">step</span>()
+
+    <span class="kw">if</span> iteration % <span class="nm">50</span> == <span class="nm">0</span>:
+        <span class="fn">print</span>(<span class="fn">f</span><span class="st">"iter {iteration:4d} | loss={loss.item():.4f} | obs={obs_loss:.4f} | max_Q={Q.max().item():.2f}"</span>)
+        history_loss.<span class="fn">append</span>(obs_loss)
+
+<span class="cm"># Q* = estimated emission field</span>
+Q_star = Q.<span class="fn">detach</span>().<span class="fn">clamp</span>(min=<span class="nm">0</span>)
+<span class="fn">print</span>(<span class="fn">f</span><span class="st">"Inversion done. Max emission: {Q_star.max():.2f} μg/m²"</span>)</code></pre>
+
+<h3>8.4 ตัวอย่าง Output Log</h3>
+
+<pre><code><span class="out">iter    0 | loss=2847.32 | obs=2847.32 | max_Q=0.00
+iter   50 | loss=1203.81 | obs=1200.47 | max_Q=12.43
+iter  100 | loss= 489.21 | obs= 482.65 | max_Q=31.87
+iter  150 | loss= 187.44 | obs= 175.21 | max_Q=48.92
+iter  200 | loss=  78.33 | obs=  61.44 | max_Q=62.10
+iter  250 | loss=  43.21 | obs=  22.87 | max_Q=69.34
+iter  300 | loss=  35.67 | obs=  14.33 | max_Q=71.22
+iter  350 | loss=  34.11 | obs=  12.77 | max_Q=71.89
+iter  400 | loss=  33.89 | obs=  12.55 | max_Q=72.01   ← converge
+iter  450 | loss=  33.88 | obs=  12.54 | max_Q=72.02
+Inversion done. Max emission: 72.02 μg/m²</span></code></pre>
+
+<!-- ============ 9 ============ -->
+<h2 id="p9">9. Regularization — ควบคุม Ill-posedness</h2>
+
+<p>Regularization คือการเพิ่ม "ข้อสมมติเกี่ยวกับ Q" เข้าไปใน loss เพื่อให้ solution สมเหตุสมผล:</p>
+
+<h3>9.1 ประเภทของ Regularization</h3>
+
+<table>
+<tr><th>ชื่อ</th><th>สูตร</th><th>ผลที่ได้</th><th>ใช้เมื่อ</th></tr>
+<tr><td><b>L2 / Tikhonov</b></td><td>λ·||Q||²</td><td>Q ราบเรียบ ค่าเล็ก</td><td>ไม่รู้ว่า fire กระจุกหรือกระจาย</td></tr>
+<tr><td><b>L1 / LASSO</b></td><td>λ·||Q||₁</td><td>Q sparse (เกือบ 0 ทุกที่ ยกเว้นจุดไฟจริง)</td><td>รู้ว่าไฟมีน้อยจุด concentrated</td></tr>
+<tr><td><b>TV (Total Variation)</b></td><td>λ·Σ|∇Q|</td><td>Q ราบเรียบภายใน cluster ขอบคมชัด</td><td>ไฟเป็น patch ต่อเนื่อง</td></tr>
+<tr><td><b>Non-negativity</b></td><td>Q ≥ 0</td><td>ไม่มีไฟ "ดูดควันกลับ"</td><td>เสมอ (physical constraint)</td></tr>
+<tr><td><b>Satellite prior</b></td><td>λ·||Q - Q_FRP||²</td><td>ใกล้ FRP ดาวเทียม</td><td>มี FRP บางส่วน (ไม่มีเมฆ)</td></tr>
+</table>
+
+<h3>9.2 โค้ด Regularization Options</h3>
+
+<pre><code><span class="kw">def</span> <span class="fn">regularization</span>(Q, Q_prior=<span class="kw">None</span>, mode=<span class="st">'l2'</span>, lam=<span class="nm">1e-3</span>):
+    Q_pos = Q.<span class="fn">clamp</span>(min=<span class="nm">0</span>)  <span class="cm"># non-negativity</span>
+
+    <span class="kw">if</span> mode == <span class="st">'l2'</span>:
+        <span class="kw">return</span> lam * (Q_pos**<span class="nm">2</span>).<span class="fn">sum</span>()
+
+    <span class="kw">elif</span> mode == <span class="st">'l1'</span>:
+        <span class="kw">return</span> lam * Q_pos.<span class="fn">abs</span>().<span class="fn">sum</span>()  <span class="cm"># sparse fire map</span>
+
+    <span class="kw">elif</span> mode == <span class="st">'tv'</span>:
+        <span class="cm"># TV = sum of gradient magnitudes</span>
+        dy = (Q_pos[<span class="nm">1</span>:, :] - Q_pos[:<span class="nm">-1</span>, :]).<span class="fn">abs</span>().<span class="fn">sum</span>()
+        dx = (Q_pos[:, <span class="nm">1</span>:] - Q_pos[:, :<span class="nm">-1</span>]).<span class="fn">abs</span>().<span class="fn">sum</span>()
+        <span class="kw">return</span> lam * (dy + dx)
+
+    <span class="kw">elif</span> mode == <span class="st">'prior'</span> <span class="kw">and</span> Q_prior <span class="kw">is not None</span>:
+        <span class="kw">return</span> lam * ((Q_pos - Q_prior)**<span class="nm">2</span>).<span class="fn">sum</span>()  <span class="cm"># pull toward FRP</span>
+
+<span class="cm"># ใช้งาน: ใน HazeNet เราแนะนำ L1 + prior (ถ้ามีดาวเทียม)</span>
+loss_reg = <span class="fn">regularization</span>(Q, Q_prior=Q_frp, mode=<span class="st">'prior'</span>, lam=<span class="nm">1e-3</span>) \
+         + <span class="fn">regularization</span>(Q, mode=<span class="st">'l1'</span>, lam=<span class="nm">5e-4</span>)</code></pre>
+
+<h3>9.3 ผลกระทบของ λ ต่อ Solution</h3>
+
+<div class="card">
+<table>
+<tr><th>λ (lambda_reg)</th><th>ผลต่อ Q*</th><th>ปัญหา</th></tr>
+<tr><td>0 (ไม่มี reg)</td><td>fit observation ดีที่สุด แต่ Q แปลกมาก (ค่าลบ / spike สูง)</td><td>Overfitting</td></tr>
+<tr><td>เล็ก (1e-4)</td><td>Q ค่อนข้าง sparse ใกล้ไฟจริง</td><td>อาจ noise ยังสูง</td></tr>
+<tr><td>กลาง (1e-3)</td><td>สมดุล — แนะนำเป็น default</td><td>—</td></tr>
+<tr><td>ใหญ่ (1e-1)</td><td>Q เล็กมาก ราบเรียบ ใกล้ 0</td><td>Underfit observation</td></tr>
+</table>
+<p class="muted">ต้อง tune λ ด้วย cross-validation เหมือน hyperparameter ทั่วไป</p>
+</div>
+
+<!-- ============ 10 ============ -->
+<h2 id="p10">10. Sensitivity Map — ∂(PM2.5)/∂(fire)</h2>
+
+<h3>10.1 คืออะไร</h3>
+
+<p>นอกจาก source inversion แล้ว adjoint ยังให้ <b>Sensitivity Map</b>:<br>
+"ถ้าเพิ่มไฟที่พิกัด (i,j) ขึ้น 1 หน่วย PM2.5 ที่เชียงใหม่จะเปลี่ยนเท่าไหร่?"</p>
+
+<pre><code><span class="cm"># คำนวณ Sensitivity Map — โค้ดสั้นมาก!</span>
+Q_test = torch.<span class="fn">zeros</span>(H, W, requires_grad=<span class="kw">True</span>)
+
+<span class="cm"># Forward: rollout ทั้ง 48 ชั่วโมง</span>
+C = Q_test
+<span class="kw">for</span> t <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">48</span>):
+    C = hazenet(C, met[t])
+
+<span class="cm"># ฝุ่นสะสมที่สถานีเชียงใหม่ (เลือก pixel เดียว)</span>
+cm_lat, cm_lon = <span class="nm">48</span>, <span class="nm">35</span>
+pm25_CM = C[cm_lat, cm_lon]  <span class="cm"># scalar</span>
+
+<span class="cm"># Backward: adjoint ผ่านทั้ง 48 timestep</span>
+pm25_CM.<span class="fn">backward</span>()
+
+<span class="cm"># Q_test.grad[i,j] = ∂(PM2.5 ที่เชียงใหม่)/∂(fire ที่ pixel (i,j))</span>
+sensitivity_map = Q_test.grad  <span class="cm"># (H, W)</span>
+<span class="fn">print</span>(<span class="fn">f</span><span class="st">"Sensitivity at Myanmar border: {sensitivity_map[55,28]:.4f}"</span>)
+<span class="out"># → 0.0382  (ไฟ 1 μg/m² ที่พม่าชายแดน → เชียงใหม่เพิ่ม 0.038 μg/m²)</span></code></pre>
+
+<h3>10.2 ผลที่ได้ใช้งานได้ทันที</h3>
+
+<div class="card">
+<table>
+<tr><th>ประโยชน์</th><th>วิธีใช้ sensitivity_map</th></tr>
+<tr><td><b>ระบุพิกัดเสี่ยงสูง</b></td><td>จุดที่ sensitivity สูง = ไฟที่นั่นมีผลต่อเชียงใหม่มาก → ลาดตระเวนก่อน</td></tr>
+<tr><td><b>ลำดับความสำคัญดับไฟ</b></td><td>sort จุดไฟ (FRP) × sensitivity → ดับไฟที่ impact × probability สูงสุดก่อน</td></tr>
+<tr><td><b>ออกแบบสถานีวัด</b></td><td>ตั้งสถานีใหม่ที่ sensitivity หลาย source ล้ำกัน = ได้ข้อมูลมีค่าสูงสุด</td></tr>
+<tr><td><b>Counterfactual เร็ว</b></td><td>ΔPM2.5 ≈ sensitivity × ΔQ (แทนที่จะ run forward ใหม่)</td></tr>
+</table>
+</div>
+
+<h3>10.3 Sensitivity ตาม Lead Time</h3>
+
+<pre><code><span class="cm"># sensitivity เปลี่ยนตาม lead time ที่ต้องการ</span>
+sensitivity_by_lead = {}
+<span class="kw">for</span> lead <span class="kw">in</span> [<span class="nm">6</span>, <span class="nm">12</span>, <span class="nm">24</span>, <span class="nm">48</span>]:  <span class="cm"># ชั่วโมง</span>
+    Q_test = torch.<span class="fn">zeros</span>(H, W, requires_grad=<span class="kw">True</span>)
+    C = Q_test
+    <span class="kw">for</span> t <span class="kw">in</span> <span class="fn">range</span>(lead):
+        C = hazenet(C, met[t])
+    C[cm_lat, cm_lon].<span class="fn">backward</span>()
+    sensitivity_by_lead[lead] = Q_test.grad.<span class="fn">clone</span>()
+
+<span class="cm"># t+6h: sensitivity กระจุกใกล้เชียงใหม่ (ลมยังไม่พาไปไกล)</span>
+<span class="cm"># t+48h: sensitivity กว้างกว่า ครอบคลุมพม่า/ลาวด้วย</span></code></pre>
+
+<!-- ============ 11 ============ -->
+<h2 id="p11">11. HazeNet vs CTM Adjoint — เปรียบเทียบตรงๆ</h2>
+
+<table>
+<tr><th>เกณฑ์</th><th>CTM (WRF-Chem / GEOS-Chem) + Adjoint</th><th>HazeNet + Autodiff</th></tr>
+<tr><td><b>เวลา develop adjoint</b></td><td>1–7 ปี (team ใหญ่)</td><td>0 วัน (ได้ฟรีจาก PyTorch)</td></tr>
+<tr><td><b>เวลา run 1 inversion</b></td><td>หลายชั่วโมง – วัน (CPU cluster)</td><td>นาที – ชั่วโมง (A100 1 เครื่อง)</td></tr>
+<tr><td><b>Spatial resolution</b></td><td>~10–30 km</td><td>สามารถ 1–5 km (ขึ้นกับ training data)</td></tr>
+<tr><td><b>Physics accuracy</b></td><td>สูงมาก (full chemistry)</td><td>กลาง (emulated, linear approx)</td></tr>
+<tr><td><b>Ensemble / uncertainty</b></td><td>ยาก (ต้อง run หลายครั้ง)</td><td>ง่ายกว่า (dropout / ensemble)</td></tr>
+<tr><td><b>Maintainability</b></td><td>แก้ source code Fortran ซับซ้อน</td><td>เปลี่ยน PyTorch module</td></tr>
+<tr><td><b>Near-realtime</b></td><td>ไม่ได้ (ช้าเกิน)</td><td><b>ได้</b> — รันได้หลาย inversion ต่อวัน</td></tr>
+</table>
+
+<div class="why">
+<b>จุดขายของ HazeNet adjoint:</b> ไม่ใช่แม่นกว่า WRF — แต่<b>เร็วกว่า 100–1000×</b> และ<b>deploy ได้ทันที</b> ทำให้การทำ source inversion แบบ near-realtime (ทุก 6 ชั่วโมง) เป็นจริงได้ในทางปฏิบัติ
+</div>
+
+<!-- ============ 12 ============ -->
+<h2 id="p12">12. ข้อจำกัดซื่อสัตย์</h2>
+
+<h3>12.1 Model Error Propagates</h3>
+
+<div class="danger">
+<b>ปัญหา:</b> ถ้า HazeNet ทำนาย C ผิด (model error) → inversion จะหา Q* ที่ "ชดเชย error" แทนที่จะหาแหล่งจริง<br><br>
+ตัวอย่าง: HazeNet underestimate dispersion ทิศเหนือ → inversion จะเพิ่ม Q ทางเหนือเพื่อชดเชย → เราเห็น "phantom fire" ที่ไม่มีจริง<br><br>
+<b>ลดผลกระทบ:</b> validate HazeNet ก่อน (Module 5) + ใช้ observation ที่หลากหลาย (หลาย station หลาย level)
+</div>
+
+<h3>12.2 Local Minima</h3>
+
+<div class="warn">
+<b>ปัญหา:</b> J(Q) อาจมีหลาย local minimum — optimizer อาจ stuck ที่ผิด<br><br>
+<b>วิธีแก้:</b>
+<ul>
+  <li>ใช้ FRP ดาวเทียมเป็น warm start (initial guess ดีกว่า zeros)</li>
+  <li>Annealing: ลด regularization ช้าๆ ตาม iteration</li>
+  <li>Run หลาย inversion จาก initial guess ต่างกัน → เลือก best</li>
+</ul>
+</div>
+
+<h3>12.3 Observation Sparsity</h3>
+
+<div class="warn">
+<b>ปัญหา:</b> สถานีวัด 8 แห่ง vs 16,384 pixel unknowns → severely underdetermined แม้มี regularization<br><br>
+<b>ข้อมูลเสริมที่ช่วยได้:</b>
+<ul>
+  <li>AOD จาก MODIS/MAIAC (spatial coverage ดีกว่า แต่ noise)</li>
+  <li>Sentinel-5P (tropomi): NO₂/CO column → proxy ของ fire</li>
+  <li>เพิ่มจำนวนสถานีวัดจาก crowdsourcing sensor</li>
+</ul>
+</div>
+
+<h3>12.4 Memory ของ Backprop ผ่านเวลา</h3>
+
+<div class="warn">
+<b>ปัญหา:</b> backprop ผ่าน 48 timestep ต้องเก็บ computation graph ทุก timestep<br>
+Memory ∝ T × (H × W × n_channels) → อาจ OOM บน A100 ถ้า T ใหญ่<br><br>
+<b>แก้ด้วย:</b>
+<ul>
+  <li><b>Gradient checkpointing</b>: เก็บแค่บาง timestep, recompute ที่เหลือระหว่าง backward</li>
+  <li>ลด T: ทำ inversion ทีละ 12h แทน 48h</li>
+</ul>
+<pre><code><span class="kw">import</span> torch.utils.checkpoint <span class="kw">as</span> checkpoint
+
+<span class="cm"># แทนที่: C = hazenet(C, met[t])</span>
+C = checkpoint.<span class="fn">checkpoint</span>(hazenet, C, met[t])
+<span class="cm"># → ประหยัด RAM ~10× แลกกับ compute เพิ่ม 30%</span></code></pre>
+</div>
+
+<!-- ============ 13 ============ -->
+<h2 id="chk">13. แบบฝึกหัด</h2>
+
+<div class="chk">
+<p class="q">Q1: ทบทวนแนวคิด</p>
+<p>Source inversion และ neural network training ต่างกันอย่างไร? เหมือนกันอย่างไร? อธิบายในแง่ของ "อะไรที่ requires_grad=True"</p>
+<details><summary>ดูเฉลย</summary>
+<p><b>เหมือนกัน:</b> ทั้งคู่ใช้ optimizer.zero_grad() → forward → loss.backward() → optimizer.step() — โครงสร้าง 5 ขั้นตอนเดิม (จาก 0.2) ทุกประการ</p>
+<p><b>ต่างกัน:</b><br>
+- Training: <code>model.parameters()</code> มี requires_grad=True, Q (input) fixed<br>
+- Inversion: Q มี requires_grad=True, <code>model.parameters()</code> frozen (requires_grad=False)<br>
+กล่าวคือ "สิ่งที่ optimize" สลับกัน — PyTorch ไม่สนใจ แค่ backprop ตาม graph</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">Q2: Regularization Choice</p>
+<p>สถานการณ์: ดาวเทียม FIRMS ตรวจพบ 12 จุดไฟใน domain แต่เมฆปกคลุมบางพื้นที่ — ควรใช้ regularization แบบไหน และทำไม?</p>
+<details><summary>ดูเฉลย</summary>
+<p><b>แนะนำ: L1 + FRP prior</b><br>
+- <b>L1</b>: รู้ว่าไฟมีน้อยจุด (sparse) → L1 ดัน Q เป็น 0 ที่ส่วนใหญ่ ยกเว้นจุดไฟจริง<br>
+- <b>FRP prior</b>: ส่วนที่ดาวเทียมเห็นได้ (ไม่มีเมฆ) ใช้เป็น anchor → <code>λ·||Q - Q_FRP||²</code><br>
+- <b>Non-negativity</b>: เสมอ (physical)<br>
+ไม่ใช้ L2 เพียงอย่างเดียวเพราะ L2 ทำให้ Q กระจายทั่วไปแทนที่จะ concentrated ที่จุดไฟ</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">Q3: Memory Budget</p>
+<p>Inversion loop ผ่าน T=72 timestep บน grid 256×256 ถ้าไม่ใช้ gradient checkpointing คร่าวๆ computation graph ต้องเก็บ activation กี่ค่า (สมมติแต่ละ timestep เก็บ 1 field C)?</p>
+<details><summary>ดูเฉลย</summary>
+<p>72 timestep × 256 × 256 × 4 bytes = 72 × 262,144 × 4 = 75,497,472 bytes ≈ <b>72 MB สำหรับ C เพียงอย่างเดียว</b><br>
+แต่ในความเป็นจริง HazeNet เก็บ intermediate activations ทุก layer ด้วย → อาจ ×10–100 → ~720 MB – 7.2 GB<br>
+บน A100 (40 GB) ยังพอ แต่ถ้า batch หลาย trajectory พร้อมกันต้องใช้ checkpointing</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">Q4: Sensitivity Map</p>
+<p>ถ้า sensitivity_map[30, 50] = 0.12 และ sensitivity_map[80, 90] = 0.003 หมายความว่าอะไร? และถ้าดาวเทียมพบไฟ 50 MW ที่ทั้งสองตำแหน่ง ตำแหน่งไหนควรดับก่อน?</p>
+<details><summary>ดูเฉลย</summary>
+<p>- sensitivity[30,50] = 0.12: ไฟ 1 μg/m² ที่ pixel (30,50) ทำให้ PM2.5 ที่เชียงใหม่เพิ่ม 0.12 μg/m³<br>
+- sensitivity[80,90] = 0.003: ไฟที่ (80,90) มีผลน้อยกว่า 40× เพราะอาจอยู่คนละทิศลมหรือไกลกว่า<br>
+<b>ควรดับ (30,50) ก่อน</b> เพราะ impact สูงกว่ามาก แม้ fire intensity (50 MW) เท่ากัน<br>
+Impact estimate: 50 MW × conversion × sensitivity ≈ ΔPM2.5 ที่เชียงใหม่</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">Q5: Adjoint คือ Backprop</p>
+<p>ทีม WRF-Chem ใช้เวลา 5 ปีพัฒนา adjoint code ในขณะที่ HazeNet ได้ฟรี — จงอธิบายว่าทำไม และมีข้อแลกเปลี่ยนอะไรบ้าง?</p>
+<details><summary>ดูเฉลย</summary>
+<p><b>ทำไมฟรี:</b> HazeNet เขียนใน PyTorch ซึ่งมี automatic differentiation — ทุก operation ถูก record ใน computation graph ระหว่าง forward pass → <code>.backward()</code> traverse graph ย้อนกลับโดยอัตโนมัติ (chain rule) = adjoint โดยไม่ต้องเขียนสูตรเพิ่ม</p>
+<p><b>ข้อแลกเปลี่ยน:</b><br>
+- HazeNet ต้องเขียนใน PyTorch ทั้งหมด (ใช้ CTM เดิมโดยตรงไม่ได้)<br>
+- Physics accuracy ต่ำกว่า WRF (เป็น emulator ไม่ใช่ first-principles)<br>
+- Memory เพิ่มขึ้นตาม T (gradient checkpointing ช่วยได้)<br>
+- แต่ได้ speed และ development time ที่ดีกว่ามาก</p>
+</details>
+</div>
+
+<hr>
+<p class="center muted">3.7 Differentiable Programming → Adjoint → Source Inversion · ย้อนไป <a href="3.6-tagged-tracer-attribution.html" style="color:var(--blue)">3.6 Tagged-Tracer</a> · ต่อไป: <b>Module 4 — Data Pipeline</b></p>
+
+</div>
+</body>
+</html>

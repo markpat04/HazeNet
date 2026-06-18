@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.3 — Operator Splitting (Strang) (สอนละเอียด)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.6px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>2.3 — Operator Splitting (Strang)</h1>
+<p class="tagline">แยกสมการก้อนใหญ่เป็นส่วน ๆ แล้วแก้ทีละส่วน — วิธีต่อ "ฟิสิกส์" เข้ากับ "นิวรอล"</p>
+<p class="sub">ต่อจาก 2.2 (มี 𝒜 แล้ว) · บทนี้ตอบว่า "แล้วเอา 𝒜 มาต่อกับพจน์อื่นยังไง" · ผูกกับ HazeNet ตลอด</p>
+
+<div class="lead">
+<b>ปัญหาที่บทนี้แก้:</b> สมการ ADR (1.2) มีหลายพจน์เกิดขึ้น<b>พร้อมกัน</b> — ลมหอบ (advection), กระจาย (diffusion), ปล่อยใหม่ (emission), หายไป (loss) · การแก้ทุกพจน์พร้อมกันในก้าวเดียวยากและยุ่ง · <b class="k">Operator splitting</b> คือเทคนิคคลาสสิกของ CTM: "อย่าแก้ทุกอย่างพร้อมกัน — แก้ทีละพจน์ ต่อกันเป็นทอด ๆ ใน 1 timestep" · นี่คือกาวที่เชื่อม 𝒜 (ฟิสิกส์ จาก 2.2) เข้ากับส่วนที่นิวรอลเรียน (g, D) อย่างเป็นระเบียบ
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. ปัญหา: หลายพจน์พร้อมกัน</a><br>
+<a href="#p2">2. ไอเดีย: แก้ทีละพจน์ ★</a><br>
+<a href="#p3">3. อุปมาทำอาหารเป็นสเต็ป</a><br>
+<a href="#p4">4. Strang splitting คืออะไร ★</a><br>
+<a href="#p5">5. splitting ใน HazeNet ★★</a><br>
+<a href="#p6">6. ทำไมมันช่วยงานเรา (3 ข้อ)</a><br>
+<a href="#p7">7. โค้ดโครงสร้าง 1 step</a><br>
+<a href="#p8">8. splitting error (ความซื่อสัตย์)</a><br>
+<a href="#cheat">9. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. ปัญหา — สมการมีหลายพจน์เกิดขึ้นพร้อมกัน</h2>
+<p>ในความจริง ภายในหนึ่งชั่วโมง ควันก้อนหนึ่ง<b>พร้อมกัน</b>: ถูกลมหอบไป + กระจายออก + มีควันใหม่เติม + บางส่วนตกหาย · สมการ ADR เขียนรวมทุกอย่าง:</p>
+<div class="card center" style="font-family:'Cambria Math',serif;font-size:16px">
+∂C/∂t = <span style="color:#58a6ff">−∇·(uC)</span> + <span style="color:#bc8cff">∇·(K∇C)</span> + <span style="color:#3fb950">E</span> − <span style="color:#f85149">L·C</span>
+<div style="font-family:'Segoe UI';font-size:12px;color:var(--muted);margin-top:6px"><span style="color:#58a6ff">advection</span> + <span style="color:#bc8cff">diffusion</span> + <span style="color:#3fb950">emission</span> − <span style="color:#f85149">loss</span> (เกิดพร้อมกันหมด)</div>
+</div>
+<p>การออกแบบวิธีเชิงตัวเลขที่แก้ 4 พจน์นี้<b>พร้อมกันในก้าวเดียว</b> ทั้งซับซ้อนและไม่ยืดหยุ่น — แต่ละพจน์มีลักษณะคณิตต่างกัน (advection ชอบ semi-Lagrangian, loss เป็นการคูณง่าย ๆ) · อยากใช้วิธีที่เหมาะกับแต่ละพจน์</p>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. ไอเดียหลัก — แก้ทีละพจน์ ต่อกันเป็นทอด ๆ <span class="pin">★</span></h2>
+<p>Operator splitting บอกว่า: <b>ไม่ต้องแก้พร้อมกัน</b> · ภายใน 1 timestep ให้แก้ทีละพจน์ โดยเอาผลลัพธ์ของพจน์ก่อนเป็นอินพุตของพจน์ถัดไป:</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 90" width="98%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker></defs>
+  <rect x="10" y="30" width="70" height="36" rx="6" fill="#1c2330" stroke="#9aa7b4"/><text x="45" y="53" fill="#e6edf3" font-size="12" text-anchor="middle">Cᵗ</text>
+  <line x1="80" y1="48" x2="108" y2="48" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#a)"/>
+  <rect x="110" y="30" width="86" height="36" rx="6" fill="#1c2330" stroke="#58a6ff"/><text x="153" y="53" fill="#58a6ff" font-size="11.5" text-anchor="middle">advection</text>
+  <line x1="196" y1="48" x2="224" y2="48" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#a)"/>
+  <rect x="226" y="30" width="86" height="36" rx="6" fill="#1c2330" stroke="#bc8cff"/><text x="269" y="53" fill="#bc8cff" font-size="11.5" text-anchor="middle">diffusion</text>
+  <line x1="312" y1="48" x2="340" y2="48" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#a)"/>
+  <rect x="342" y="30" width="92" height="36" rx="6" fill="#1c2330" stroke="#3fb950"/><text x="388" y="53" fill="#3fb950" font-size="11" text-anchor="middle">emit − loss</text>
+  <line x1="434" y1="48" x2="462" y2="48" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#a)"/>
+  <rect x="464" y="30" width="80" height="36" rx="6" fill="#0f1f17" stroke="#3fb950" stroke-width="2"/><text x="504" y="53" fill="#3fb950" font-size="12" text-anchor="middle">Cᵗ⁺¹</text>
+</svg>
+</div>
+<p>= แต่ละพจน์กลายเป็น "ขั้นตอนย่อย" ที่แก้แยกได้ด้วยวิธีที่เหมาะที่สุดของมัน · advection ใช้ semi-Lagrangian (2.2), loss ใช้การคูณ ฯลฯ · พอต่อครบทุกพจน์ = ได้ C<sup>t+1</sup></p>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. อุปมา — ทำอาหารทีละขั้น</h2>
+<div class="ex"><b>เหมือนทำผัดกะเพรา:</b> คุณไม่โยนทุกอย่างลงกระทะพร้อมกันแล้วหวังให้ออกมาดี · คุณทำ<b>เป็นสเต็ป</b>: เจียวกระเทียม → ใส่เนื้อ → ปรุงรส → ใส่ใบกะเพรา · แต่ละสเต็ปใช้เทคนิค/ไฟต่างกัน และผลของสเต็ปก่อนเป็นวัตถุดิบของสเต็ปถัดไป · operator splitting คือการ "ทำสมการเป็นสเต็ป" แบบเดียวกัน</div>
+<p>ข้อดีคือ<b>ความยืดหยุ่น</b>: ถ้าวันหนึ่งอยากเปลี่ยนวิธีทำ diffusion ก็เปลี่ยนแค่สเต็ปนั้น ไม่ต้องรื้อทั้งสมการ</p>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. Strang splitting — แบบ "สมมาตร" ที่แม่นกว่า <span class="pin">★</span></h2>
+<p>การแก้ทีละพจน์ต่อกันตรง ๆ (เรียก <b>Lie splitting</b>) ใช้ได้ แต่มี error เล็กน้อยเพราะ "ลำดับ" ของพจน์มีผล (ทำ advection ก่อน loss ≠ ทำ loss ก่อน advection เป๊ะ ๆ)</p>
+<p><b>Strang splitting</b> แก้ปัญหานี้ด้วยการทำแบบ<b>สมมาตร</b>: แบ่งพจน์แรกเป็นครึ่ง ทำหัว-ท้าย ประกบพจน์กลาง · เช่น:</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 80" width="98%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker></defs>
+  <rect x="10" y="25" width="118" height="34" rx="6" fill="#1c2330" stroke="#58a6ff"/><text x="69" y="47" fill="#58a6ff" font-size="11" text-anchor="middle">advection ½Δt</text>
+  <line x1="128" y1="42" x2="150" y2="42" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#a2)"/>
+  <rect x="152" y="25" width="150" height="34" rx="6" fill="#1c2330" stroke="#bc8cff"/><text x="227" y="47" fill="#bc8cff" font-size="11" text-anchor="middle">diff+emit+loss Δt</text>
+  <line x1="302" y1="42" x2="324" y2="42" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#a2)"/>
+  <rect x="326" y="25" width="118" height="34" rx="6" fill="#1c2330" stroke="#58a6ff"/><text x="385" y="47" fill="#58a6ff" font-size="11" text-anchor="middle">advection ½Δt</text>
+  <text x="490" y="46" fill="#3fb950" font-size="11">= แม่นขึ้น</text>
+</svg>
+</div>
+<p>ผลคือความแม่นดีขึ้น (จาก "อันดับ 1" เป็น "อันดับ 2" — error เล็กลงเร็วเมื่อ Δt เล็ก) โดยจ่ายแค่ทำ advection ครึ่ง step สองครั้ง · CTM ระดับโลกนิยมใช้ Strang</p>
+<div class="warn"><b>ไม่ต้องจำคณิตลึก:</b> สิ่งที่ต้องรู้คือ — Strang = "ทำพจน์หัวเป็นครึ่ง ประกบท้ายอีกครึ่ง เพื่อความสมมาตร → แม่นขึ้น" · เป็นมาตรฐานที่เราเลือกตามตำรา CTM ไม่ใช่สิ่งที่เราคิดใหม่</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. Splitting ใน HazeNet — กาวเชื่อมฟิสิกส์ + นิวรอล <span class="pin">★★</span></h2>
+<p>นี่คือเหตุผลที่บทนี้สำคัญต่อโปรเจกต์ · จำสมการแกนได้ไหม:</p>
+<div class="card center" style="font-family:'Cambria Math',serif;font-size:16px">
+C<sup>t+1</sup> = <span style="color:#58a6ff">𝒜(u)</span> C<sup>t</sup> + <span style="color:#3fb950">g<sub>θ</sub></span>·E − <span style="color:#f85149">D<sub>θ</sub></span>⊙C<sup>t</sup>
+</div>
+<p>นี่คือ operator splitting ที่แต่ละพจน์มาจาก "คนละแหล่ง":</p>
+<table>
+<tr><th>ขั้นตอน (พจน์)</th><th>ใครทำ</th><th>เป็นอะไร</th></tr>
+<tr><td><b style="color:#58a6ff">𝒜(u) — advection</b></td><td>ฟิสิกส์ (semi-Lagrangian, 2.2)</td><td>ฝังตายตัว ไม่เรียน</td></tr>
+<tr><td><b style="color:#3fb950">g<sub>θ</sub>·E — emission</b></td><td>นิวรอล (AFNO) ทำนายสัมประสิทธิ์ g</td><td>เรียนจากข้อมูล</td></tr>
+<tr><td><b style="color:#f85149">D<sub>θ</sub>⊙C — loss</b></td><td>นิวรอล (AFNO) ทำนายอัตราหาย D</td><td>เรียนจากข้อมูล</td></tr>
+</table>
+<p>= operator splitting คือ<b>โครงสร้างที่อนุญาตให้เราผสม "ฟิสิกส์ที่รู้แน่" กับ "นิวรอลที่เรียน" ในสมการเดียว</b> · advection เราไม่เชื่อให้นิวรอลทำ (จาก 2.2) → ใส่ฟิสิกส์ · ส่วน emission/loss ซับซ้อนเกินจะเขียนสูตร → ให้นิวรอลเรียนสัมประสิทธิ์</p>
+<div class="why"><b>นี่คือ "conditionally-linear operator" (หัวใจ 3.5):</b> สังเกตว่าทุกพจน์<b>เชิงเส้นใน C</b> (𝒜 คูณ C, D คูณ C, E ไม่ขึ้นกับ C) · สัมประสิทธิ์ g, D ถูกทำนายจาก<b>อากาศ+static</b> (ไม่ใช่จาก C) → พอกำหนดอากาศแล้ว สมการเป็น<b>เชิงเส้นใน C</b> · "conditionally" = เชิงเส้น<u>เมื่อให้</u>อากาศ · operator splitting คือสิ่งที่ทำให้โครงสร้างนี้สะอาดและคงความเชิงเส้นไว้ทุกพจน์ → superposition (2.5) ยังใช้ได้</div>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. ทำไม splitting ช่วยงานเรา — 3 ข้อ</h2>
+<ol>
+<li><b>แยกฟิสิกส์ออกจากการเรียน:</b> ใส่ความรู้ที่แน่นอน (advection, ไม่ติดลบ, อนุรักษ์มวล) เป็นพจน์ตายตัว → นิวรอลโฟกัสเรียนแค่ส่วนที่ยากจริง → เรียนง่ายขึ้น ใช้ข้อมูลน้อยลง (สำคัญมากเพราะเรามีแค่ 2 เดือน/1 GPU)</li>
+<li><b>คงความเชิงเส้นทุกพจน์:</b> แต่ละ sub-step ออกแบบให้เชิงเส้นใน C → superposition รอด → attribution (C2) ทำได้</li>
+<li><b>ยืดหยุ่น/ดีบักง่าย:</b> ทดสอบแต่ละพจน์แยกได้ (เช่นปิด diffusion ดูว่า advection ถูกไหม) → ตรงกับปรัชญา error analysis ของเรา (แยกว่า error มาจากพจน์ไหน)</li>
+</ol>
+<div class="ex"><b>เชื่อม oracle substitution (Module 5):</b> เพราะสมการแยกเป็นพจน์ เราสามารถ "เปลี่ยนพจน์เป็นของจริง (oracle)" ทีละตัว เพื่อวัดว่า error มาจากพจน์ไหน — เช่น ใส่ลมจริงแทนลม ERA5 ดูว่า error ลดเท่าไร = ε_wind · operator splitting ทำให้การผ่า error แบบนี้เป็นไปได้</div>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. โค้ดโครงสร้าง 1 timestep</h2>
+<pre><code><span class="kw">def</span> <span class="fn">hazenet_step</span>(C, wind, met, static):
+    <span class="st">"""เดินหนึ่ง timestep ด้วย operator splitting"""</span>
+    <span class="cm"># --- พจน์ที่นิวรอลทำนายสัมประสิทธิ์ (จากอากาศ ไม่ใช่จาก C) ---</span>
+    g = afno_emit(met, static)       <span class="cm"># สัมประสิทธิ์ปล่อย g_theta</span>
+    D = afno_loss(met, static)       <span class="cm"># อัตราหาย D_theta (0..1)</span>
+    E = emission_from_fire(met)      <span class="cm"># ควันใหม่จากไฟ (FRP, 1.1)</span>
+
+    <span class="cm"># --- ขั้นตอน splitting (ต่อกันเป็นทอด) ---</span>
+    C = advect(C, wind)              <span class="cm"># 1) 𝒜: ฟิสิกส์ semi-Lagrangian (2.2)</span>
+    C = C + g * E                    <span class="cm"># 2) emission</span>
+    C = C - D * C                    <span class="cm"># 3) loss  (= (1-D)*C)</span>
+    <span class="kw">return</span> C                        <span class="cm"># C^{t+1}</span>
+
+<span class="cm"># ทุกบรรทัดเชิงเส้นใน C -> superposition รอด -> แยกแหล่งได้ (2.5)</span>
+<span class="cm"># advect ฝังตายตัว · g,D มาจากนิวรอล · ทั้งหมด differentiable -> adjoint ฟรี</span></code></pre>
+<p>นี่คือสมการแกนในรูปโค้ด · สังเกตว่ามันคือ "สเต็ปทำอาหาร" ที่ผสมฟิสิกส์ (advect) กับนิวรอล (g, D) ลงตัว</p>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. Splitting error (ความซื่อสัตย์)</h2>
+<p>การแยกแก้ทีละพจน์<b>ไม่ฟรี 100%</b> · เพราะในความจริงทุกพจน์เกิดพร้อมกัน การทำทีละอันสร้าง error เล็กน้อยเรียก <b>splitting error</b> · ตัวอย่าง: ควันที่เพิ่งปล่อย (emission) ควรถูกลมหอบ (advection) ทันทีในชั่วโมงนั้น แต่ถ้าเราทำ advection ก่อน emission ทีหลัง ควันใหม่จะ "ตกรอบ" การหอบไปหนึ่ง step</p>
+<ul>
+<li>splitting error <b>เล็กลงเมื่อ Δt เล็ก</b> และ Strang (สมมาตร) ทำให้เล็กกว่า Lie อีก</li>
+<li>เป็นส่วนหนึ่งของ <code>ε_structure</code> (จาก 2.1) — error จากการออกแบบเชิงตัวเลข</li>
+</ul>
+<div class="why"><b>ทำไมยอมรับได้:</b> splitting error เล็กมากเทียบกับ error จากแหล่งอื่น (ลม ERA5 หยาบ, บัญชีการปล่อยไฟ) · และเราได้ของแลกที่คุ้มกว่ามาก: โครงสร้างที่เชิงเส้น+พิสูจน์คุณสมบัติได้+ผสมฟิสิกส์กับนิวรอลได้ · ในเปเปอร์เราจะ<b>ระบุ splitting error เป็นข้อจำกัดที่รู้ตัว</b> และวัดขนาดมันด้วย convergence test (ลด Δt แล้วดูว่า error ลดตามทฤษฎีไหม)</div>
+
+<!-- ============ cheat ============ -->
+<h2 id="cheat">9. Cheat sheet + แบบฝึกหัด</h2>
+<div class="card">
+<b>สรุปจำ:</b>
+<ul>
+<li><b>ปัญหา:</b> ADR มีหลายพจน์เกิดพร้อมกัน แก้พร้อมกันยาก</li>
+<li><b>Operator splitting:</b> แก้ทีละพจน์ ต่อกันเป็นทอด ใน 1 timestep (เหมือนทำอาหารเป็นสเต็ป)</li>
+<li><b>Lie</b> = ต่อตรง ๆ (อันดับ 1) · <b>Strang</b> = สมมาตร ½+เต็ม+½ (อันดับ 2 แม่นกว่า)</li>
+<li><b>ใน HazeNet:</b> advection=ฟิสิกส์ตายตัว(2.2) · emission/loss=นิวรอลเรียนสัมประสิทธิ์ g,D</li>
+<li><b>★★ กาวเชื่อม:</b> splitting คือโครงสร้างที่ผสม "ฟิสิกส์ที่รู้แน่" + "นิวรอลที่เรียน" ในสมการเดียว</li>
+<li><b>คงความเชิงเส้นทุกพจน์</b> → superposition รอด → attribution ได้ (= conditionally-linear, 3.5)</li>
+<li><b>3 ประโยชน์:</b> แยกฟิสิกส์ออกจากการเรียน · คงเชิงเส้น · ดีบัก/ผ่า error ได้ (oracle)</li>
+<li><b>ข้อจำกัด:</b> splitting error (ทำทีละอันแทนพร้อมกัน) = ส่วนของ ε_structure · เล็กลงเมื่อ Δt เล็ก</li>
+</ul>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 1 — operator splitting ช่วยให้เรา "ผสมฟิสิกส์กับนิวรอล" ได้ยังไง? ยกตัวอย่างพจน์ที่เป็นฟิสิกส์ vs นิวรอลในงานเรา</p>
+<details><summary>เฉลย</summary>
+<p>splitting แยกสมการเป็นขั้นตอนย่อยที่แก้แยกได้ → เราเลือก<b>วิธีต่างกันต่อแต่ละพจน์</b> · <b>advection (𝒜)</b> = ฟิสิกส์ฝังตายตัว (semi-Lagrangian) เพราะต้องรักษาความเชิงเส้น/ไม่ติดลบ · <b>emission (g) และ loss (D)</b> = นิวรอล AFNO เรียนสัมประสิทธิ์จากอากาศ เพราะซับซ้อนเกินเขียนสูตร · ทั้งสองมาต่อกันใน 1 timestep ได้เพราะ splitting</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 2 — Strang ต่างจาก Lie splitting ยังไง และทำไมถึงแม่นกว่า?</p>
+<details><summary>เฉลย</summary>
+<p><b>Lie:</b> แก้พจน์ต่อกันตรง ๆ (A เต็ม → B เต็ม) อันดับ 1 · <b>Strang:</b> ทำพจน์หัวเป็นครึ่ง ประกบท้ายอีกครึ่ง (A½ → B เต็ม → A½) แบบ<b>สมมาตร</b> · ความสมมาตรทำให้ error จาก "ลำดับพจน์มีผล" หักล้างกันมากขึ้น → อันดับ 2 (error เล็กลงเร็วกว่าเมื่อ Δt เล็ก) โดยจ่ายแค่ทำ A ครึ่ง step สองครั้ง</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 3 — splitting error คืออะไร และทำไมเรายอมรับมันได้?</p>
+<details><summary>เฉลย</summary>
+<p><b>splitting error</b> = error จากการแก้พจน์ทีละอันแทนที่จะพร้อมกัน (เช่น ควันที่เพิ่งปล่อยตกรอบการหอบไป 1 step) · ยอมรับได้เพราะ (1) มัน<b>เล็กมาก</b>เทียบกับ error จากลม ERA5 หยาบ/บัญชีไฟ, (2) เล็กลงเมื่อ Δt เล็ก + Strang ช่วย, (3) เราได้โครงสร้างที่เชิงเส้น+พิสูจน์ได้+ผสมฟิสิกส์/นิวรอลแลกมา ซึ่งคุ้มกว่ามาก · จัดเป็นส่วนของ ε_structure ที่เรารายงานอย่างซื่อสัตย์</p>
+</details>
+</div>
+
+<div class="lead">
+<b>จบ 2.3 แล้วคุณควร:</b> เข้าใจว่า operator splitting = แก้สมการหลายพจน์ทีละพจน์ต่อกันเป็นทอด (เหมือนทำอาหารเป็นสเต็ป), รู้ว่า Strang = แบบสมมาตรที่แม่นกว่า, และที่สำคัญสุด — เห็นว่า splitting คือ<b>กาวที่เชื่อม 𝒜 (ฟิสิกส์ 2.2) เข้ากับ g,D (นิวรอล)</b> ในสมการแกนเดียว โดยคงความเชิงเส้นทุกพจน์ → ปูตรงสู่ conditionally-linear operator (3.5)
+<br><br>
+<b>ขั้นต่อไปแนะนำ:</b> <b>2.4 Mass conservation · non-negativity · monotone scheme</b> (⭐CORE) — เจาะคุณสมบัติ "มวลไม่รั่ว / ควันไม่ติดลบ" ที่ทั้ง 2.2 และ 2.3 เกริ่นไว้ ว่าทำไมเรา "พิสูจน์ได้" · หรือกระโดดไป <b>2.5 Superposition</b> (หัวใจ 2/3) ที่เป็นบทไคลแมกซ์ของ Module นี้ · บอกเลขถัดไปได้เลยครับ
+</div>
+
+</div>
+</body>
+</html>

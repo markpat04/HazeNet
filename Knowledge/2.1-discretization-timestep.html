@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2.1 — Discretization + Timestep (สอนละเอียด)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.6px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>2.1 — Discretization + Timestep</h1>
+<p class="tagline">แปลงสมการต่อเนื่องให้คอมพิวเตอร์คำนวณได้ — กริด (ที่ว่าง) + ก้าวเวลา</p>
+<p class="sub">เริ่ม Module 2 (แกนคณิตของโมเดล) · บทนี้คือ "สะพาน" จากสมการ ADR (1.2) ไปสู่โค้ด tensor (0.1) · ผูกกับ HazeNet ตลอด</p>
+
+<div class="lead">
+<b>ทำไมบทนี้มาก่อน:</b> สมการ ADR (1.2) เป็น<b>คณิตศาสตร์ต่อเนื่อง</b> — <code>∂C/∂t</code> สมมติว่าเวลาไหลลื่นไม่ขาดตอน และ <code>∇</code> สมมติว่าที่ว่างละเอียดอนันต์ · แต่คอมพิวเตอร์ทำแบบนั้นไม่ได้ มันรู้จักแค่ "ตัวเลขในช่องตาราง" · <b class="k">Discretization</b> = ศิลปะของการ "หั่น" ที่ว่างและเวลาเป็นช่อง ๆ เพื่อให้สมการกลายเป็นการบวกลบคูณบน tensor · เข้าใจบทนี้ = เข้าใจว่าทำไม HazeNet ถึงเป็น tensor รูปร่าง <code>[เวลา, ช่อง, lat, lon]</code> ได้
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. ต่อเนื่อง vs ไม่ต่อเนื่อง</a><br>
+<a href="#p2">2. หั่นที่ว่าง = กริด (Δx) ★</a><br>
+<a href="#p3">3. หั่นเวลา = timestep (Δt) ★</a><br>
+<a href="#p4">4. อนุพันธ์ → ผลต่าง (finite difference)</a><br>
+<a href="#p5">5. กฎเหล็ก: เงื่อนไข CFL ★★</a><br>
+<a href="#p6">6. ความละเอียดของ HazeNet</a><br>
+<a href="#p7">7. เชื่อมกับ tensor + autoregressive</a><br>
+<a href="#p8">8. error จาก discretization</a><br>
+<a href="#cheat">9. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. ต่อเนื่อง (continuous) vs ไม่ต่อเนื่อง (discrete)</h2>
+<p>โลกจริงต่อเนื่อง — ความเข้มข้นฝุ่น <code>C</code> มีค่าที่<b>ทุกจุด</b>ในอากาศ และที่<b>ทุกขณะ</b>เวลา · แต่คอมพิวเตอร์เก็บได้แค่ตัวเลขจำนวนจำกัด · เราจึง "สุ่มเก็บ" ค่าที่จุดเป็นระยะ ๆ</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 160" width="96%" xmlns="http://www.w3.org/2000/svg">
+  <!-- continuous curve -->
+  <text x="140" y="20" fill="#58a6ff" font-size="12" text-anchor="middle" font-weight="bold">ต่อเนื่อง (โลกจริง)</text>
+  <path d="M30,120 Q90,40 150,90 T270,70" fill="none" stroke="#58a6ff" stroke-width="2.5"/>
+  <line x1="30" y1="130" x2="270" y2="130" stroke="#30363d"/>
+  <text x="150" y="150" fill="#9aa7b4" font-size="10" text-anchor="middle">ค่าทุกจุด</text>
+  <!-- discrete dots -->
+  <text x="430" y="20" fill="#3fb950" font-size="12" text-anchor="middle" font-weight="bold">ไม่ต่อเนื่อง (คอมพิวเตอร์)</text>
+  <path d="M310,120 Q370,40 430,90 T550,70" fill="none" stroke="#30363d" stroke-width="1" stroke-dasharray="3 3"/>
+  <g fill="#3fb950"><circle cx="310" cy="120" r="5"/><circle cx="350" cy="78" r="5"/><circle cx="390" cy="70" r="5"/><circle cx="430" cy="90" r="5"/><circle cx="470" cy="92" r="5"/><circle cx="510" cy="78" r="5"/><circle cx="550" cy="70" r="5"/></g>
+  <line x1="310" y1="130" x2="550" y2="130" stroke="#30363d"/>
+  <text x="430" y="150" fill="#9aa7b4" font-size="10" text-anchor="middle">เก็บค่าเป็นจุด ๆ ห่างกัน Δx</text>
+</svg>
+</div>
+<p>"การหั่นต่อเนื่องให้เป็นจุด ๆ" นี่แหละคือ <b>discretization</b> · เราหั่น 2 อย่าง: <b>ที่ว่าง</b> (เป็นกริด) และ <b>เวลา</b> (เป็น step)</p>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. หั่นที่ว่าง = กริด (grid spacing Δx) <span class="pin">★</span></h2>
+<p>เราวางตารางทับแผนที่ภาคเหนือ แล้วเก็บค่า PM2.5 หนึ่งค่าต่อ "ช่อง" (grid cell) · ระยะห่างระหว่างช่องเรียก <code>Δx</code> (delta-x)</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 360 200" width="62%" xmlns="http://www.w3.org/2000/svg">
+  <g stroke="#30363d" stroke-width="1">
+    <line x1="40" y1="30" x2="320" y2="30"/><line x1="40" y1="70" x2="320" y2="70"/><line x1="40" y1="110" x2="320" y2="110"/><line x1="40" y1="150" x2="320" y2="150"/>
+    <line x1="40" y1="30" x2="40" y2="150"/><line x1="110" y1="30" x2="110" y2="150"/><line x1="180" y1="30" x2="180" y2="150"/><line x1="250" y1="30" x2="250" y2="150"/><line x1="320" y1="30" x2="320" y2="150"/>
+  </g>
+  <rect x="110" y="70" width="70" height="40" fill="#3fb950" opacity="0.25"/>
+  <text x="145" y="95" fill="#3fb950" font-size="13" text-anchor="middle" font-weight="bold">42</text>
+  <text x="145" y="125" fill="#9aa7b4" font-size="9" text-anchor="middle">1 ช่อง = 1 ค่า</text>
+  <line x1="110" y1="165" x2="180" y2="165" stroke="#58a6ff" stroke-width="1.5"/>
+  <text x="145" y="182" fill="#58a6ff" font-size="11" text-anchor="middle">Δx</text>
+</svg>
+</div>
+<ul>
+<li><b>Δx เล็ก</b> = กริดละเอียด = เห็นรายละเอียดมาก แต่ช่องเยอะ → คำนวณหนัก/ช้า/กิน GPU</li>
+<li><b>Δx ใหญ่</b> = กริดหยาบ = เร็ว แต่หยาบ มองไม่เห็นรายละเอียดเล็ก (เช่น หุบเขาแคบ)</li>
+</ul>
+<div class="why"><b>เชื่อม HazeNet:</b> เราเลือกกริด <b>0.1°</b> (~11 กม.) · นี่คือ "Δx" ของเรา · ค่านี้คือ trade-off: ละเอียดพอเห็นความต่างระหว่างจังหวัด แต่หยาบพอให้รันบน 1 GPU ใน 2 เดือนได้ (ข้อจำกัดโครงการ) · จำได้ไหมว่า ERA5 หยาบ 0.25° (1.3)? เราจึงต้อง regrid มันลงมา 0.1° (หัวข้อ 4.3)</div>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. หั่นเวลา = timestep (Δt) <span class="pin">★</span></h2>
+<p>เวลาก็หั่นเหมือนกัน · แทนที่จะรู้ <code>C</code> ทุกขณะ เรารู้ <code>C</code> เป็น "เฟรม" ห่างกัน <code>Δt</code> · เหมือนหนังที่จริง ๆ เป็นภาพนิ่งหลายเฟรมต่อวินาที</p>
+<p>เราเขียนค่าที่ step ต่าง ๆ ว่า:</p>
+<div class="card center" style="font-family:'Cambria Math',serif;font-size:17px">
+C<sup>t</sup> → C<sup>t+1</sup> → C<sup>t+2</sup> → …
+<div style="font-family:'Segoe UI';font-size:12.5px;color:var(--muted);margin-top:8px">แต่ละลูกศรห่างกัน Δt · โมเดล "เดินหน้า" ทีละ step</div>
+</div>
+<p>นี่คือที่มาของ "<b>update equation</b>" ของ HazeNet ที่เขียนว่า <code>C<sup>t+1</sup> = (ทำอะไรบางอย่างกับ) C<sup>t</sup></code> — มันคือกฎที่บอกว่า "จากเฟรมนี้ ไปเฟรมหน้ายังไง"</p>
+<div class="ex"><b>เชื่อม update equation หลัก:</b> สมการแกนของเรา <code>C<sup>t+1</sup> = 𝒜(u)C<sup>t</sup> + g·E − D⊙C<sup>t</sup></code> ก็คือ "กฎเดินหนึ่ง timestep" นั่นเอง · มันบอกว่า "เอาควันเฟรมนี้ เลื่อนตามลม (𝒜) บวกควันที่ปล่อยใหม่ (E) ลบที่หายไป (D) = ควันเฟรมหน้า"</div>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. อนุพันธ์ → ผลต่าง (finite difference)</h2>
+<p>ปัญหา: สมการ ADR มี <code>∂C/∂t</code> และ <code>∇</code> ซึ่งเป็น<b>อนุพันธ์</b> (อัตราการเปลี่ยน ณ จุดเดียว) · คอมพิวเตอร์คำนวณ "ณ จุดเดียว" ไม่ได้ แต่คำนวณ "ผลต่างระหว่างช่อง" ได้</p>
+<p><b>กุญแจ:</b> อนุพันธ์ ≈ ผลต่างหารระยะ</p>
+<div class="card center" style="font-family:'Cambria Math',serif;font-size:16px">
+∂C/∂t &nbsp;≈&nbsp; (C<sup>t+1</sup> − C<sup>t</sup>) / Δt
+<br><br>
+∂C/∂x &nbsp;≈&nbsp; (C<sub>i+1</sub> − C<sub>i</sub>) / Δx
+</div>
+<p>= "อัตราการเปลี่ยนตามเวลา" ≈ "ค่าต่างระหว่างเฟรมนี้กับเฟรมหน้า หารด้วยช่วงเวลา" · นี่เรียก <b>finite difference</b> (ผลต่างจำกัด) — เป็นวิธีพื้นฐานสุดในการแปลงสมการให้คอมพิวเตอร์แก้ได้</p>
+<div class="why"><b>ทำไมเราไม่ต้อง implement finite difference เอง (ส่วนใหญ่):</b> HazeNet ฉลาดตรงที่<b>ไม่ได้แก้ finite difference ทื่อ ๆ</b> สำหรับ advection (มันไม่เสถียร — ดูข้อ 5) · เราใช้ semi-Lagrangian (2.2) ที่ดีกว่า · แต่คุณต้องเข้าใจ finite difference ก่อน เพราะมันคือ "ภาษาฐาน" ที่อธิบายว่าทำไมวิธีอื่นถึงจำเป็น</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. กฎเหล็ก: เงื่อนไข CFL <span class="pin">★★ สำคัญมาก</span></h2>
+<p>นี่คือกฎที่ต้องจำ · มันโยง Δx, Δt, และความเร็วลม <code>u</code> เข้าด้วยกัน:</p>
+<div class="card center" style="font-size:17px">
+<b style="color:#e3b341;font-family:'Cambria Math',serif">CFL = u · Δt / Δx ≤ 1</b>
+<div style="font-size:12.5px;color:var(--muted);margin-top:8px;font-family:'Segoe UI'">"ใน 1 timestep ควันต้องเคลื่อนไม่เกิน 1 ช่องกริด"</div>
+</div>
+<h4>เข้าใจด้วยสามัญสำนึก</h4>
+<p>ถ้าลมเร็วมาก (u ใหญ่) และ timestep ยาว (Δt ใหญ่) → ควันในหนึ่ง step กระโดด<b>ข้ามหลายช่อง</b> · วิธีเชิงตัวเลขแบบ finite difference จะ "ตามไม่ทัน" → ตัวเลข<b>ระเบิด (เป็น infinity / NaN)</b> หรือเด้งไปมาไม่สมจริง</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 150" width="96%" xmlns="http://www.w3.org/2000/svg">
+  <!-- good CFL -->
+  <text x="140" y="18" fill="#3fb950" font-size="11.5" text-anchor="middle" font-weight="bold">CFL ≤ 1 (ดี)</text>
+  <g stroke="#30363d"><line x1="30" y1="50" x2="250" y2="50"/><line x1="30" y1="80" x2="250" y2="80"/><line x1="85" y1="50" x2="85" y2="80"/><line x1="140" y1="50" x2="140" y2="80"/><line x1="195" y1="50" x2="195" y2="80"/></g>
+  <circle cx="57" cy="65" r="8" fill="#3fb950"/>
+  <path d="M70,65 L108,65" stroke="#3fb950" stroke-width="2" marker-end="url(#g1)"/>
+  <defs><marker id="g1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#3fb950"/></marker>
+        <marker id="r1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#f85149"/></marker></defs>
+  <circle cx="112" cy="65" r="8" fill="#3fb950" opacity="0.5"/>
+  <text x="140" y="105" fill="#9aa7b4" font-size="9.5" text-anchor="middle">เลื่อน ≤ 1 ช่อง → เสถียร</text>
+
+  <!-- bad CFL -->
+  <text x="430" y="18" fill="#f85149" font-size="11.5" text-anchor="middle" font-weight="bold">CFL &gt; 1 (ระเบิด)</text>
+  <g stroke="#30363d"><line x1="320" y1="50" x2="540" y2="50"/><line x1="320" y1="80" x2="540" y2="80"/><line x1="375" y1="50" x2="375" y2="80"/><line x1="430" y1="50" x2="430" y2="80"/><line x1="485" y1="50" x2="485" y2="80"/></g>
+  <circle cx="347" cy="65" r="8" fill="#f85149"/>
+  <path d="M360,65 L520,65" stroke="#f85149" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#r1)"/>
+  <circle cx="524" cy="65" r="8" fill="#f85149" opacity="0.5"/>
+  <text x="430" y="105" fill="#9aa7b4" font-size="9.5" text-anchor="middle">กระโดด 3 ช่อง → ตัวเลขพัง</text>
+</svg>
+</div>
+<p>ดังนั้น<b>เลือก Δt ให้เล็กพอ</b>เทียบกับ Δx และลมแรงสุดที่เป็นไปได้ · นี่คือเหตุผลหลักที่ CTM (1.5) ต้องใช้ timestep เล็ก ๆ → จำนวน step เยอะ → ช้า</p>
+<div class="why"><b>เชื่อม HazeNet (สำคัญ):</b> semi-Lagrangian advection (2.2) ที่เราใช้ <b>ไม่ติดข้อจำกัด CFL รุนแรง</b> — มันตามรอยควัน "ย้อนกลับ" ไปหาว่ามาจากไหน จึงเลื่อนข้ามหลายช่องได้โดยไม่ระเบิด · นี่เป็นเหตุผลหนึ่งที่เราเลือกมัน และทำให้ใช้ Δt ใหญ่กว่า (= step น้อยกว่า = เร็วกว่า CTM) · แต่คุณต้องรู้จัก CFL ก่อน ถึงจะเข้าใจว่าทำไม semi-Lagrangian ถึงเจ๋ง</div>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. ความละเอียดของ HazeNet (สรุปตัวเลขจริง)</h2>
+<table>
+<tr><th>มิติ</th><th>ค่าของเรา</th><th>ความหมาย</th></tr>
+<tr><td>Δx (กริดพื้นที่)</td><td>~0.1° (~11 กม.)</td><td>หนึ่งช่อง ≈ ขนาดอำเภอใหญ่</td></tr>
+<tr><td>โดเมน</td><td>ภาคเหนือ + ประเทศเพื่อนบ้าน</td><td>ต้องครอบคลุมแหล่งข้ามแดน (1.4)</td></tr>
+<tr><td>Δt (ก้าวเวลา)</td><td>รายชั่วโมง (ตามอินพุต)</td><td>ตรงกับความถี่ ERA5/Himawari</td></tr>
+<tr><td>ขอบฟ้าพยากรณ์</td><td>1–3 วันล่วงหน้า</td><td>= เดินหลายสิบ step (autoregressive, ข้อ 7)</td></tr>
+</table>
+<div class="warn"><b>ทำไมต้องครอบเพื่อนบ้านด้วย:</b> ถ้ากริดครอบแค่ภาคเหนือไทย ควันจากเมียนมาจะ "โผล่มาจากขอบ" โดยเราไม่รู้ที่มา → แยกแหล่งไม่ได้ · โดเมนต้อง<b>ใหญ่พอครอบแหล่งต้นทาง</b> นี่เป็นการตัดสินใจ discretization ที่ผูกตรงกับ pain point</div>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. เชื่อมกับ tensor + autoregressive rollout</h2>
+<p>เมื่อหั่นที่ว่าง+เวลาแล้ว ข้อมูลเราก็กลายเป็น <b>tensor</b> (จาก 0.1) รูปร่าง:</p>
+<pre><code><span class="cm"># รูปร่างข้อมูล HazeNet หลัง discretization</span>
+C.shape = (<span class="nm">time</span>, <span class="nm">channel</span>, <span class="nm">lat</span>, <span class="nm">lon</span>)
+<span class="cm">#         เวลา(step) ตัวแปร  แกนเหนือ-ใต้ แกนออก-ตก</span>
+<span class="cm">#         จาก Δt     PM2.5/ลม/..  จาก Δx     จาก Δx</span></code></pre>
+<p>การ "พยากรณ์ล่วงหน้า" คือการเอา update equation มาเดินซ้ำ ๆ ทีละ step — เรียก <b>autoregressive rollout</b>:</p>
+<pre><code>C = C0                          <span class="cm"># สภาพเริ่มต้น (วันนี้)</span>
+<span class="kw">for</span> step <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">48</span>):       <span class="cm"># เดิน 48 ชม. ข้างหน้า</span>
+    C = model(C, met[step])     <span class="cm"># C^t -> C^{t+1} (กฎเดินหนึ่ง step)</span>
+<span class="cm"># ตอนนี้ C = พยากรณ์ 48 ชม.ล่วงหน้า</span></code></pre>
+<div class="danger"><b>error สะสม (ปัญหาสำคัญ):</b> ทุก step เอาเอาต์พุตที่อาจผิดนิดหน่อยมาเป็นอินพุต step ถัดไป → error <b>สะสมทบต้น</b> ยิ่งเดินไกลยิ่งเพี้ยน · นี่คือ <code>ε_rollout</code> ในการแยก error ของเรา (จาก master plan) · เป็นเหตุผลที่เราต้องเทรนแบบ "เดินหลาย step ตอนเทรน" ด้วย ไม่ใช่เทรน 1 step แล้วหวังว่าจะเดินไกลได้</div>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. error ที่เกิดจาก discretization เอง</h2>
+<p>การหั่นให้หยาบ "ทิ้งข้อมูล" ไปบ้างเสมอ → เกิด error ที่หลีกเลี่ยงไม่ได้ 2 แบบ:</p>
+<ul>
+<li><b>Truncation error (จากหั่นหยาบ):</b> Δx/Δt ใหญ่ → finite difference ประมาณอนุพันธ์หยาบ → คลาดเคลื่อน · ทำให้เกิด "numerical diffusion" (ภาพเบลอเกินจริง เหมือนควันกระจายเองทั้งที่ไม่ควร)</li>
+<li><b>Representation error (จากกริดหยาบ):</b> หุบเขาแคบกว่า 11 กม. โมเดลมองไม่เห็น → ฝุ่นในหุบเขาเล็กถูกเฉลี่ยหายไป</li>
+</ul>
+<div class="why"><b>เชื่อม error analysis (Module 5):</b> นี่คือส่วนหนึ่งของ <code>ε_structure</code> (error จากโครงสร้าง/การออกแบบ) ในการแยก error ของเรา · เรา<b>ยอมรับ</b>มันอย่างซื่อสัตย์: เลือก 0.1° เพราะ trade-off กับ GPU/เวลา และจะรายงานว่า error ส่วนนี้มาจากความหยาบของกริด ไม่ใช่จากนิวรอลเรียนไม่เก่ง · การ<b>แยกแหล่งของ error</b>ให้ออกแบบนี้คือสิ่งที่ทำให้งานเป็นระดับ A*</div>
+
+<!-- ============ cheat ============ -->
+<h2 id="cheat">9. Cheat sheet + แบบฝึกหัด</h2>
+<div class="card">
+<b>สรุปจำ:</b>
+<ul>
+<li><b>Discretization</b> = หั่นที่ว่าง+เวลาต่อเนื่อง → ช่องตาราง (ให้คอมพิวเตอร์คำนวณได้)</li>
+<li><b>Δx</b> = ระยะกริด (เล็ก=ละเอียดแต่ช้า) · HazeNet ใช้ ~0.1° (~11 กม.)</li>
+<li><b>Δt</b> = ก้าวเวลา · ทำให้เกิด update equation <code>C^t → C^{t+1}</code></li>
+<li><b>Finite difference:</b> อนุพันธ์ ≈ ผลต่าง/ระยะ (ภาษาฐานของโมเดลเชิงตัวเลข)</li>
+<li><b>CFL = u·Δt/Δx ≤ 1</b> ★★ — ควันเลื่อนไม่เกิน 1 ช่อง/step ไม่งั้นตัวเลขระเบิด</li>
+<li><b>semi-Lagrangian (2.2)</b> เลี่ยงข้อจำกัด CFL → ใช้ Δt ใหญ่กว่า → เร็วกว่า CTM</li>
+<li><b>tensor:</b> ข้อมูลกลายเป็น <code>(time, channel, lat, lon)</code></li>
+<li><b>autoregressive rollout:</b> เดิน update ซ้ำ → พยากรณ์ไกล · แต่เกิด <code>ε_rollout</code> สะสม</li>
+<li><b>discretization error:</b> truncation + representation → ส่วนหนึ่งของ <code>ε_structure</code></li>
+</ul>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 1 — กริด Δx = 11 กม., timestep Δt = 1 ชม., ลมแรงสุด u = 40 กม./ชม. · CFL เท่าไร และโมเดลเสถียรไหม (ถ้าใช้ finite difference ธรรมดา)?</p>
+<details><summary>เฉลย</summary>
+<p>CFL = u·Δt/Δx = 40 × 1 / 11 ≈ <b>3.6</b> · มากกว่า 1 → <b>ไม่เสถียร</b> ถ้าใช้ finite difference ธรรมดา (ควันกระโดด ~3.6 ช่องต่อ step → ตัวเลขจะระเบิด) · ทางแก้: ลด Δt (เช่นเป็น 15 นาที → CFL≈0.9) <u>หรือ</u> ใช้ semi-Lagrangian ที่ไม่ติดข้อจำกัดนี้ (= สิ่งที่ HazeNet เลือก, 2.2)</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 2 — ทำไม autoregressive rollout ถึงทำให้ error แย่ลงเรื่อย ๆ ตามขอบฟ้าพยากรณ์?</p>
+<details><summary>เฉลย</summary>
+<p>เพราะแต่ละ step เอา<b>เอาต์พุตของ step ก่อน</b> (ที่มี error เล็กน้อย) มาเป็น<b>อินพุต</b>ของ step ถัดไป → error ถูกป้อนกลับและขยายทบต้นทุก step · ยิ่งเดินไกล error ยิ่งสะสม = <code>ε_rollout</code> · แก้โดยเทรนให้โมเดลเห็นการเดินหลาย step (multi-step training) ไม่ใช่เทรน 1 step</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 3 — ถ้าเราอยากเห็นรายละเอียดฝุ่นในหุบเขาแคบ 5 กม. กริด 0.1° (11 กม.) ทำได้ไหม? นี่คือ error ชนิดไหน?</p>
+<details><summary>เฉลย</summary>
+<p><b>ทำไม่ได้</b> · หุบเขา 5 กม. เล็กกว่า 1 ช่องกริด (11 กม.) → ถูกเฉลี่ยรวมหายไป · นี่คือ <b>representation error</b> (ส่วนหนึ่งของ <code>ε_structure</code>) · ถ้าต้องการต้องลด Δx (กริดละเอียดขึ้น) ซึ่งแลกกับ GPU/เวลามากขึ้น — เป็น trade-off ที่เรายอมรับและรายงานอย่างซื่อสัตย์</p>
+</details>
+</div>
+
+<div class="lead">
+<b>จบ 2.1 แล้วคุณควร:</b> เข้าใจว่าทำไมสมการต่อเนื่อง (1.2) ต้องถูก "หั่น" เป็นกริด (Δx) + ก้าวเวลา (Δt) ก่อนคอมพิวเตอร์จะคำนวณได้, รู้จัก finite difference และ<b>กฎ CFL</b> (ว่าทำไมตัวเลขระเบิดได้), เห็นว่าข้อมูลกลายเป็น tensor <code>(time,channel,lat,lon)</code> และพยากรณ์ไกลด้วย autoregressive rollout (ที่มาของ <code>ε_rollout</code>)
+<br><br>
+<b>ขั้นต่อไปแนะนำ:</b> <b>2.2 Semi-Lagrangian advection</b> (⭐CORE 🔴) — วิธีเลื่อนควันตามลมที่เลี่ยงข้อจำกัด CFL ที่เพิ่งเรียน · เป็น "ส่วน 𝒜 (ฟิสิกส์)" ในโมเดล และเป็นบทที่ทุกอย่างในข้อ 5 ปูทางไว้ · บอกเลขถัดไปได้เลยครับ
+</div>
+
+</div>
+</body>
+</html>

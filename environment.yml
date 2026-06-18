@@ -1,0 +1,34 @@
+name: hazenet
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  # core scientific
+  - numpy
+  - pandas
+  - scipy
+  - matplotlib
+  # geospatial / arrays
+  - xarray
+  - netcdf4
+  - rioxarray
+  - rasterio
+  - zarr
+  - dask
+  - s3fs
+  - cartopy
+  # data download / utils
+  - cdsapi
+  - requests
+  - pyyaml
+  - tqdm
+  # machine learning
+  - scikit-learn
+  - xgboost
+  - pip
+  - pip:
+      # PyTorch + CUDA 12.1 (สำหรับ NVIDIA GPU เช่น RTX 4050)
+      # CPU เท่านั้น: ตัด --index-url ออก
+      - --index-url https://download.pytorch.org/whl/cu121
+      - torch
+  # xesmf (conservative regrid) ลองเพิ่มแยกภายหลัง - บน Windows อาจไม่มี build

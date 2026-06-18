@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HazeNet — Pipeline ทั้งโปรเจกต์ อธิบายแบบเริ่มจากศูนย์</title>
+<style>
+  :root{
+    --bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;
+    --red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ffa657;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:"Segoe UI",Tahoma,"Sarabun",sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:1080px;margin:0 auto;padding:30px 20px 120px}
+  h1{font-size:34px;line-height:1.22;margin:0 0 6px}
+  .tagline{color:var(--cyan);font-size:18px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  h2{font-size:25px;margin:60px 0 14px;padding-bottom:10px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19.5px;margin:30px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);
+    padding:18px 22px;border-radius:10px;margin:22px 0;font-size:17px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 22px;margin:16px 0}
+  .analogy{background:linear-gradient(180deg,#1a2433,#141b26);border:1px solid #2d4358;
+    border-left:4px solid var(--cyan);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .analogy .h{color:var(--cyan);font-weight:bold;font-size:15px;letter-spacing:.3px;margin-bottom:4px}
+  .analogy .h::before{content:"🧠 เปรียบเทียบให้เห็นภาพ — ";color:var(--cyan)}
+  .warn{background:rgba(227,179,65,.07);border:1px solid var(--border);border-left:4px solid var(--amber);border-radius:10px;padding:14px 20px;margin:16px 0}
+  .danger{background:rgba(248,81,73,.07);border:1px solid var(--border);border-left:4px solid var(--red);border-radius:10px;padding:14px 20px;margin:16px 0}
+  .ok{background:rgba(63,185,80,.07);border:1px solid var(--border);border-left:4px solid var(--green);border-radius:10px;padding:14px 20px;margin:16px 0}
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14.5px}
+  th,td{border:1px solid var(--border);padding:9px 12px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  .eq{background:#11161d;border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:8px;
+    padding:14px 18px;margin:14px 0;font-size:17px;overflow-x:auto;font-family:"Cambria Math",serif;line-height:2}
+  .eq .lbl{display:block;color:var(--muted);font-size:13px;font-family:"Segoe UI",sans-serif;margin-top:6px}
+  a{color:var(--blue)}
+  .muted{color:var(--muted)} b.k{color:var(--green)}
+  .center{text-align:center}
+  .pill{display:inline-block;font-size:12.5px;padding:2px 11px;border-radius:20px;margin:3px 4px 3px 0;border:1px solid var(--border);color:var(--muted)}
+  .pill.g{color:var(--green);border-color:var(--green);background:rgba(63,185,80,.1)}
+  .pill.p{color:var(--purple);border-color:var(--purple);background:rgba(188,140,255,.1)}
+  .pill.a{color:var(--amber);border-color:var(--amber);background:rgba(227,179,65,.1)}
+  .pill.m{color:var(--muted)}
+  /* hero */
+  .hero{background:linear-gradient(135deg,#161b22 0%,#1a2433 60%,#141b26 100%);
+    border:1px solid var(--border);border-radius:16px;padding:30px 30px 26px;margin:18px 0 10px}
+  /* TOC */
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 24px;margin:24px 0;columns:2;font-size:15px}
+  @media(max-width:720px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;display:block;padding:3px 0}
+  .toc a:hover{color:var(--cyan)}
+  /* stat grid */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0}
+  @media(max-width:720px){.stats{grid-template-columns:1fr 1fr}}
+  .stat{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:18px 12px;text-align:center}
+  .stat .big{font-size:32px;color:var(--amber);font-weight:bold;line-height:1.05}
+  .stat .lbl{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.4}
+  /* stage block */
+  .stage{display:grid;grid-template-columns:60px 1fr;gap:0;margin:20px 0;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--panel)}
+  .stage .idx{background:var(--panel2);display:flex;align-items:flex-start;justify-content:center;
+    padding-top:20px;font-size:27px;font-weight:bold;color:var(--cyan);border-right:1px solid var(--border)}
+  .stage .body{padding:16px 22px}
+  .stage h3{margin-top:4px}
+  .kv{display:grid;grid-template-columns:130px 1fr;gap:6px 14px;margin:10px 0;font-size:14.5px}
+  .kv .k2{color:var(--amber);font-weight:bold}
+  .flow text{font-family:"Segoe UI",Tahoma,sans-serif}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.grid2{grid-template-columns:1fr}}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .check{color:var(--green);font-weight:bold}.cross{color:var(--red);font-weight:bold}.tri{color:var(--amber)}
+  .tag-now{display:inline-block;font-size:11.5px;padding:1px 9px;border-radius:6px;background:rgba(63,185,80,.15);color:var(--green);border:1px solid var(--green);margin-left:8px}
+  .tag-dream{display:inline-block;font-size:11.5px;padding:1px 9px;border-radius:6px;background:rgba(188,140,255,.12);color:var(--purple);border:1px solid var(--purple);margin-left:8px}
+  .legend span{display:inline-block;margin:2px 16px 2px 0;font-size:13.5px}
+  .dot{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:middle}
+  .num-list{counter-reset:step;list-style:none;padding-left:0}
+  .num-list li{position:relative;padding:8px 0 8px 44px;border-bottom:1px dashed var(--border)}
+  .num-list li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:8px;
+    width:30px;height:30px;border-radius:50%;background:var(--panel2);border:1px solid var(--cyan);color:var(--cyan);
+    display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:15px}
+  .timeline-row{display:grid;grid-template-columns:70px 1fr;gap:14px;align-items:start;padding:12px 0;border-bottom:1px solid var(--border)}
+  .timeline-row .wk{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:6px;text-align:center;font-weight:bold;color:var(--cyan);font-size:14px}
+  .gate{display:inline-block;font-size:12.5px;color:var(--amber);border:1px dashed var(--amber);border-radius:6px;padding:1px 8px;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ===================== HERO ===================== -->
+<div class="hero">
+  <h1>HazeNet 🛰️🔥</h1>
+  <p class="tagline">AI พยากรณ์ฝุ่น PM2.5 + บอกว่า "ควันมาจากไหน" + ตอบ "ถ้าดับไฟตรงนี้ฝุ่นลดเท่าไร"</p>
+  <p class="sub">เอกสารอธิบาย Pipeline ทั้งโปรเจกต์ ตั้งแต่ต้นจนจบ · เขียนสำหรับคนที่<b>ไม่เคยรู้จัก GeoAI มาก่อน</b> · สังเคราะห์จากทุกไฟล์ในโฟลเดอร์ internship (แผน + บทวิจารณ์ + ผลการทดลองจริง Phase 0 / M2)</p>
+  <p style="margin-top:14px">
+    <span class="pill g">เป้าหมาย: ส่งงานใน 2 เดือน</span>
+    <span class="pill">ทรัพยากร: GPU 1 ตัว</span>
+    <span class="pill">ข้อมูล: open-source 100%</span>
+    <span class="pill p">มาตรฐาน: ระดับตีพิมพ์ (A*)</span>
+  </p>
+</div>
+
+<div class="lead">
+<b>อ่าน 30 วินาทีให้เห็นภาพรวม:</b> เรากำลังสร้าง "สมองกล" ที่ดูข้อมูล <b>ไฟป่า + ลม + ภูมิประเทศ</b> แล้วทำนายว่าอีก 1–2 วันข้างหน้า ฝุ่นควันจะลอยไปกองอยู่ที่ไหนบ้าง พร้อมบอกได้ว่าควันก้อนนั้น<b>มาจากประเทศ/พื้นที่ไหนกี่เปอร์เซ็นต์</b> และถ้าเราไป<b>ดับไฟจุดไหนจะช่วยลดฝุ่นในเมืองได้มากที่สุด</b> — ทำได้ในไม่กี่วินาที ในขณะที่แบบจำลองวิทยาศาสตร์ดั้งเดิม (WRF-Chem) ต้องใช้ซูเปอร์คอมพิวเตอร์รันเป็นวันๆ
+</div>
+
+<!-- ===================== TOC ===================== -->
+<div class="toc">
+<b style="color:var(--green)">📑 สารบัญ</b><br>
+<a href="#why">1. ทำไมต้องทำ — ปัญหาจริงคืออะไร</a>
+<a href="#what">2. เราสร้างอะไร (อธิบาย 3 ความสามารถ)</a>
+<a href="#bigmap">3. 🗺️ แผนที่ Pipeline ทั้งระบบ (ภาพเดียวจบ)</a>
+<a href="#magic">4. ✨ หัวใจวิเศษ: "ความเป็นเชิงเส้น" คืออะไร</a>
+<a href="#stages">5. 🔧 เดินทีละสถานี (8 ขั้น) แบบละเอียด</a>
+<a href="#reality">6. ⚡ ความจริงจากการทดลอง (จุดพลิก)</a>
+<a href="#focus">7. 🎯 งานหลัก 2 เดือน — แก้ตรงไหน</a>
+<a href="#timeline">8. 🗓️ Timeline 8 สัปดาห์ + ด่านตัดสิน</a>
+<a href="#deliver">9. 📦 ส่งมอบอะไรเมื่อจบ</a>
+<a href="#honest">10. 🛡️ ข้อจำกัด (พูดตรง)</a>
+</div>
+
+<!-- ===================== 1. WHY ===================== -->
+<h2 id="why">1. ทำไมต้องทำ — ปัญหาจริงคืออะไร</h2>
+
+<p>ทุกปีช่วงเดือน <b>กุมภาพันธ์–เมษายน</b> ภาคเหนือของไทย (โดยเฉพาะเชียงใหม่ เชียงราย) จมอยู่ในหมอกควันพิษ จนติดอันดับเมืองอากาศแย่ที่สุดในโลกหลายวัน ต้นเหตุส่วนใหญ่คือ<b>การเผาชีวมวล</b> (เผาป่า เผาไร่) ทั้งในไทยและประเทศเพื่อนบ้าน</p>
+
+<div class="stats">
+  <div class="stat"><div class="big">223</div><div class="lbl">µg/m³ ค่าพีคเชียงใหม่<br>(เกณฑ์ WHO ปลอดภัย = 15)</div></div>
+  <div class="stat"><div class="big">~60%</div><div class="lbl">ของฝุ่นช่วงวิกฤต<br>ลอย<b>ข้ามแดน</b>มาจากเพื่อนบ้าน</div></div>
+  <div class="stat"><div class="big">1.7M+</div><div class="lbl">คนป่วยกลุ่มโรค<br>จากมลพิษต่อปี (ภาคเหนือ)</div></div>
+  <div class="stat"><div class="big">วันๆ</div><div class="lbl">เวลาที่แบบจำลองฟิสิกส์<br>ดั้งเดิมใช้รัน 1 ฉาก</div></div>
+</div>
+
+<h3>ปัญหาที่แท้จริง ไม่ใช่ "ไม่รู้ว่าฝุ่นจะมา" แต่คือ "ช่องว่างการตัดสินใจ"</h3>
+<p>หน่วยงานรัฐ (กรมควบคุมมลพิษ, GISTDA) <u>พยากรณ์ฝุ่นได้อยู่แล้ว</u> สิ่งที่ระบบเดิม<b>ตอบไม่ได้</b>และทำให้การแก้ปัญหาเป็นแบบ "เหวี่ยงแห" คือ 2 คำถามนี้:</p>
+
+<div class="grid2">
+  <div class="card">
+    <h4 style="color:var(--cyan)">❓ "ควันก้อนนี้มาจากใครกันแน่?"</h4>
+    <p class="muted" style="font-size:14.5px">ใช้ในการเจรจาข้ามพรมแดน / War Room ทุกวันนี้เถียงกันด้วยความรู้สึกเชิงการเมือง เพราะเครื่องมือเดิม (HYSPLIT) รันทีละจุด ช้า และทำเป็นแผนที่ไม่ได้</p>
+  </div>
+  <div class="card">
+    <h4 style="color:var(--amber)">❓ "ดับไฟตรงไหนช่วยเมืองมากที่สุด?"</h4>
+    <p class="muted" style="font-size:14.5px">ทรัพยากรดับไฟมีจำกัด ต้องเลือกจุด แต่จะรู้ได้ไงว่าจุดไหนคุ้ม? แบบจำลองฟิสิกส์ทดลอง "ถ้าดับตรงนี้" 1 ฉากใช้เวลาเป็นวัน → ตัดสินใจไม่ทัน</p>
+  </div>
+</div>
+
+<div class="lead"><b>สรุปเป้าหมาย:</b> สร้างเครื่องมือที่ตอบ 2 คำถามนี้ได้<b>ทันเวลาและมีหลักฐานตัวเลข</b> เพื่อเปลี่ยนการจัดการฝุ่นจาก "เหวี่ยงแห" เป็น "ตรงจุด"</div>
+
+<!-- ===================== 2. WHAT ===================== -->
+<h2 id="what">2. เราสร้างอะไร — 3 ความสามารถในโมเดลตัวเดียว</h2>
+<p>HazeNet คือ AI ตัวเดียว ที่รันครั้งเดียวแล้วได้ผลลัพธ์ 3 อย่างพร้อมกัน:</p>
+
+<div class="grid2">
+<div class="card" style="border-left:4px solid var(--green)">
+  <h4 style="color:var(--green)">① พยากรณ์ (Forecast)</h4>
+  <p style="font-size:14.5px">ทำนายแผนที่ฝุ่น PM2.5 ล่วงหน้า <b>24–48 ชั่วโมง</b> ความละเอียด ~10 กม. (ละเอียดกว่ารายงานเดิมมาก — เห็นเป็นรายอำเภอ ไม่ใช่ทั้งจังหวัด)</p>
+</div>
+<div class="card" style="border-left:4px solid var(--cyan)">
+  <h4 style="color:var(--cyan)">② ระบุแหล่งที่มา (Attribution)</h4>
+  <p style="font-size:14.5px">บอกว่าฝุ่นในเชียงใหม่ ณ ชั่วโมงนั้น มาจาก <b>เมียนมา X% / ลาว Y% / อำเภอ Z%</b> — เหมือนพิมพ์ลายนิ้วมือของควัน (Smoke Fingerprint)</p>
+</div>
+</div>
+<div class="card" style="border-left:4px solid var(--amber)">
+  <h4 style="color:var(--amber)">③ ตอบ What-if (Counterfactual)</h4>
+  <p style="font-size:14.5px">ตอบคำถามจำลอง "<b>ถ้าดับไฟที่อำเภอ X ฝุ่นในเมืองจะลดกี่%</b>" ได้ในวินาที — ช่วยให้รัฐทุ่มทรัพยากรดับไฟตรงจุดที่คุ้มที่สุด</p>
+</div>
+
+<div class="analogy">
+<div class="h"></div>
+คิดภาพ HazeNet เป็น <b>"นักพยากรณ์อากาศที่เชี่ยวชาญเรื่องควันโดยเฉพาะ"</b> — แต่เก่งกว่าคนพยากรณ์ทั่วไปตรงที่ ไม่ได้บอกแค่ "พรุ่งนี้ฝุ่นเยอะ" แต่บอกได้ด้วยว่า "ควันก้อนนี้พัดมาจากบ้านไหน และถ้าไปจัดการต้นตอตรงไหนจะได้ผลที่สุด"
+</div>
+
+<!-- ===================== 3. BIG MAP ===================== -->
+<h2 id="bigmap">3. 🗺️ แผนที่ Pipeline ทั้งระบบ — ภาพเดียวเห็นหมด</h2>
+<p>ก่อนเจาะรายละเอียด นี่คือภาพรวมการไหลของงานทั้งหมด ตั้งแต่ข้อมูลดิบ → จนได้ผลลัพธ์ → จนพิสูจน์ว่าถูกต้อง อ่านจากบนลงล่าง:</p>
+
+<div class="center card">
+<svg class="flow" viewBox="0 0 1040 760" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#58a6ff"/></marker>
+    <marker id="arg" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker>
+  </defs>
+
+  <!-- ROW 1: data -->
+  <text x="520" y="22" fill="#f778ba" font-size="14" font-weight="bold" text-anchor="middle">① ข้อมูลดิบ open-source (เก็บด้วยสคริปต์ใน src/)</text>
+  <g font-size="11">
+    <rect x="20"  y="34" width="158" height="50" rx="7" fill="#1c2330" stroke="#f778ba"/><text x="99"  y="54" fill="#f778ba" text-anchor="middle" font-weight="bold">🔥 FIRMS</text><text x="99"  y="71" fill="#9aa7b4" text-anchor="middle">จุดไฟ / ความแรงไฟ</text>
+    <rect x="192" y="34" width="158" height="50" rx="7" fill="#1c2330" stroke="#f778ba"/><text x="271" y="54" fill="#f778ba" text-anchor="middle" font-weight="bold">💨 ERA5 / Met</text><text x="271" y="71" fill="#9aa7b4" text-anchor="middle">ลม ฝน ความชื้น BLH</text>
+    <rect x="364" y="34" width="158" height="50" rx="7" fill="#1c2330" stroke="#f778ba"/><text x="443" y="54" fill="#f778ba" text-anchor="middle" font-weight="bold">⛰️ DEM</text><text x="443" y="71" fill="#9aa7b4" text-anchor="middle">ความสูงภูมิประเทศ</text>
+    <rect x="536" y="34" width="158" height="50" rx="7" fill="#1c2330" stroke="#f778ba"/><text x="615" y="54" fill="#f778ba" text-anchor="middle" font-weight="bold">😷 Air4Thai/OpenAQ</text><text x="615" y="71" fill="#9aa7b4" text-anchor="middle">PM2.5 จริง (เฉลย)</text>
+    <rect x="708" y="34" width="158" height="50" rx="7" fill="#1c2330" stroke="#9aa7b4" stroke-dasharray="4 3"/><text x="787" y="54" fill="#9aa7b4" text-anchor="middle" font-weight="bold">🛰️ AOD (เสริม)</text><text x="787" y="71" fill="#9aa7b4" text-anchor="middle">ความหนาควันจากดาวเทียม</text>
+  </g>
+
+  <!-- datacube -->
+  <rect x="250" y="106" width="540" height="42" rx="8" fill="#1c2330" stroke="#56d4dd" stroke-width="2"/>
+  <text x="520" y="126" fill="#56d4dd" font-size="13" font-weight="bold" text-anchor="middle">② DATACUBE (Zarr) — จับทุกข้อมูลมาวางบนกริดเดียวกัน 0.1°</text>
+  <text x="520" y="141" fill="#9aa7b4" font-size="11" text-anchor="middle">ภูมิภาค SEA 111×101 ช่อง · รายวัน ก.พ.–เม.ย. ปี 2019–2023 · แยกไฟติดป้ายแหล่ง E⁽ˢ⁾</text>
+  <line x1="520" y1="86" x2="520" y2="104" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#arg)"/>
+
+  <!-- model box -->
+  <rect x="110" y="178" width="820" height="230" rx="12" fill="#0f141b" stroke="#3fb950" stroke-width="2"/>
+  <text x="520" y="201" fill="#3fb950" font-size="14" font-weight="bold" text-anchor="middle">③ โมเดล HazeNet (CLNO) — เคลื่อนฝุ่นทีละก้าวเวลา โดยเคารพฟิสิกส์</text>
+
+  <rect x="140" y="220" width="235" height="86" rx="9" fill="#161b22" stroke="#58a6ff"/>
+  <text x="257" y="244" fill="#58a6ff" font-size="12.5" font-weight="bold" text-anchor="middle">𝒜 · พัดพาตามลม</text>
+  <text x="257" y="264" fill="#e6edf3" font-size="11" text-anchor="middle">semi-Lagrangian</text>
+  <text x="257" y="281" fill="#9aa7b4" font-size="10.5" text-anchor="middle">ฟิสิกส์แท้ · มวลไม่หาย</text>
+  <text x="257" y="297" fill="#9aa7b4" font-size="10.5" text-anchor="middle">ควันไม่ติดลบ</text>
+
+  <rect x="403" y="220" width="235" height="86" rx="9" fill="#161b22" stroke="#bc8cff"/>
+  <text x="520" y="244" fill="#bc8cff" font-size="12.5" font-weight="bold" text-anchor="middle">ℱθ · เน็ตเรียนสัมประสิทธิ์</text>
+  <text x="520" y="264" fill="#e6edf3" font-size="11" text-anchor="middle">เดา "อัตราปล่อย/สูญเสีย"</text>
+  <text x="520" y="281" fill="#9aa7b4" font-size="10.5" text-anchor="middle">จากลม+ภูมิประเทศ</text>
+  <text x="520" y="297" fill="#9aa7b4" font-size="10.5" text-anchor="middle">แต่บวกฝุ่นแบบเชิงเส้น</text>
+
+  <rect x="666" y="220" width="235" height="86" rx="9" fill="#161b22" stroke="#56d4dd"/>
+  <text x="783" y="244" fill="#56d4dd" font-size="12.5" font-weight="bold" text-anchor="middle">Σ tracer · superposition</text>
+  <text x="783" y="264" fill="#e6edf3" font-size="11" text-anchor="middle">C = C⁽เมียนมา⁾+C⁽ลาว⁾+…</text>
+  <text x="783" y="281" fill="#9aa7b4" font-size="10.5" text-anchor="middle">รวมแยกสีควันได้เป๊ะ</text>
+  <text x="783" y="297" fill="#9aa7b4" font-size="10.5" text-anchor="middle">→ ระบุแหล่งฟรี</text>
+
+  <line x1="375" y1="263" x2="401" y2="263" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="638" y1="263" x2="664" y2="263" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+
+  <rect x="320" y="332" width="400" height="54" rx="9" fill="#161b22" stroke="#e3b341" stroke-dasharray="5 4"/>
+  <text x="520" y="355" fill="#e3b341" font-size="12.5" font-weight="bold" text-anchor="middle">↻ Rollout: ทำซ้ำ t → t+1 → … → t+48 ชม.</text>
+  <text x="520" y="373" fill="#9aa7b4" font-size="10.5" text-anchor="middle">ป้อนผลกลับเข้าไปทำนายชั่วโมงถัดไป · หัว quantile คาย P10/P50/P90 (ความไม่แน่นอน)</text>
+  <line x1="520" y1="148" x2="520" y2="176" stroke="#9aa7b4" stroke-width="1.5" marker-end="url(#arg)"/>
+
+  <!-- outputs -->
+  <text x="520" y="446" fill="#3fb950" font-size="14" font-weight="bold" text-anchor="middle">④ ผลลัพธ์ 3 อย่าง (รันเดียว)</text>
+  <rect x="60"  y="460" width="290" height="64" rx="10" fill="#1c2330" stroke="#3fb950"/>
+  <text x="205" y="486" fill="#3fb950" font-size="13" font-weight="bold" text-anchor="middle">① พยากรณ์ฝุ่น</text>
+  <text x="205" y="506" fill="#9aa7b4" font-size="11" text-anchor="middle">แผนที่ 24–48 ชม. ~10 กม.</text>
+  <rect x="375" y="460" width="290" height="64" rx="10" fill="#1c2330" stroke="#56d4dd"/>
+  <text x="520" y="486" fill="#56d4dd" font-size="13" font-weight="bold" text-anchor="middle">② ระบุแหล่ง</text>
+  <text x="520" y="506" fill="#9aa7b4" font-size="11" text-anchor="middle">เมียนมา/ลาว/อำเภอ กี่%</text>
+  <rect x="690" y="460" width="290" height="64" rx="10" fill="#1c2330" stroke="#e3b341"/>
+  <text x="835" y="486" fill="#e3b341" font-size="13" font-weight="bold" text-anchor="middle">③ What-if</text>
+  <text x="835" y="506" fill="#9aa7b4" font-size="11" text-anchor="middle">ดับไฟ s → ฝุ่นลดกี่%</text>
+  <line x1="260" y1="408" x2="205" y2="458" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="520" y1="408" x2="520" y2="458" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="780" y1="408" x2="835" y2="458" stroke="#58a6ff" stroke-width="2" marker-end="url(#ar)"/>
+
+  <!-- validation -->
+  <text x="520" y="566" fill="#3fb950" font-size="14" font-weight="bold" text-anchor="middle">⑤ พิสูจน์ว่าถูกต้อง (เทียบของจริง + แยกที่มาของ error)</text>
+  <rect x="60"  y="582" width="216" height="58" rx="9" fill="#161b22" stroke="#30363d"/><text x="168" y="606" fill="#e6edf3" font-size="11.5" text-anchor="middle" font-weight="bold">V1 ความแม่น</text><text x="168" y="624" fill="#9aa7b4" font-size="10" text-anchor="middle">vs baseline หลายระดับ</text>
+  <rect x="290" y="582" width="216" height="58" rx="9" fill="#161b22" stroke="#56d4dd"/><text x="398" y="606" fill="#56d4dd" font-size="11.5" text-anchor="middle" font-weight="bold">V2 ระบุแหล่ง</text><text x="398" y="624" fill="#9aa7b4" font-size="10" text-anchor="middle">vs WRF-Chem + PMF</text>
+  <rect x="520" y="582" width="216" height="58" rx="9" fill="#161b22" stroke="#e3b341"/><text x="628" y="606" fill="#e3b341" font-size="11.5" text-anchor="middle" font-weight="bold">V3 What-if</text><text x="628" y="624" fill="#9aa7b4" font-size="10" text-anchor="middle">vs source-off</text>
+  <rect x="750" y="582" width="230" height="58" rx="9" fill="#161b22" stroke="#bc8cff"/><text x="865" y="606" fill="#bc8cff" font-size="11.5" text-anchor="middle" font-weight="bold">★ Error Budget</text><text x="865" y="624" fill="#9aa7b4" font-size="10" text-anchor="middle">error มาจากส่วนไหน</text>
+
+  <text x="520" y="678" fill="#9aa7b4" font-size="11" text-anchor="middle">❄️ พักไว้เป็น roadmap: ลมพยากรณ์จริง (GFS) · CTM digital twin · source inversion เต็ม · GeoLLM</text>
+  <text x="520" y="700" fill="#bc8cff" font-size="11.5" text-anchor="middle" font-weight="bold">🎯 งานหลัก 2 เดือน อยู่ที่ "ทำกล่อง ③ + ⑤ ให้ดีและพิสูจน์ได้" — ไม่ใช่ยัดของเสริม</text>
+</svg>
+<div class="legend center" style="margin-top:6px">
+<span><span class="dot" style="background:#f778ba"></span>ข้อมูลดิบ</span>
+<span><span class="dot" style="background:#56d4dd"></span>datacube</span>
+<span><span class="dot" style="background:#3fb950"></span>โมเดล/ผลลัพธ์</span>
+<span><span class="dot" style="background:#e3b341"></span>ฟรีจากเชิงเส้น</span>
+<span><span class="dot" style="background:#bc8cff"></span>เน็ต/วิเคราะห์</span>
+</div>
+</div>
+
+<!-- ===================== 4. MAGIC ===================== -->
+<h2 id="magic">4. ✨ หัวใจวิเศษของโปรเจกต์: "ความเป็นเชิงเส้น" คืออะไร</h2>
+<p>ก่อนไปดูแต่ละขั้น ต้องเข้าใจ "ความลับ" ที่ทำให้ทำ 3 อย่างได้ในโมเดลตัวเดียวก่อน เพราะมันคือสิ่งที่ทำให้งานนี้ <b>ต่างจากคนอื่นทั้งโลก</b></p>
+
+<div class="analogy">
+<div class="h"></div>
+ลองนึกว่าควันจากแต่ละแหล่งถูก<b>ย้อมสีต่างกัน</b> — ควันจากเมียนมาเป็น <span style="color:#f85149">สีแดง</span>, ลาวเป็น <span style="color:#58a6ff">สีน้ำเงิน</span>, ไทยเป็น <span style="color:#3fb950">สีเขียว</span> เมื่อลมพัดควันทั้งหมดปนกันลอยมาที่เชียงใหม่ สิ่งที่เราเห็นคือ "สีรวม"
+<br><br>
+<b>กุญแจคือ:</b> ถ้าการเคลื่อนที่ของควันเป็น <b>"เชิงเส้น" (linear)</b> แปลว่า <b>สีรวม = สีแดง + สีน้ำเงิน + สีเขียว เป๊ะๆ</b> ไม่มีการกลายเป็นสีอื่น เราจึง<b>แยกสีกลับออกมาได้เสมอ</b> → รู้ว่าควันตรงนี้เป็นแดงกี่% น้ำเงินกี่% (= ระบุแหล่ง) และถ้าอยาก "ดับไฟเมียนมา" ก็แค่<b>ลบสีแดงออก</b> แล้วดูว่าสีรวมจางลงเท่าไร (= what-if)
+</div>
+
+<div class="eq">
+C = C⁽เมียนมา⁾ + C⁽ลาว⁾ + C⁽ไทย⁾ + … &nbsp;&nbsp;(หลัก Superposition)
+<span class="lbl">ฝุ่นรวมที่จุดใดๆ = ผลบวกของฝุ่นจากแต่ละแหล่ง — บวกกันได้เป๊ะ "ก็ต่อเมื่อ" ระบบเป็นเชิงเส้น</span>
+</div>
+
+<p>นี่คือเหตุผลที่ทีมตั้งใจออกแบบโมเดลให้ <b>"เชิงเส้นในความเข้มข้นฝุ่น (C)"</b> เรียกว่า <b>Conditionally-Linear Neural Operator (CLNO)</b>:</p>
+
+<div class="card">
+<div class="kv">
+  <div class="k2">Conditionally</div><div>"อัตราการปล่อย/สูญเสีย" ของควันขึ้นกับสภาพอากาศ (ลมแรง ฝนตก แดดจัด) — ส่วนนี้ AI เป็นคนเดา ซับซ้อนได้เต็มที่ (ไม่เชิงเส้น)</div>
+  <div class="k2">Linear</div><div>แต่เมื่อรู้อัตราแล้ว การเอามันไป "คูณกับปริมาณฝุ่น" เป็นการคูณ/บวกตรงๆ (เชิงเส้น) → จึงแยกสีควันกลับได้</div>
+</div>
+<p class="muted" style="margin-bottom:0">เปรียบเทียบ: AI เป็นเหมือน "เชฟที่ปรับสูตร (สัมประสิทธิ์) ตามวัตถุดิบวันนั้น" แต่เวลาผสมจริง <b>ผสมตามสัดส่วนตรงๆ เสมอ</b> — เลยตามรอยได้ว่าจานนี้มาจากวัตถุดิบไหนเท่าไร</p>
+</div>
+
+<div class="warn"><b>ข้อแม้ที่ต้องพูดตรง (สำคัญมาก):</b> ฝุ่น PM2.5 จริงๆ ~30–40% เป็น <b>ฝุ่นทุติยภูมิ (secondary)</b> ที่เกิดจากก๊าซทำปฏิกิริยาเคมีกับแสงแดด — ส่วนนี้<b>ไม่เป็นเชิงเส้น</b> ฉะนั้นเราจะ<b>ไม่เคลมเกินจริง</b> ว่า "ระบุแหล่งได้ 100%" แต่จะเรียกผลของเราว่า <b>"อิทธิพลการพัดพาของควันปฐมภูมิ (primary smoke จากการเผา)"</b> ซึ่งเพียงพอต่อการจัดการ "เป้าหมายการเผา" ของรัฐ — รายละเอียดในข้อ 10</div>
+
+<!-- ===================== 5. STAGES ===================== -->
+<h2 id="stages">5. 🔧 เดินทีละสถานีในเส้นทาง — 8 ขั้นแบบละเอียด</h2>
+<p>ตอนนี้เราจะเดินตามลูกศรในแผนที่ใหญ่ ทีละกล่อง อธิบายว่าแต่ละขั้น <b>ทำอะไร · ทำยังไง · ทำไมต้องมี</b> พร้อมระบุว่าทำไปแล้ว <span class="tag-now">ทำแล้ว</span> หรือเป็นเวอร์ชันฝัน <span class="tag-dream">อนาคต</span></p>
+
+<!-- Stage 0 -->
+<div class="stage"><div class="idx">0</div><div class="body">
+<h3>เก็บข้อมูลดิบ (Data Collection) <span class="tag-now">ทำแล้ว</span></h3>
+<p><b>ทำอะไร:</b> ดาวน์โหลดข้อมูล 4–5 ชนิดจากแหล่งฟรีทั่วโลก ด้วยสคริปต์ Python (โฟลเดอร์ <code>src/download_*.py</code>)</p>
+<table>
+<tr><th>ข้อมูล</th><th>แหล่ง</th><th>คืออะไร / ใช้ทำไม</th></tr>
+<tr><td>🔥 จุดไฟ + ความแรงไฟ (FRP)</td><td>NASA FIRMS (ดาวเทียม VIIRS)</td><td>"ต้นตอ" ของควัน — ดาวเทียมมองเห็นจุดร้อนบนพื้นโลก</td></tr>
+<tr><td>💨 ลม/ฝน/ความชื้น/อุณหภูมิ</td><td>ERA5 (ผ่าน Open-Meteo ฟรี)</td><td>"ตัวพา" ควัน — ลมตัดสินว่าควันลอยไปทางไหน</td></tr>
+<tr><td>⛰️ ความสูงภูมิประเทศ (DEM)</td><td>Copernicus GLO-30</td><td>"กับดัก" — แอ่งภูเขา (เชียงใหม่) กักควันไว้</td></tr>
+<tr><td>😷 ค่า PM2.5 จริงจากสถานี</td><td>Air4Thai / OpenAQ</td><td>"เฉลย" — ใช้สอน AI และใช้ตรวจข้อสอบ</td></tr>
+<tr><td>🛰️ AOD ความหนาควัน <span class="tag-dream">เสริม</span></td><td>ดาวเทียม Himawari</td><td>ควันที่ "เห็นจริง" จากฟ้า — เก็บไว้เป็นตัวช่วย/ตรวจสอบ</td></tr>
+</table>
+<div class="analogy"><div class="h"></div>เหมือนนักสืบรวบรวมหลักฐาน: <b>FRP</b> = รอยเท้าคนร้าย (ไฟ), <b>ลม</b> = ทิศที่คนร้ายวิ่งหนี, <b>ภูมิประเทศ</b> = แผนที่เมือง, <b>PM2.5</b> = พยานที่บอกว่าจริงๆ เกิดอะไรขึ้น</div>
+</div></div>
+
+<!-- Stage 1 -->
+<div class="stage"><div class="idx">1</div><div class="body">
+<h3>สร้าง Datacube — จับทุกข้อมูลมาวางบนตารางเดียวกัน <span class="tag-now">ทำแล้ว</span></h3>
+<p><b>ปัญหา:</b> ข้อมูลแต่ละชนิดมาคนละความละเอียด คนละเวลา คนละพิกัด (ลมเป็นกริดหยาบ, ไฟเป็นจุดๆ, PM2.5 เป็นสถานี) — เอามาคำนวณด้วยกันตรงๆ ไม่ได้</p>
+<p><b>ทำอะไร:</b> วาดตารางมาตรฐานทับทั้งภูมิภาค (กริด <b>0.1° ≈ 11 กม.</b>) แล้ว "ยัด" ทุกข้อมูลให้มาอยู่ในช่องเดียวกัน เวลาเดียวกัน เก็บเป็นไฟล์ <b>Zarr</b> (อ่านเร็ว) — โค้ด <code>build_grid_m2.py</code> + <code>build_datacube_m2.py</code></p>
+<div class="kv">
+  <div class="k2">ขนาดจริง</div><div>กริด <b>111 × 101 ช่อง</b> (= 11,211 ช่อง) ครอบคลุม ไทยเหนือ + พม่า(รัฐฉาน/คะฉิ่น) + ลาวเหนือ → จำเป็นต่อการดูควันข้ามแดน</div>
+  <div class="k2">ช่วงเวลา</div><div>เดือน ก.พ.–เม.ย. ปี 2019–2023 (~449 วัน)</div>
+  <div class="k2">หน้าตา</div><div>เหมือนก้อนข้อมูล 4 มิติ: [ช่องข้อมูล × เวลา × แถว × คอลัมน์]</div>
+</div>
+<div class="analogy"><div class="h"></div>เหมือนวาง <b>แผ่นใสหลายแผ่นซ้อนกัน</b> ให้ตรงกริดเป๊ะ — แผ่นลม, แผ่นไฟ, แผ่นภูเขา, แผ่นฝุ่น เมื่อซ้อนตรงกันแล้ว มองทะลุลงไปช่องเดียวจะเห็นครบว่า "ตรงนี้ ชั่วโมงนี้ ลมเท่าไร ไฟเท่าไร ฝุ่นเท่าไร"</div>
+</div></div>
+
+<!-- Stage 2 -->
+<div class="stage"><div class="idx">2</div><div class="body">
+<h3>Emission Tagging — แปลงไฟเป็น "การปล่อยควันที่ติดป้ายแหล่ง" <span class="tag-now">ทำแล้ว</span></h3>
+<p><b>ทำอะไร:</b> แปลงค่าความแรงไฟ (FRP) ที่ดาวเทียมเห็น → ให้กลายเป็น "อัตราการปล่อยควัน E" ในแต่ละช่องกริด แล้ว<u>ติดป้ายว่าควันก้อนนี้เกิดจากแหล่งไหน</u> (ประเทศ/พื้นที่)</p>
+<p><b>ทำไมสำคัญ:</b> การ "ติดป้าย" ตั้งแต่ต้นทาง คือสิ่งที่ทำให้ตามรอยควันแยกสีได้ในขั้นหลัง (ข้อ 6 ในแผนที่)</p>
+<div class="warn"><b>นี่คือจุดที่ค้นพบว่าเป็น "แกนปัญหาจริง" ของทั้งโปรเจกต์</b> — ความสัมพันธ์ FRP → ปริมาณฝุ่นจริง <b>ไม่คงที่</b> (ไฟแรงเท่ากันคนละปี ได้ฝุ่นไม่เท่ากัน) เดี๋ยวอธิบายเต็มในข้อ 6–7</div>
+</div></div>
+
+<!-- Stage 3 -->
+<div class="stage"><div class="idx">3</div><div class="body">
+<h3>𝒜 · Physics Advection — พัดพาควันตามลม (ฟิสิกส์แท้) <span class="tag-now">ทำแล้ว</span></h3>
+<p><b>ทำอะไร:</b> เลื่อนกลุ่มควันไปตามทิศลม ใช้วิธีคณิตศาสตร์ชื่อ <b>semi-Lagrangian</b></p>
+<div class="analogy"><div class="h"></div>วิธี semi-Lagrangian ทำงานแบบ "ถามย้อนกลับ": สำหรับฝุ่นในช่องนี้ ณ ชั่วโมงหน้า — มันลอยมาจากตรงไหน? ก็<b>เดินถอยหลังทวนลม</b>ไป 1 ชั่วโมง แล้วหยิบค่าฝุ่นจากจุดนั้นมา เหมือนถามว่า "ใบไม้ที่ลอยมาตกหน้าบ้านฉันตอนนี้ เมื่อกี้มันอยู่ที่ไหน — ก็ต้องอยู่เหนือลมขึ้นไป"</div>
+<p><b>ทำไมต้องใช้ฟิสิกส์ ไม่ให้ AI เดาเอง:</b></p>
+<ul>
+<li><b class="k">มวลไม่หาย</b> — ควันไม่หายไปเฉยๆ หรือโผล่มาเอง (อนุรักษ์มวล)</li>
+<li><b class="k">ค่าไม่ติดลบ</b> — ฝุ่นเป็นลบไม่ได้ (วิธี monotone รับประกัน)</li>
+<li><b class="k">เดาเหตุการณ์ใหม่ได้ดีกว่า</b> — ลมเป็นกฎฟิสิกส์สากล ใช้ได้กับรูปแบบไฟที่ไม่เคยเห็น ต่างจาก AI ล้วนที่ "ท่องจำ" รูปแบบเก่า</li>
+</ul>
+<p class="muted">งาน AI มลพิษส่วนใหญ่ (เช่น PM2.5-GNN) ปล่อยให้เน็ตเดาการเคลื่อนที่เอง — เราใส่การพัดพาเป็น "กฎตายตัว" ตรงนี้คือจุดแข็ง</p>
+</div></div>
+
+<!-- Stage 4 -->
+<div class="stage"><div class="idx">4</div><div class="body">
+<h3>ℱθ · Neural Network เรียนสัมประสิทธิ์ — หัวใจความใหม่ <span class="tag-now">ทำแล้ว</span></h3>
+<p><b>ปัญหา:</b> ลมพาควันได้ แต่ยังมีกระบวนการอื่นที่ฟิสิกส์ตรงๆ ทำยาก — ไฟปล่อยควันออกมาเท่าไร? ควันสลาย/ตกลงพื้นเร็วแค่ไหน? อากาศปิด (ฝาชั้นบรรยากาศต่ำ) ทำให้ฝุ่นสะสมแค่ไหน?</p>
+<p><b>ทำอะไร:</b> ให้ Neural Network ดูสภาพอากาศ + ภูมิประเทศ แล้ว<b>เดา "สัมประสิทธิ์"</b> 3 ตัว:</p>
+<div class="eq">
+C<sub>t+1</sub>⁽ˢ⁾ = 𝒜<sub>mono</sub> C<sub>t</sub>⁽ˢ⁾ + <span style="color:#3fb950">g<sub>θ</sub></span>·E<sub>t</sub>⁽ˢ⁾ − <span style="color:#f85149">D<sub>θ</sub></span>⊙C<sub>t</sub>⁽ˢ⁾
+<span class="lbl"><span style="color:#3fb950">g (อัตราปล่อยควันจากไฟ)</span> · <span style="color:#f85149">D (อัตราสูญเสีย/สลาย)</span> · ทั้งหมดเน็ตเดาจากสภาพอากาศ แต่ "กระทำต่อ C แบบเชิงเส้น"</span>
+</div>
+<p>เครื่องมือที่ใช้คือ <b>AFNO / U-Net</b> (สถาปัตยกรรมเดียวกับโมเดลพยากรณ์อากาศชั้นนำอย่าง FourCastNet)</p>
+<div class="analogy"><div class="h"></div>นึกถึงสมการนี้เป็น "บัญชีรายรับ-รายจ่ายของฝุ่นในแต่ละช่อง": <b>ยอดยกมา</b> (ลมพัดมา 𝒜) <b>+ รายรับ</b> (ไฟปล่อยเพิ่ม g·E) <b>− รายจ่าย</b> (สลายไป D·C) = <b>ยอดชั่วโมงหน้า</b> AI มีหน้าที่แค่ประเมิน "อัตรา" รายรับรายจ่าย ส่วนการบวกลบเป็นไปตามบัญชีตรงๆ</div>
+<div class="ok"><b>ผลทดลองจริง (Phase 0, กล่องเล็กเชียงใหม่):</b> CLNO ของเราชนะทุก baseline — MAE 28.1 vs XGBoost 32.4 vs ค่าเฉลี่ย 59.8 (ยิ่งต่ำยิ่งดี) ✓</div>
+</div></div>
+
+<!-- Stage 5 -->
+<div class="stage"><div class="idx">5</div><div class="body">
+<h3>Rollout — ทำนายต่อเนื่องถึง 48 ชั่วโมง <span class="tag-now">ทำแล้ว</span></h3>
+<p><b>ทำอะไร:</b> โมเดลทำนายได้ทีละ 1 ก้าวเวลา จะพยากรณ์ไกลๆ ก็<b>ป้อนผลของชั่วโมงนี้กลับเข้าไปทำนายชั่วโมงถัดไป</b> วนไปเรื่อยๆ (autoregressive) จนครบ 24–48 ชม.</p>
+<p><b>ความท้าทาย:</b> error สะสม — ทำนายผิดนิดในชั่วโมงแรก พอวนหลายรอบจะเพี้ยนมาก จึงต้องเทรนแบบ multi-step ให้โมเดลชินกับการทำนายต่อเนื่อง</p>
+<p><b>ความไม่แน่นอน:</b> ใช้ "หัว quantile" ให้โมเดลคายค่า <b>P10 / P50 / P90</b> (ต่ำสุด-กลาง-สูงสุดที่เป็นไปได้) พร้อมกัน → ได้แถบความมั่นใจโดยไม่ต้องรันซ้ำ 50 รอบให้เปลือง GPU</p>
+<div class="analogy"><div class="h"></div>เหมือนเล่นต่อโดมิโน — วางตัวต่อไป (ทำนายก้าวถัดไป) โดยอิงตัวก่อนหน้า ถ้าวางเอียงนิดเดียวตั้งแต่ต้น ปลายแถวจะล้มเป๋ จึงต้องฝึกให้วางนิ่งตั้งแต่ต้นทาง</div>
+</div></div>
+
+<!-- Stage 6 -->
+<div class="stage"><div class="idx">6</div><div class="body">
+<h3>Attribution — "Smoke Fingerprint" ระบุแหล่ง (ฟรีจากเชิงเส้น) <span class="tag-now">ทำแล้ว</span></h3>
+<p><b>ทำอะไร:</b> เพราะโมเดลเชิงเส้น (ข้อ 4) เราจึงรันควันแต่ละแหล่งเป็น "tracer แยกสี" ไปพร้อมกัน แต่ละ tracer วิ่งตามลมตัวเดียวกัน ปล่อยจากแหล่งตัวเองเท่านั้น → จบการรัน รู้ทันทีว่าฝุ่นที่เชียงใหม่ ณ ชั่วโมงใดๆ <b>มาจากเมียนมากี่% ลาวกี่% อำเภอไหนกี่%</b></p>
+<div class="eq">
+สัดส่วนแหล่ง s = C⁽ˢ⁾ / (C⁽¹⁾ + C⁽²⁾ + … + C⁽ⁿ⁾)
+<span class="lbl">หารส่วนของแต่ละสี ด้วยสีรวม → ได้เปอร์เซ็นต์ของแต่ละแหล่ง</span>
+</div>
+<p class="muted"><b>ของใหม่ระดับโลก:</b> เครื่องมือเดิม (HYSPLIT/PMF) ทำ "หลังเหตุการณ์ + ทีละจุด + ช้า" ของเราทำ <b>inline + ทุก pixel ทุกชั่วโมง</b> ในการรันพยากรณ์เดียวกัน</p>
+<div class="ok"><b>ผลจริง:</b> แผนที่ระบุแหล่ง (attribution map) วันที่ฝุ่นหนักสุดออกมา "สมเหตุสมผลทางภูมิศาสตร์" — เห็นว่าควันมาจากจุดไฟจริง ✓</div>
+</div></div>
+
+<!-- Stage 7 -->
+<div class="stage"><div class="idx">7</div><div class="body">
+<h3>What-if / Counterfactual — "ดับไฟตรงนี้ลดกี่%" (ฟรี) <span class="tag-now">หลักการพร้อม</span></h3>
+<p><b>ทำอะไร:</b> เพราะเชิงเส้น "ดับไฟแหล่ง s" = <b>ลบ C⁽ˢ⁾ (สีนั้น) ออกจากผลรวม</b> แล้วดูว่าฝุ่นในเมืองลดลงเท่าไร — ทำได้ในวินาที ลองหลายๆ จุดเพื่อหาว่าจุดไหนคุ้มสุด</p>
+<div class="analogy"><div class="h"></div>เหมือนมีอีควอไลเซอร์เพลง — อยากรู้ว่าเสียงเบสมีผลแค่ไหน ก็แค่<b>ลากแถบเบสลง</b>แล้วฟังว่าเพลงเปลี่ยนไง  เราก็แค่ "ปิดสวิตช์" แหล่งไฟทีละแหล่งแล้วดูแผนที่ฝุ่น</p></div>
+<p class="muted"><b>ของใหม่:</b> WRF-Chem ทำได้แต่ 1 ฉากใช้คลัสเตอร์รันเป็นวัน — เราทำ interactive ระดับวินาที</p>
+</div></div>
+
+<!-- Stage 8 -->
+<div class="stage"><div class="idx">8</div><div class="body">
+<h3>Validation — พิสูจน์ว่าถูกต้อง + แยกที่มาของ error (ส่วนที่ทำให้งาน "ขายได้") <span class="tag-now">กำลังทำ</span></h3>
+<p>นี่คือส่วนที่ทำให้งานนี้มีน้ำหนักระดับตีพิมพ์ ไม่ใช่แค่ "รันแล้วได้เลข" — ต้องพิสูจน์ทุกเคลม:</p>
+<table>
+<tr><th>การทดสอบ</th><th>พิสูจน์อะไร</th><th>เทียบกับ</th></tr>
+<tr><td><b>V1 ความแม่น</b></td><td>พยากรณ์แม่นกว่าของง่ายๆ จริงไหม</td><td>บันได baseline: ค่าเดิม(persistence) → XGBoost → PM2.5-GNN/AirPhyNet</td></tr>
+<tr><td><b>V2 ระบุแหล่ง</b></td><td>สัดส่วนแหล่งตรงความจริงไหม</td><td>WRF-Chem (ฟิสิกส์) + PMF (ตรวจวัดจริงที่เชียงใหม่ ~51% biomass)</td></tr>
+<tr><td><b>V3 What-if</b></td><td>"ดับไฟ→ลด%" เชื่อถือได้ไหม</td><td>WRF-Chem source-off (เชียงราย 45% ข้ามแดน)</td></tr>
+<tr><td><b>★ Error Budget</b></td><td>error รวมมาจากส่วนไหน</td><td>เทคนิค "oracle substitution" (ดูด้านล่าง)</td></tr>
+</table>
+<h4>★ Error Budget — ไม่ได้บอกแค่ "ผิดเท่าไร" แต่บอก "ผิดเพราะอะไร"</h4>
+<p>งาน AI พยากรณ์ส่วนใหญ่รายงานแค่ "RMSE = X" แต่ไม่บอกว่า X มาจากไหน เราจะ<b>แตก error ออกเป็นงบ</b> ว่ามาจาก: ลมผิด? ไฟแปลงผิด? ฟิสิกส์ขาด? เน็ตเรียนไม่สุด? — เพื่อรู้ว่า "ถ้าจะแก้ให้ดีขึ้น ต้องไปลงแรงตรงไหนคุ้มสุด"</p>
+<div class="center card" style="background:var(--panel2)">
+<svg class="flow" viewBox="0 0 640 230" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <text x="320" y="20" fill="#e6edf3" font-size="13" font-weight="bold" text-anchor="middle">ตัวอย่างงบ error (ภาพประกอบ) — แยก error รวมเป็นส่วนๆ</text>
+  <rect x="150" y="44" width="160" height="34" fill="#f778ba"/><text x="230" y="66" fill="#0d1117" font-size="11" text-anchor="middle" font-weight="bold">ลมผิด 28%</text>
+  <rect x="150" y="78" width="160" height="30" fill="#e3b341"/><text x="230" y="98" fill="#0d1117" font-size="11" text-anchor="middle" font-weight="bold">ไฟ→ฝุ่น 24%</text>
+  <rect x="150" y="108" width="160" height="40" fill="#bc8cff"/><text x="230" y="132" fill="#0d1117" font-size="11" text-anchor="middle" font-weight="bold">ฟิสิกส์ขาด 31%</text>
+  <rect x="150" y="148" width="160" height="20" fill="#58a6ff"/><text x="230" y="162" fill="#0d1117" font-size="10" text-anchor="middle" font-weight="bold">เน็ต 10%</text>
+  <rect x="150" y="168" width="160" height="16" fill="#56d4dd"/><text x="230" y="180" fill="#0d1117" font-size="9.5" text-anchor="middle" font-weight="bold">สะสม 7%</text>
+  <text x="230" y="202" fill="#9aa7b4" font-size="11" text-anchor="middle">error รวม</text>
+  <text x="350" y="78" fill="#3fb950" font-size="12" font-weight="bold">→ insight:</text>
+  <text x="350" y="98" fill="#e6edf3" font-size="11.5">"ฟิสิกส์ขาด + ลม" ใหญ่สุด</text>
+  <text x="350" y="116" fill="#e6edf3" font-size="11.5">→ ลงแรงแก้ตรงนี้คุ้มกว่า</text>
+  <text x="350" y="134" fill="#e6edf3" font-size="11.5">"เน็ต" เล็ก = เน็ตโอเคแล้ว</text>
+  <text x="350" y="160" fill="#9aa7b4" font-size="10.5">(สอดคล้องผลจริงที่ค้นพบ — ดูข้อ 6)</text>
+</svg>
+</div>
+<div class="analogy"><div class="h"></div>oracle substitution = "ลองแทนของจริงด้วยของในอุดมคติทีละอย่าง" เช่น ลองใส่ลมที่สมบูรณ์แบบเข้าไป ถ้า error ลดฮวบ แปลว่า "ลม" คือตัวการใหญ่ เหมือนหมอวินิจฉัยโรคด้วยการตัดสาเหตุทีละข้อ</div>
+</div></div>
+
+<!-- ===================== 6. REALITY ===================== -->
+<h2 id="reality">6. ⚡ ความจริงจากการทดลอง — จุดพลิกของโปรเจกต์</h2>
+<p>ส่วนนี้สำคัญที่สุด เพราะมันคือสิ่งที่ทำให้แผน "บนกระดาษ" ต่างจาก "งานจริง 2 เดือนนี้" ทีมได้รันจริงไปแล้ว 2 เฟส และค้นพบสิ่งที่<b>เปลี่ยนทิศทางทั้งโปรเจกต์</b></p>
+
+<h3>สิ่งที่ทำเสร็จแล้ว</h3>
+<div class="grid2">
+<div class="card ok">
+<b>✅ Phase 0 (กล่องเล็กเชียงใหม่)</b>
+<p style="font-size:14px;margin:6px 0 0">pipeline ครบ end-to-end · CLNO ชนะทุก baseline (MAE 28.1) · ทำ attribution + inversion ได้</p>
+</div>
+<div class="card ok">
+<b>✅ M2 (ขยายเป็นทั้งภูมิภาค SEA)</b>
+<p style="font-size:14px;margin:6px 0 0">กริด 111×101 · 5 ปี · รันครบ · ได้ MAE 55 / RMSE 81 (โดเมนใหญ่ขึ้น 33 เท่า ยากขึ้นมาก) · attribution map ใช้ได้</p>
+</div>
+</div>
+
+<h3>🔍 3 การค้นพบที่พลิกความเข้าใจ (จาก M2 รอบ 2)</h3>
+<ol class="num-list">
+<li><b>"เน็ต" ไม่ใช่คอขวด</b> — ลองลดขนาดโมเดลจาก 24 ล้านพารามิเตอร์ → เหลือ 0.4 ล้าน ผลทดสอบ<b>แทบไม่เปลี่ยน</b> (78→72) แปลว่าปัญหา<u>ไม่ได้</u>อยู่ที่ "เน็ตเล็กไป/ใหญ่ไป"</li>
+<li><b>ปีวิกฤต 2023 ไม่ได้ทำนายยากสุด</b> — ที่ทำนายพลาดหนักจริงคือ "ปีฝุ่นน้อย" (2021, 2022) ที่โมเดล<b>ทำนายเกินจริง +45~50</b> µg/m³</li>
+<li><b>แกนปัญหาตัวจริง = ความสัมพันธ์ "ไฟ → ฝุ่น" ไม่คงที่ข้ามปี (non-stationarity)</b> — ไฟแรงเท่ากันคนละปี กลับได้ปริมาณฝุ่นต่างกันมาก โมเดลที่เป็นเชิงเส้นล้วนจับ "ระดับฝุ่นรวมต่อปี" ไม่ได้</li>
+</ol>
+
+<div class="danger"><b>นี่คือ "จุดพลิก":</b> แผนเดิมคิดว่าต้องไปปรับแต่งสถาปัตยกรรมเน็ตให้เก่งขึ้น แต่ผลจริงบอกว่า <b>เน็ตดีพอแล้ว</b> — เงินและเวลาควรไปลงที่ <b>"การแปลงไฟเป็นฝุ่น" และ "ตัวแปรอากาศที่ขาดหาย"</b> ไม่ใช่ที่โครงเน็ต</div>
+
+<div class="analogy"><div class="h"></div>เหมือนรถวิ่งช้า เราเดาว่าเครื่องยนต์ (เน็ต) ไม่แรงพอ เลยจะเปลี่ยนเครื่อง แต่พอตรวจจริงพบว่าเครื่องโอเค ปัญหาคือ<b>"น้ำมันคุณภาพไม่คงที่"</b> (ไฟ→ฝุ่นไม่คงที่) กับ <b>"ยางอ่อน"</b> (ขาดตัวแปร BLH) — ต้องไปแก้สองอย่างนั้น ไม่ใช่เปลี่ยนเครื่อง</div>
+
+<!-- ===================== 7. FOCUS ===================== -->
+<h2 id="focus">7. 🎯 งานหลักของ 2 เดือนนี้ — แก้ตรงไหน (Pipeline สุดท้ายที่ตัดสินแล้ว)</h2>
+<p>จากการค้นพบข้างบน ทีมตัดสินใจ pipeline สุดท้ายเป็น <b>3 เสาหลัก</b> นี่คือสิ่งที่จะลงมือจริงใน 2 เดือน:</p>
+
+<div class="card" style="border-left:4px solid var(--green)">
+<h4 style="color:var(--green)">เสาที่ 1 — คง CLNO เป็นแกนล็อก (ไม่รื้อเน็ต)</h4>
+<p style="font-size:14.5px">เพราะพิสูจน์แล้วว่าเน็ตไม่ใช่คอขวด และ conditionally-linear คือ "สิ่งเดียว" ที่ให้ attribution + what-if มาฟรี ถ้าทิ้งไปก็เสียจุดขายหลัก → <b>ล็อกไว้ ไม่เสียเวลารื้อ</b></p>
+</div>
+
+<div class="card" style="border-left:4px solid var(--amber)">
+<h4 style="color:var(--amber)">เสาที่ 2 — ทุ่ม 60% ของเวลาไปแก้ "ไฟ→ฝุ่นไม่คงที่" (แกนปัญหาจริง)</h4>
+<p style="font-size:14.5px">ไม่ใช่แก้ที่เน็ต แต่แก้ที่ <b>"อินพุต/ฟิสิกส์"</b> 3 อย่าง:</p>
+<div class="kv">
+  <div class="k2">① Emission curve</div><div>แปลง FRP → ฝุ่น แบบ "อิ่มตัว" (log/saturating) แทนเส้นตรง — เพราะไฟแรงมากๆ ฝุ่นไม่ได้เพิ่มเป็นเส้นตรงตาม แก้อาการ "ทำนายเกินตอนไฟหนัก"</div>
+  <div class="k2">② เพิ่ม BLH</div><div><b>Boundary Layer Height = ความสูงของ "ฝาชั้นบรรยากาศ"</b> ที่อากาศผสมกัน — ฝาต่ำ = ควันถูกกักอัดให้เข้มข้น, ฝาสูง = ควันกระจายเจือจาง นี่คือตัวแปรที่ทำให้ "ไฟเท่ากันได้ฝุ่นต่างกัน" ที่ขาดหายไป</div>
+  <div class="k2">③ บังคับให้ met อธิบาย</div><div>ให้สภาพอากาศเป็นตัวอธิบายความต่างระหว่างปี (generalize ได้) แทนการให้โมเดล "โกง" ด้วยตัวเลขเฉพาะปี</div>
+</div>
+</div>
+
+<div class="analogy"><div class="h"></div><b>BLH คืออะไรแบบเห็นภาพ:</b> ลองนึกถึงควันในห้อง ถ้าเพดานห้องเตี้ย (BLH ต่ำ) ควันจะอบอวลเข้มข้นหายใจไม่ออก ถ้าเพดานสูงเท่าโรงยิม (BLH สูง) ควันเท่าเดิมจะดูจางลงมาก — ตอนเช้าที่อากาศนิ่งเพดานนี้จะต่ำ ฝุ่นเลยหนาเป็นพิเศษ การไม่มีตัวแปรนี้ = โมเดลตาบอดต่อสาเหตุสำคัญที่สุดของการสะสมฝุ่น</div>
+
+<div class="card" style="border-left:4px solid var(--purple)">
+<h4 style="color:var(--purple)">เสาที่ 3 — พิสูจน์อย่างเข้มงวด + ซื่อสัตย์เรื่องขอบเขต</h4>
+<p style="font-size:14.5px">error budget (oracle substitution) + บันได baseline + cross-validation แบบ leave-one-year-out + เขียน disclaimer ตรงๆ ว่าระบุแหล่งได้เฉพาะ "ควันปฐมภูมิจากการเผา"</p>
+</div>
+
+<h4>📌 ของที่ "เก็บ / เลื่อน / เป็นเวอร์ชันฝัน"</h4>
+<table>
+<tr><th>สถานะ</th><th>รายการ</th></tr>
+<tr><td><span class="pill g">เก็บทำ</span></td><td>CLNO core · quantile head P10/50/90 (แทน ensemble หนักๆ) · attribution map · error budget · domain SEA 111×101</td></tr>
+<tr><td><span class="pill a">เลื่อน/เสริม</span></td><td>AOD (ใช้เป็น oracle/target เสริม ไม่ใช่ input หลัก) · เพิ่มสถานีพม่า/ลาว</td></tr>
+<tr><td><span class="pill m">เวอร์ชันฝัน (roadmap)</span></td><td>ลมพยากรณ์จริง GFS (operational) · CTM digital twin · source inversion เต็มรูป · GeoLLM</td></tr>
+</table>
+
+<div class="warn"><b>🚦 ด่านตัดสินใจ (Gate) ที่ตั้งไว้:</b> ภายในต้นโปรเจกต์ ต้องลด bias ของ "ปีฝุ่นน้อย" จาก <b>+45 → ≤ +25</b> µg/m³ ด้วย BLH + emission curve ให้ได้ — ถ้าทำไม่ได้ ต้องกลับมาทบทวนแผน ไม่ดันทุรังต่อ</div>
+
+<!-- ===================== 8. TIMELINE ===================== -->
+<h2 id="timeline">8. 🗓️ Timeline 8 สัปดาห์ + ด่านตัดสิน</h2>
+<p>แผน 2 เดือน แบ่งเป็น 8 สัปดาห์ แต่ละช่วงมี "ด่าน" (gate) ที่ต้องผ่านก่อนไปต่อ — กฎเหล็กคือ <b>ถ้าแกนพยากรณ์ยังไม่ดีพอ ห้ามไปเพิ่มของเสริม</b></p>
+
+<div class="card">
+<div class="timeline-row"><div class="wk">W1</div><div><b>เตรียมข้อมูล + EDA</b> — ตรวจ datacube, เพิ่ม BLH, ทำ baseline ค่าเดิม(persistence) ให้รันได้ <span class="gate">gate: Zarr พร้อม + baseline ขึ้น</span></div></div>
+<div class="timeline-row"><div class="wk">W2</div><div><b>ฟิสิกส์พัดพา + emission curve</b> — semi-Lagrangian + แปลงไฟแบบอิ่มตัว <span class="gate">gate: ลด bias ปีต่ำ +45 → ≤+25</span></div></div>
+<div class="timeline-row"><div class="wk">W3–4</div><div><b>เทรน CLNO เต็ม + จูน</b> — เทียบบันได baseline ครบ <span class="gate">⭐ gate ตัดสิน: ต้องชนะ PM2.5-GNN/AirPhyNet ไม่งั้นหยุดเพิ่มฟีเจอร์ ทุ่มแก้แกน</span></div></div>
+<div class="timeline-row"><div class="wk">W5</div><div><b>Attribution + ตรวจสอบ V2</b> — เทียบ WRF-Chem + PMF <span class="gate">gate: สัดส่วนแหล่งสอดคล้อง ~30–51%</span></div></div>
+<div class="timeline-row"><div class="wk">W6</div><div><b>Ablation เต็ม + ★ Error Budget</b> — oracle substitution, แยก error ตามพื้นที่/เวลา <span class="gate">gate: ได้งบ error เป็นตัวเลข</span></div></div>
+<div class="timeline-row"><div class="wk">W7</div><div><b>What-if + ความไม่แน่นอน (quantile)</b> — counterfactual + calibration plot <span class="gate">gate: เดโม what-if 1 ฉาก</span></div></div>
+<div class="timeline-row" style="border-bottom:none"><div class="wk">W8</div><div><b>เขียนรายงาน/preprint + roadmap slide + ซ้อมเดโม</b> <span class="gate">gate: ส่งงาน + draft</span></div></div>
+</div>
+
+<!-- ===================== 9. DELIVERABLES ===================== -->
+<h2 id="deliver">9. 📦 เมื่อจบ 2 เดือน เราส่งมอบอะไร</h2>
+<div class="grid2">
+<div class="card">
+<h4 style="color:var(--green)">ผลงานหลัก (ต้องมี)</h4>
+<p>
+<span class="pill g">โมเดล CLNO + โค้ดรันซ้ำได้</span>
+<span class="pill g">ตาราง benchmark เทียบ 5 baseline (มีช่วงความเชื่อมั่น)</span>
+<span class="pill g">★ Error budget + วิเคราะห์ error ตามพื้นที่/เวลา</span>
+<span class="pill g">แผนที่ attribution เทียบ WRF-Chem + PMF</span>
+<span class="pill g">เดโม what-if 1 ฉาก</span>
+</p>
+</div>
+<div class="card">
+<h4 style="color:var(--purple)">ผลงานเสริม (ถ้าเวลาเหลือ)</h4>
+<p>
+<span class="pill p">arXiv preprint draft</span>
+<span class="pill p">benchmark dataset v0 (เปิดให้คนอื่นใช้)</span>
+<span class="pill p">roadmap slide (ทิศทางต่อยอด)</span>
+<span class="pill p">source inversion proof-of-concept</span>
+</p>
+</div>
+</div>
+<div class="lead"><b>หัวใจของ "งานที่ขายได้":</b> ไม่ใช่แค่ "AI ทำนายฝุ่นได้" (ใครก็ทำ) แต่คือ <b>โมเดลที่ระบุแหล่ง + ตอบ what-if ได้ฟรีจากการออกแบบเชิงเส้น + พิสูจน์ด้วย error budget ว่า error มาจากไหน + ซื่อสัตย์เรื่องขอบเขต</b> — ครบชุดนี้คือสิ่งที่ยังไม่มีใครทำในบริบทควันข้ามแดนเอเชียอาคเนย์</div>
+
+<!-- ===================== 10. HONEST ===================== -->
+<h2 id="honest">10. 🛡️ ข้อจำกัด — พูดตรงเพื่อกันโดนยำ</h2>
+<p>ทีมทำ "Devil's Advocate" วิจารณ์ตัวเองหนักๆ ไว้แล้ว 2 รอบ นี่คือจุดอ่อนที่รู้ตัว + วิธีรับมือ (การพูดตรงทำให้น่าเชื่อถือกว่าการเคลมเกินจริง):</p>
+<table>
+<tr><th>จุดอ่อน</th><th>ความจริง</th><th>วิธีรับมือ</th></tr>
+<tr><td>เชิงเส้นไม่ครอบคลุมฝุ่นทุติยภูมิ</td><td>30–40% ของ PM2.5 เกิดจากปฏิกิริยาเคมี (ไม่เชิงเส้น)</td><td>ไม่เคลม 100% เรียกผลว่า "อิทธิพลควันปฐมภูมิจากการเผา" — พอสำหรับจัดการการเผา</td></tr>
+<tr><td>ดาวเทียมตาบอดวันฝุ่นหนัก</td><td>เมฆ/ควันหนาบัง AOD พอดีวันวิกฤต</td><td>จึงลด AOD เป็นแค่ตัวเสริม ไม่พึ่งเป็นหลัก</td></tr>
+<tr><td>Train/Serve skew (ลม)</td><td>เทรนด้วยลมในอดีต ERA5 แต่ใช้จริงต้องใช้ลมพยากรณ์ GFS ที่ error สูง</td><td>เวอร์ชันนี้ประเมินบน ERA5 ก่อน + ระบุชัดว่า GFS เป็น roadmap</td></tr>
+<tr><td>AI เดาเหตุการณ์สุดขั้วที่ไม่เคยเจอได้แย่</td><td>ปีที่รุนแรงกว่าทุกปีในประวัติศาสตร์อาจถูก underpredict</td><td>หัว quantile P90 + รายงาน error ตามระดับความเข้มข้น</td></tr>
+<tr><td>ข้อมูลปีน้อย (แค่ 5 ปี)</td><td>"ระดับปี" มีแค่ 5 ตัวอย่าง น้อยเกินจะ generalize</td><td>พึ่งฟิสิกส์ (BLH/curve) อธิบายแทนการท่องจำปี + LOYO cross-validation</td></tr>
+</table>
+
+<hr>
+<div class="lead center">
+<b>สรุปบรรทัดสุดท้าย:</b> HazeNet = AI ที่<b>เคารพฟิสิกส์การพัดพา</b> ทำให้พยากรณ์ฝุ่น + ระบุแหล่ง + ตอบ what-if ได้ในการรันเดียวระดับวินาที · งานจริง 2 เดือนนี้<b>ไม่ใช่การรื้อเน็ต</b> แต่คือการ<b>แก้ "ไฟ→ฝุ่นไม่คงที่" ด้วย emission curve + BLH</b> แล้ว<b>พิสูจน์ทุกเคลมด้วย error budget</b> อย่างซื่อสัตย์ — ทำสิ่งเดียวให้ลึกที่สุดในโลก ดีกว่าทำสิบอย่างแบบผิวๆ
+</div>
+
+<p class="center muted" style="margin-top:34px">HazeNet · Pipeline ทั้งโปรเจกต์ อธิบายแบบเริ่มจากศูนย์ · สังเคราะห์จากทุกไฟล์ในโฟลเดอร์ internship<br>(focused-plan · master-execution-plan · overview-endtoend · devil's-advocate ×2 · ผลจริง Phase 0 / M2 / M2-round2)</p>
+
+</div>
+</body>
+</html>

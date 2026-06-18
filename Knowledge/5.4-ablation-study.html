@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5.4 — Ablation Study</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .green-box b{color:var(--green)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.4px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--amber);color:var(--amber);margin-left:6px}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+  a.ext{color:var(--blue)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>5.4 — Ablation Study: ตัดทีละชิ้น ดูว่าจำเป็นจริงไหม <span class="pin">🟡 กลาง</span></h1>
+<p class="tagline">เอาชิ้นส่วนของ "เราเอง" ออกทีละอย่าง → วัดว่าผลตกแค่ไหน → พิสูจน์ว่าทุกชิ้นมีเหตุผล</p>
+<p class="sub">ต่อจาก 5.3 (baseline=โมเดลอื่น / ablation=ตัวเราเอง) · โยง 3.5/2.4/3.4/3.6/3.9 (ชิ้นส่วนที่เคลม) · โมดูล 4 (data ablation) · 4.5 (แต่ละ run=งบ A100) · 5.5 (oracle) · 5.6 (seed/significance)</p>
+
+<div class="lead">
+<b>คำถามที่ 2 ของกรรมการ (ถัดจาก "ดีกว่าอะไร"):</b> <em>"แล้วมันต้องซับซ้อนขนาดนั้นจริงเหรอ? ชิ้นไหนที่ทำให้ดีขึ้นกันแน่?"</em><br><br>
+<b>Ablation ตอบคำถามนี้ตรง ๆ:</b> เอาชิ้นส่วนหนึ่งออก → เทรนใหม่ → ถ้าผล <b>ตกลง</b> = ชิ้นนั้นจำเป็น · ถ้าผล <b>ไม่ขยับ</b> = ชิ้นนั้นเป็นน้ำหนักส่วนเกิน (ตัดทิ้งได้ หรือเรา over-engineer)<br><br>
+<b>หัวใจ:</b> ablation คือ "การทดลองแบบควบคุม" — <b class="k">เปลี่ยนทีละอย่าง กดทุกอย่างที่เหลือให้นิ่ง</b> · มันคือสิ่งที่เปลี่ยน "ฉันเดาว่าฟิสิกส์ช่วย" ให้เป็น "ฟิสิกส์ช่วย <em>เพราะตัดออกแล้ว RMSE แย่ลง X%</em>"
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. Ablation คืออะไร + ต่างจาก baseline</a><br>
+<a href="#p2">2. หลักการทดลองแบบควบคุม ★</a><br>
+<a href="#p3">3. ตัดอะไรบ้างใน HazeNet ★</a><br>
+<a href="#p4">4. อ่านผล: ตาราง ablation</a><br>
+<a href="#p5">5. ablation vs oracle (5.5)</a><br>
+<a href="#p6">6. ความซื่อสัตย์: null result ก็ต้องรายงาน ★</a><br>
+<a href="#p7">7. งบ A100: ตัดอะไรก่อน</a><br>
+<a href="#p8">8. กับดักของ ablation</a><br>
+<a href="#cheat">9. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- 1 -->
+<h2 id="p1">1. Ablation คืออะไร — และต่างจาก baseline (5.3) ยังไง</h2>
+<p><b>Ablation</b> (มาจากศัพท์แพทย์ "ตัดเนื้อเยื่อออก") = เอา <b>ส่วนประกอบหนึ่งของโมเดลเราออก</b> แล้วดูว่าเกิดอะไรขึ้น</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 540 130" width="92%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="aa" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker></defs>
+  <text x="90" y="18" fill="#3fb950" font-size="11.5" text-anchor="middle">โมเดลเต็ม</text>
+  <g><rect x="30" y="34" width="34" height="34" rx="5" fill="#16263a" stroke="#58a6ff"/><rect x="68" y="34" width="34" height="34" rx="5" fill="#1e1630" stroke="#bc8cff"/><rect x="106" y="34" width="34" height="34" rx="5" fill="#0f2418" stroke="#3fb950"/></g>
+  <text x="90" y="86" fill="#3fb950" font-size="11">RMSE = 12.0</text>
+  <line x1="160" y1="51" x2="200" y2="51" stroke="#9aa7b4" marker-end="url(#aa)"/><text x="180" y="44" fill="#9aa7b4" font-size="9.5">ตัดสีม่วง</text>
+  <text x="320" y="18" fill="#f85149" font-size="11.5" text-anchor="middle">เอาชิ้นม่วงออก (− physics)</text>
+  <g><rect x="260" y="34" width="34" height="34" rx="5" fill="#16263a" stroke="#58a6ff"/><rect x="298" y="34" width="34" height="34" rx="5" fill="#161b22" stroke="#30363d" stroke-dasharray="3 2"/><rect x="336" y="34" width="34" height="34" rx="5" fill="#0f2418" stroke="#3fb950"/></g>
+  <text x="320" y="86" fill="#f85149" font-size="11">RMSE = 16.5 (แย่ลง 4.5)</text>
+  <text x="320" y="104" fill="#e3b341" font-size="10.5" text-anchor="middle">→ ชิ้นม่วงสำคัญ +4.5 ของผล</text>
+</svg>
+</div>
+<table>
+<tr><th></th><th>Baseline (5.3)</th><th>Ablation (5.4)</th></tr>
+<tr><td>เทียบกับอะไร</td><td><b>โมเดลอื่น</b> (persistence, ConvLSTM, AirPhyNet)</td><td><b>ตัวเราเองที่ถูกตัดบางส่วน</b></td></tr>
+<tr><td>ตอบคำถาม</td><td>"ดีกว่าของที่มีอยู่ไหม"</td><td>"แต่ละชิ้นของเราจำเป็นไหม"</td></tr>
+<tr><td>พิสูจน์</td><td>คุณค่ารวมเทียบโลกภายนอก</td><td>คุณค่าของแต่ละ design choice</td></tr>
+</table>
+<div class="why"><b>ต้องมีทั้งคู่:</b> baseline บอกว่า "งานเรามีค่า" · ablation บอกว่า "ค่านั้นมาจากไอเดียของเราจริง ไม่ใช่บังเอิญ (เน็ตใหญ่ขึ้น/ข้อมูลเยอะขึ้น)" · ขาดอันใดอันหนึ่ง reviewer เติมข้อสงสัยเอง</div>
+
+<!-- 2 -->
+<h2 id="p2">2. หลักการทดลองแบบควบคุม — เปลี่ยนทีละอย่าง <span class="pin">★</span></h2>
+<p>ablation ที่ถูกต้องคือ <b>การทดลองทางวิทยาศาสตร์</b>: ต้องแยก "ผลของชิ้นที่ตัด" ออกจากปัจจัยอื่นให้ได้</p>
+<div class="danger"><b>กฎเหล็ก — เปลี่ยนตัวแปรเดียว (one-factor-at-a-time):</b> เวลาตัดชิ้น A ต้อง <b>กดทุกอย่างที่เหลือให้เหมือนเดิมเป๊ะ</b> — ข้อมูลเดียวกัน, split เดียวกัน (5.2), hyperparameter เดียวกัน, จำนวน epoch/seed เดียวกัน · ถ้าตัด physics ออกแล้วดันลด learning rate ไปด้วย → แยกไม่ออกว่าผลตกเพราะอะไร · <b>ผิดกฎนี้ = ablation ไร้ความหมาย</b></div>
+<div class="ex"><b>เปรียบเทียบ:</b> เหมือนทดลองยา — อยากรู้ว่ายา A ได้ผลไหม ต้องให้กลุ่มทดลองกับกลุ่มควบคุม "เหมือนกันทุกอย่างยกเว้นยา A" · ถ้ากลุ่มทดลองกินดีกว่า/ออกกำลังมากกว่าด้วย → สรุปไม่ได้ว่าเป็นเพราะยา</div>
+
+<!-- 3 -->
+<h2 id="p3">3. ตัดอะไรบ้างใน HazeNet — ผูกกับสิ่งที่เราเคลม <span class="pin">★</span></h2>
+<p>หลักการเลือก: <b>ตัด "สิ่งที่เราเคลมว่าเป็น contribution" ก่อน</b> เพราะนั่นคือสิ่งที่ต้องพิสูจน์มากที่สุด · จัด 3 กลุ่ม:</p>
+
+<h4>กลุ่ม A — สถาปัตยกรรม/ฟิสิกส์ (contribution หลัก)</h4>
+<table>
+<tr><th>ตัดอะไร</th><th>กลายเป็น</th><th>พิสูจน์</th></tr>
+<tr><td>conditionally-linear operator (3.5)</td><td>แทนด้วย NN ทั่วไป</td><td><b>หัวใจ:</b> ฟิสิกส์เชิงโครงสร้างช่วยจริงไหม</td></tr>
+<tr><td>mass-conservation constraint (2.4)</td><td>ปล่อยให้มวลรั่วได้</td><td>การบังคับอนุรักษ์ช่วยความแม่น+attribution ไหม</td></tr>
+<tr><td>tagged-tracer (3.6)</td><td>ไม่มีการแยกแหล่ง</td><td>เพิ่ม attribution แล้วทำ forecast แย่ลงไหม</td></tr>
+<tr><td>rollout curriculum (3.4)</td><td>เทรน rollout ยาวตรง ๆ</td><td>curriculum ทำให้เสถียรจริงไหม</td></tr>
+</table>
+
+<h4>กลุ่ม B — ข้อมูลเข้า (พิสูจน์ว่า pipeline โมดูล 4 คุ้ม)</h4>
+<table>
+<tr><th>ตัด channel</th><th>พิสูจน์</th></tr>
+<tr><td>− DEM</td><td>ภูมิประเทศ (แอ่งกักฝุ่น) ช่วยจริงไหม → คุ้มกับการ aggregate ใน 4.3</td></tr>
+<tr><td>− AOD (Himawari)</td><td>ดาวเทียมช่วยเติมเชิงพื้นที่จริงไหม</td></tr>
+<tr><td>− emission (FIRMS)</td><td>ข้อมูลไฟจำเป็นต่อ forecast/attribution แค่ไหน</td></tr>
+<tr><td>− ลมชั้นบน / PBL</td><td>ตัวแปรอุตุไหนขับผลมากสุด (โยง 1.3)</td></tr>
+</table>
+
+<h4>กลุ่ม C — ส่วนเสริม</h4>
+<p>uncertainty head (3.9), FiLM conditioning, skip connections, ขนาดเน็ต (ลึก/กว้าง) — ตัด/ลดเพื่อดูว่าจำเป็นหรือเป็นส่วนเกิน</p>
+<div class="green-box"><b>ตัวที่สำคัญสุดต้องไม่พลาด:</b> ablation ของ <b>conditionally-linear operator (3.5)</b> — เพราะนี่คือ "สิ่งที่เราประดิษฐ์" · ถ้าตัดออกแล้วโมเดลเกือบเท่าเดิม = contribution หลักของเราอ่อน · ถ้าตัดแล้วแย่ลงชัด = หลักฐานทองว่าไอเดียเราคือตัวขับผลจริง (สังเกต: การตัดอันนี้จริง ๆ จะได้โมเดลคล้าย ConvLSTM ใน 5.3 → ablation กับ baseline บรรจบกันตรงนี้)</div>
+
+<!-- 4 -->
+<h2 id="p4">4. อ่านผล — ตาราง ablation จัดอันดับความสำคัญ</h2>
+<p>ผลออกมาเป็นตาราง "โมเดลเต็ม vs ลบทีละชิ้น" · <b>delta (ส่วนที่แย่ลง) = ความสำคัญของชิ้นนั้น</b> · เรียงจากมากไปน้อย:</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 520 180" width="90%" xmlns="http://www.w3.org/2000/svg">
+  <text x="260" y="16" fill="#e6edf3" font-size="12" text-anchor="middle">ผลแย่ลงเมื่อตัดชิ้นนั้น (ยิ่งยาว = ยิ่งจำเป็น)</text>
+  <g font-size="11">
+   <text x="150" y="44" fill="#9aa7b4" text-anchor="end">− conditionally-linear</text><rect x="160" y="32" width="180" height="16" fill="#3fb950"/><text x="348" y="44" fill="#3fb950">+4.5</text>
+   <text x="150" y="72" fill="#9aa7b4" text-anchor="end">− emission (FIRMS)</text><rect x="160" y="60" width="120" height="16" fill="#58a6ff"/><text x="288" y="72" fill="#58a6ff">+3.0</text>
+   <text x="150" y="100" fill="#9aa7b4" text-anchor="end">− AOD</text><rect x="160" y="88" width="84" height="16" fill="#56d4dd"/><text x="252" y="100" fill="#56d4dd">+2.1</text>
+   <text x="150" y="128" fill="#9aa7b4" text-anchor="end">− DEM</text><rect x="160" y="116" width="48" height="16" fill="#bc8cff"/><text x="216" y="128" fill="#bc8cff">+1.2</text>
+   <text x="150" y="156" fill="#9aa7b4" text-anchor="end">− uncertainty head</text><rect x="160" y="144" width="10" height="16" fill="#9aa7b4"/><text x="178" y="156" fill="#9aa7b4">+0.2</text>
+  </g>
+  <text x="260" y="176" fill="#6e7681" font-size="9.5" text-anchor="middle">ตัวเลขสมมุติเพื่อสาธิตการอ่าน</text>
+</svg>
+</div>
+<p><b>วิธีตีความ:</b> ชิ้นบนสุด (delta สูง) = จำเป็นมาก, การันตี design choice · ชิ้นล่างสุด (delta ≈ 0 เช่น uncertainty head ไม่ช่วย forecast) = <b>ไม่ได้แปลว่าไร้ค่า</b> แต่ "ไม่ช่วย metric นี้" — uncertainty head ช่วยเรื่อง CRPS/การตัดสินใจ (3.9) ไม่ใช่ RMSE → ต้องดู metric ให้ตรงกับหน้าที่ของชิ้นนั้น</p>
+<div class="warn"><b>Occam's razor:</b> ถ้าตัดชิ้นไหนแล้วผล <b>ไม่ตก (หรือดีขึ้น!)</b> ในทุก metric ที่เกี่ยวข้อง → <b>ควรตัดมันออกจริง ๆ</b> · โมเดลที่เรียบง่ายกว่าโดยผลเท่ากันคือโมเดลที่ดีกว่า (เทรนเร็ว, อธิบายง่าย, บั๊กน้อย) · ablation จึงเป็นทั้งเครื่องพิสูจน์ <em>และ</em> เครื่องตัดไขมัน</div>
+
+<!-- 5 -->
+<h2 id="p5">5. Ablation vs Oracle Substitution (เกริ่น 5.5)</h2>
+<p>มี 2 ทิศของการทดลองชิ้นส่วน:</p>
+<table>
+<tr><th></th><th>Ablation (5.4)</th><th>Oracle substitution (5.5)</th></tr>
+<tr><td>ทำอะไร</td><td><b>เอาชิ้นออก</b> (ทำให้แย่ลง)</td><td><b>แทนชิ้นด้วยคำตอบจริง</b> (ทำให้ดีขึ้นสุด)</td></tr>
+<tr><td>วัด</td><td>"ชิ้นนี้ช่วยเท่าไร" (พื้น)</td><td>"ถ้าชิ้นนี้สมบูรณ์แบบ จะดีได้ถึงไหน" (เพดาน)</td></tr>
+<tr><td>ตัวอย่าง</td><td>ตัด emission ออก</td><td>ใส่ emission จริงแบบ perfect</td></tr>
+</table>
+<div class="why"><b>คู่กันได้ภาพครบ:</b> ablation บอก "พื้น" (ขาดชิ้นนี้แล้วแย่แค่ไหน) · oracle บอก "เพดาน" (ชิ้นนี้ถ้าเป๊ะจะดีได้แค่ไหน) · ช่องว่างระหว่างโมเดลจริงกับ oracle = "ยังพัฒนาชิ้นนี้ได้อีกเท่าไร" → ชี้เป้าว่าควรลงแรงปรับปรุงตรงไหน (เต็มเรื่องใน 5.5)</div>
+
+<!-- 6 -->
+<h2 id="p6">6. ความซื่อสัตย์ — null result ก็ต้องรายงาน <span class="pin">★</span></h2>
+<div class="danger"><b>สถานการณ์ที่ต้องกล้าเผชิญ:</b> ทำ ablation แล้วพบว่า "ฟิสิกส์ที่เราภูมิใจ ตัดออกแล้วผลแทบไม่ต่าง" · สัญชาตญาณคืออยากซ่อน — <b>แต่ต้องรายงาน</b> · การปิดผลที่ขัดใจ = การโกงทางวิทยาศาสตร์ และมักโดนจับได้ตอน reproduce</div>
+<div class="green-box"><b>วิธีพลิก null result เป็นจุดแข็ง:</b> ถ้า physics ไม่ช่วย <em>forecast</em> แต่ <b>ทำให้ attribution ถูกต้อง/ตีความได้ (3.6)</b> → นั่นคือ contribution ที่ซื่อสัตย์: "ฟิสิกส์ไม่ได้ทำให้แม่นกว่า แต่ทำให้ <em>เชื่อถือได้และตอบคำถามแหล่งที่มาได้</em> ซึ่ง ConvLSTM ทำไม่ได้" · งานวิจัยที่ดีรายงานทั้งที่ได้ผลและไม่ได้ผล แล้วอธิบายว่าทำไม — นั่นคือสิ่งที่ทำให้เชื่อถือได้ (สอดคล้องจุดยืน contribution ใน 5.3)</div>
+
+<!-- 7 -->
+<h2 id="p7">7. งบ A100 — ตัดอะไรก่อน (แต่ละ ablation = 1 รอบเทรน)</h2>
+<p>เหมือน 5.2: แต่ละ ablation variant = เทรนใหม่ 1 รอบ = กิน A100-ชม. · ablation 10 อย่าง = เทรน 10 รอบ = เกินงบแน่นอน · ต้องจัดลำดับ:</p>
+<div class="card">
+<ol>
+<li><b>ตัด contribution หลักก่อน (กลุ่ม A):</b> conditionally-linear (3.5) — อันนี้ห้ามขาด เพราะคือสิ่งที่ต้องพิสูจน์ที่สุด</li>
+<li><b>data ablation ที่สำคัญ (กลุ่ม B):</b> − emission, − AOD, − DEM (พิสูจน์ว่า pipeline โมดูล 4 คุ้ม)</li>
+<li><b>ที่เหลือเฉพาะถ้ามีเวลา</b></li>
+</ol>
+</div>
+<div class="ex"><b>เคล็ดประหยัดงบ:</b> ทำ ablation บน <b>setting ที่ย่อลง</b> (rollout สั้นกว่า / โดเมนเล็กกว่า / epoch น้อยกว่า) แล้วเทรน "โมเดลเต็มตัวจริง" แค่ครั้งเดียวสำหรับผลพาดหัว · แนวโน้มความสำคัญของชิ้นส่วนมักคงอยู่แม้ใน setting ย่อ → ใช้ตัดสินใจได้โดยไม่ต้องเทรนเต็มทุก variant (โยง 4.5)</div>
+
+<!-- 8 -->
+<h2 id="p8">8. กับดักของ ablation</h2>
+<ul>
+<li><b>Interaction effects:</b> ตัด A อย่างเดียว -2, ตัด B อย่างเดียว -2 → ไม่ได้แปลว่าตัดทั้งคู่ -4 (ชิ้นส่วนอาจทำงานร่วมกัน/ทดแทนกัน) · ระวังการบวกผลแบบนาอีฟ</li>
+<li><b>Hyperparameter ไม่แฟร์:</b> variant ที่ตัดชิ้นไปอาจต้องการ hyperparameter ต่าง · กด hyperparameter ให้เท่าเดิมอาจ "ลงโทษ" variant เกินจริง · ทางสายกลาง: ระบุว่าใช้ HP เดียวกันเพื่อความเทียบได้ และเป็น lower bound</li>
+<li><b>Single-seed noise:</b> ผลต่าง +0.3 อาจเป็นแค่ความบังเอิญของ random seed · ถ้าทำได้ ควรรันหลาย seed แล้วดู mean±std (โยง 5.6) — อย่างน้อยระบุว่าผลมาจาก seed เดียวถ้าจำกัดงบ</li>
+<li><b>วัดผิด metric:</b> ตัด uncertainty head แล้วดู RMSE (ไม่ตก) → สรุปว่า "ไร้ค่า" ผิด · ต้องวัดด้วย metric ที่ตรงหน้าที่ของชิ้น (CRPS)</li>
+</ul>
+
+<!-- cheat -->
+<h2 id="cheat">9. Cheat sheet + แบบฝึกหัด</h2>
+<div class="card">
+<h4>Cheat sheet</h4>
+<ul>
+<li><b>ablation</b> = ตัดชิ้นของเรา · <b>baseline</b> = เทียบโมเดลอื่น — มีทั้งคู่</li>
+<li><b>เปลี่ยนทีละอย่าง</b> กดที่เหลือนิ่ง (ข้อมูล/split/HP/seed เดียวกัน)</li>
+<li><b>ตัด contribution หลักก่อน</b> (3.5 conditionally-linear)</li>
+<li>delta = ความสำคัญ · จัดอันดับ · delta≈0 → ตัดทิ้ง (Occam)</li>
+<li>วัดด้วย metric ที่ตรงหน้าที่ของชิ้น (uncertainty→CRPS ไม่ใช่ RMSE)</li>
+<li><b>null result ต้องรายงาน</b> — พลิกเป็นจุดแข็ง (เช่น ฟิสิกส์ช่วย attribution)</li>
+<li>งบจำกัด → ตัด contribution+data หลักก่อน · ทำบน setting ย่อ</li>
+</ul>
+</div>
+<div class="chk">
+<p class="q">❓ แบบฝึกหัด</p>
+<ol>
+<li>ablation ต่างจาก baseline ยังไง? ทำไมต้องมีทั้งคู่?</li>
+<li>ทำไมเวลาตัดชิ้น A ต้องกดทุกอย่างที่เหลือให้เหมือนเดิม?</li>
+<li>ควร ablate ชิ้นไหนของ HazeNet ก่อนที่สุด เพราะอะไร?</li>
+<li>ตัด uncertainty head แล้ว RMSE ไม่ตก แปลว่ามันไร้ค่าไหม?</li>
+<li>ทำ ablation แล้วพบฟิสิกส์ไม่ช่วย forecast — ควรทำยังไง?</li>
+</ol>
+<details><summary>เฉลย</summary>
+<ol>
+<li>ablation=ตัดส่วนของเราเอง (พิสูจน์แต่ละ design จำเป็น) · baseline=เทียบโมเดลอื่น (พิสูจน์คุณค่ารวม) · ขาดอันใด reviewer เติมข้อสงสัยเอง</li>
+<li>เพื่อแยก "ผลของชิ้นที่ตัด" ออกจากปัจจัยอื่น (controlled experiment) · ไม่งั้นสรุปสาเหตุไม่ได้</li>
+<li>conditionally-linear operator (3.5) — เป็น contribution หลัก สิ่งที่ต้องพิสูจน์มากสุด</li>
+<li>ไม่ — มันทำหน้าที่เรื่อง uncertainty (CRPS) ไม่ใช่ RMSE · ต้องวัดด้วย metric ที่ตรงหน้าที่</li>
+<li>รายงานตรง ๆ + พลิกเป็นจุดแข็ง: ฟิสิกส์อาจไม่เพิ่มความแม่นแต่ทำให้ attribution/inversion เป็นไปได้และตีความได้ (สิ่งที่ ConvLSTM ทำไม่ได้)</li>
+</ol>
+</details>
+</div>
+<div class="chk">
+<p class="q">✅ เช็กลิสต์ก่อนไป 5.5</p>
+<ul>
+<li>☐ ระบุชิ้นส่วนที่เคลมเป็น contribution ครบ (กลุ่ม A)</li>
+<li>☐ ออกแบบ ablation เปลี่ยนทีละอย่าง (controlled)</li>
+<li>☐ จัดลำดับตัดตามงบ (contribution + data หลักก่อน)</li>
+<li>☐ จับคู่ชิ้นส่วน ↔ metric ที่ถูกต้อง</li>
+<li>☐ เตรียมรายงาน null result อย่างซื่อสัตย์</li>
+</ul>
+</div>
+
+<hr>
+<p class="center muted">5.4 — Ablation Study · โมดูล 5 · ต่อไป: <b style="color:var(--cyan)">5.5 Error Decomposition / Oracle Substitution</b> — แยก error รวมว่ามาจากส่วนไหน + หา "เพดาน" ของแต่ละชิ้น (เสาหลักของ rigor)</p>
+
+</div>
+</body>
+</html>

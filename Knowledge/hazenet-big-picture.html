@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HazeNet — ภาพรวมทั้งหมด ตั้งแต่ต้นจนจบ (ฉบับเข้าใจง่าย + ลึก)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.85;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:30px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:24px;margin:48px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:26px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:16px 20px;border-radius:8px;margin:20px 0;font-size:17px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .ana{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ana b{color:var(--amber)}
+  .ana::before{content:"🔍 อุปมาให้เห็นภาพ";display:block;color:var(--amber);font-weight:bold;font-size:13.5px;margin-bottom:4px}
+  .deep{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .deep b{color:var(--purple)}
+  .deep::before{content:"📐 ลงลึกทฤษฎี";display:block;color:var(--purple);font-weight:bold;font-size:13.5px;margin-bottom:4px}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .green-box b{color:var(--green)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:9px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:6px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 22px;margin:20px 0;font-size:14.8px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:2}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+  .step{display:flex;gap:14px;align-items:flex-start;border:1px solid var(--border);border-radius:11px;margin:14px 0;padding:14px 18px;background:var(--panel)}
+  .step-n{background:var(--green);color:#06210f;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:17px;flex-shrink:0}
+  .step-t{font-size:17px;font-weight:bold;color:var(--text);margin:0 0 3px}
+  .heart{border:2px solid var(--pink);border-radius:12px;margin:18px 0;padding:4px 20px 16px;background:rgba(247,120,186,.05)}
+  .heart-h{color:var(--pink);font-size:18px;font-weight:bold;margin:14px 0 4px}
+  .power{border:1px solid var(--border);border-radius:11px;padding:14px 18px;margin:12px 0;background:var(--panel)}
+  .power-t{font-size:17px;font-weight:bold;color:var(--cyan)}
+  .youarehere{background:linear-gradient(90deg,rgba(63,185,80,.15),transparent);border:1px solid var(--green);border-radius:11px;padding:14px 20px;margin:20px 0}
+  .youarehere b{color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>HazeNet — ภาพรวมทั้งหมด ตั้งแต่ต้นจนจบ <span class="pin">📖 อ่านก่อนเริ่ม</span></h1>
+<p class="tagline">เราจะทำอะไร · ต่างจากของเดิมยังไง · เดินทางจากศูนย์ถึงส่งงานยังไง — เล่าให้คนไม่มีพื้นฐานเข้าใจ แต่ลงลึกทุกทฤษฎี</p>
+
+<div class="lead">
+<b>HazeNet คืออะไร — ใน 3 ประโยค:</b><br>
+เรากำลังสร้าง "สมองกล" ที่ดูสภาพอากาศกับจุดไฟป่า แล้ว<b>พยากรณ์ล่วงหน้าว่าฝุ่น PM2.5 จะหนาแค่ไหน ที่ไหน</b> · ที่พิเศษคือมัน <b>บอกได้ว่าฝุ่นก้อนนี้ลอยมาจากแหล่งไหน</b> (พม่า? ลาว? ในประเทศ?) · และยัง <b>ย้อนกลับไปบอกได้ว่าต้องดับไฟตรงไหนถึงจะช่วยได้มากที่สุด</b> — สามอย่างนี้รวมกันในระบบเดียว ซึ่งของที่มีอยู่ตอนนี้ยังทำครบไม่ได้
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#problem">1. ปัญหาคืออะไร (ทำไมต้องทำ)</a><br>
+<a href="#now">2. ตอนนี้โลกแก้ยังไง + ทำไมยังไม่พอ</a><br>
+<a href="#idea">3. ไอเดียของเรา + ต่างยังไง</a><br>
+<a href="#hearts">4. หัวใจ 3 ดวง (ทฤษฎีลึก + อุปมา)</a><br>
+<a href="#powers">5. 3 พลังของโมเดล</a><br>
+<a href="#journey">6. เดินทางตั้งแต่ต้นจนจบ (เราทำอะไรบ้าง)</a><br>
+<a href="#two">7. เวอร์ชันจริง 2 เดือน vs เวอร์ชันฝัน</a><br>
+<a href="#diff">8. ต่างจากงานปัจจุบันยังไง (สรุป)</a><br>
+<a href="#limit">9. ขีดจำกัดที่ต้องซื่อสัตย์</a><br>
+<a href="#here">10. ตอนนี้คุณอยู่ตรงไหน</a><br>
+</div>
+
+<!-- 1 problem -->
+<h2 id="problem">1. ปัญหาคืออะไร (ทำไมต้องทำ)</h2>
+<p>ทุกฤดูแล้ง (ก.พ.–เม.ย.) ภาคเหนือของไทยและเพื่อนบ้านเผาไร่/ป่า เกิดควันมหาศาล · ควันนี้มี <b>PM2.5</b> = ฝุ่นเล็กจิ๋วขนาด ≤2.5 ไมครอน (เล็กกว่าเส้นผม ~30 เท่า) เล็กจนหายใจเข้าไปลึกถึงปอดและเข้ากระแสเลือดได้ → ก่อโรคทางเดินหายใจ หัวใจ มะเร็งปอด</p>
+<div class="center card">
+<svg viewBox="0 0 680 180" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI">
+  <text x="340" y="20" fill="#e6edf3" font-size="13" text-anchor="middle" font-weight="bold">หมอกควันข้ามพรมแดน (transboundary haze)</text>
+  <!-- countries -->
+  <rect x="30" y="50" width="150" height="90" rx="8" fill="rgba(255,155,84,.12)" stroke="#ff9b54"/><text x="105" y="75" fill="#ff9b54" font-size="12" text-anchor="middle" font-weight="bold">พม่า / ลาว</text><text x="105" y="95" fill="#9aa7b4" font-size="10" text-anchor="middle">🔥 จุดไฟเยอะ</text><text x="105" y="112" fill="#9aa7b4" font-size="10" text-anchor="middle">แต่ไม่มีสถานีวัด</text>
+  <rect x="430" y="50" width="220" height="90" rx="8" fill="rgba(88,166,255,.1)" stroke="#58a6ff"/><text x="540" y="75" fill="#58a6ff" font-size="12" text-anchor="middle" font-weight="bold">ภาคเหนือไทย (เชียงใหม่)</text><text x="540" y="95" fill="#9aa7b4" font-size="10" text-anchor="middle">😷 คนได้รับฝุ่น</text><text x="540" y="112" fill="#9aa7b4" font-size="10" text-anchor="middle">มีสถานีวัดบ้าง</text>
+  <!-- wind arrow with smoke -->
+  <path d="M185 95 Q310 60 425 95" stroke="#bc8cff" stroke-width="3" fill="none" marker-end="url(#w)"/>
+  <text x="305" y="50" fill="#bc8cff" font-size="11" text-anchor="middle">ลมพัดควันข้ามพรมแดน</text>
+  <g fill="#9aa7b4" opacity="0.6"><circle cx="240" cy="88" r="6"/><circle cx="290" cy="78" r="7"/><circle cx="345" cy="76" r="6"/><circle cx="395" cy="86" r="7"/></g>
+  <text x="340" y="165" fill="#9aa7b4" font-size="10.5" text-anchor="middle">ปัญหาหลัก: ฝุ่นส่วนใหญ่ไม่ได้เกิดในที่ที่เราเดือดร้อน → จะแก้ต้องรู้ว่า "มาจากไหน"</text>
+  <defs><marker id="w" markerWidth="10" markerHeight="10" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#bc8cff"/></marker></defs>
+</svg>
+</div>
+<p>โจทย์จึงมี 3 ชั้น: (1) <b>วันนี้/พรุ่งนี้ฝุ่นจะหนาแค่ไหน</b> เพื่อเตือนประชาชน · (2) <b>ฝุ่นมาจากแหล่งไหน</b> เพื่อแก้ที่ต้นเหตุ (เป็นเรื่องการเมือง/นโยบายข้ามประเทศ) · (3) <b>ถ้าจะลดควร dับไฟตรงไหน</b> เพื่อใช้ทรัพยากรคุ้มสุด</p>
+
+<!-- 2 now -->
+<h2 id="now">2. ตอนนี้โลกแก้ยังไง — และทำไมยังไม่พอ</h2>
+<p>มี 3 วิธีหลักในปัจจุบัน แต่ละวิธีเก่งคนละด้าน และมีจุดอ่อนคนละแบบ:</p>
+
+<h3>วิธีที่ 1 — สถานีวัดภาคพื้น (เช่น Air4Thai)</h3>
+<p>เครื่องวัดฝุ่นตั้งตามเมือง บอกค่า "ตอนนี้" ตรงจุดที่มีเครื่อง</p>
+<div class="ana"><b>เหมือน:</b> มีเทอร์โมมิเตอร์วัดอุณหภูมิตรงหน้าบ้าน — รู้ว่าตอนนี้ร้อนแค่ไหน แต่<b>บอกพรุ่งนี้ไม่ได้</b> และ<b>บอกที่ที่ไม่มีเครื่องไม่ได้</b></div>
+<p>จุดอ่อน: วัดเฉพาะจุด · พยากรณ์อนาคตไม่ได้ · บอกแหล่งที่มาไม่ได้ · แหล่งต้นทาง (พม่า/ลาว) แทบไม่มีเครื่องเลย</p>
+
+<h3>วิธีที่ 2 — แบบจำลองฟิสิกส์เคมี (CMAQ, WRF-Chem)</h3>
+<p>โปรแกรมยักษ์ที่จำลองบรรยากาศตามสมการฟิสิกส์จริง รันบนซูเปอร์คอมพิวเตอร์ ทำได้ทุกอย่าง — พยากรณ์ บอกแหล่ง ย้อนรอย</p>
+<div class="ana"><b>เหมือน:</b> เครื่องจำลองสภาพอากาศระดับเทพในหนัง — ละเอียดสุด ๆ แต่<b>ต้องใช้ซูเปอร์คอมรันเป็นวัน</b> แพงมหาศาล และต้องป้อน "บัญชีรายชื่อทุกไฟว่าปล่อยควันเท่าไร" (emission inventory) ซึ่ง<b>ตัวเลขนี้เองก็ไม่แม่น</b></div>
+<p>จุดอ่อน: ช้า/แพงมาก · พึ่งบัญชี emission ที่ไม่แน่นอน · ไม่ได้ "เรียนรู้" จากข้อมูลจริงที่วัดได้</p>
+
+<h3>วิธีที่ 3 — AI กล่องดำ (แนว GraphCast, Aurora)</h3>
+<p>โมเดล AI สมัยใหม่ที่เรียนจากข้อมูลอดีต พยากรณ์เร็วและแม่นมาก</p>
+<div class="ana"><b>เหมือน:</b> นกแก้วอัจฉริยะที่ทายอากาศแม่นมาก — แต่<b>ถามว่า "ทำไม" หรือ "ควันมาจากไหน" มันตอบไม่ได้</b> เพราะมันแค่จำแพตเทิร์น ไม่เข้าใจเหตุผล</p>
+<p>จุดอ่อน: เป็นกล่องดำ · บอกแหล่งที่มาไม่ได้ (no attribution) · ย้อนรอยหาต้นเหตุไม่ได้ (no inversion)</p>
+
+<table>
+<tr><th>ความสามารถ</th><th>สถานีวัด</th><th>ฟิสิกส์ (CMAQ)</th><th>AI กล่องดำ</th><th>HazeNet (เรา)</th></tr>
+<tr><td>พยากรณ์อนาคต</td><td>❌</td><td>✅ (ช้า)</td><td>✅ (เร็ว)</td><td>✅ เร็ว</td></tr>
+<tr><td>บอกแหล่งที่มาของฝุ่น</td><td>❌</td><td>✅ (แพง)</td><td>❌</td><td>✅ <b>โดยกำเนิด</b></td></tr>
+<tr><td>ย้อนรอยหาต้นเหตุ</td><td>❌</td><td>✅ (แพงมาก)</td><td>❌</td><td>✅</td></tr>
+<tr><td>เร็ว/ถูก</td><td>✅</td><td>❌</td><td>✅</td><td>✅</td></tr>
+<tr><td>เรียนจากข้อมูลจริง</td><td>—</td><td>❌</td><td>✅</td><td>✅</td></tr>
+</table>
+<div class="green-box"><b>ช่องว่างที่เราจะเสียบ:</b> รวม "ความเข้าใจเหตุผลแบบฟิสิกส์" กับ "ความเร็ว+เรียนรู้แบบ AI" → เป็น <b>AI ที่เร็ว แต่บอกแหล่งที่มาและย้อนรอยได้</b> — ยังไม่มีใครทำครบ</div>
+
+<!-- 3 idea -->
+<h2 id="idea">3. ไอเดียของเรา + ต่างยังไง</h2>
+<p>HazeNet คือ AI ที่เราจงใจ "ใส่กฎฟิสิกส์เข้าไปในโครงสร้าง" แทนที่จะปล่อยให้มันเดาเองทั้งหมด · การใส่ฟิสิกส์นี่แหละทำให้มันได้ความสามารถพิเศษ (บอกแหล่ง/ย้อนรอย) ที่ AI กล่องดำไม่มี</p>
+<div class="why"><b>ทำไมโปรเจกต์นี้ถึงต้องเป็น "GeoAI" จริง ๆ:</b> ถ้าแค่อยากทายค่าฝุ่น AI ธรรมดาก็พอ · แต่เพราะเราต้องการ "บอกแหล่ง + ย้อนรอย + เคารพกฎอนุรักษ์มวล + ทำงานบนแผนที่จริงที่มีลม/ภูเขา" → จำเป็นต้องใช้ AI ที่ผูกกับพื้นที่และฟิสิกส์ (= GeoAI) ไม่ใช่ AI ทั่วไป</div>
+
+<!-- 4 hearts -->
+<h2 id="hearts">4. หัวใจ 3 ดวง ที่ทำให้ทุกอย่างเป็นไปได้</h2>
+<p>ทั้งโปรเจกต์ตั้งอยู่บนแนวคิด 3 อย่างที่ต่อกันเป็นลูกโซ่ · เข้าใจ 3 อันนี้ = เข้าใจหัวใจทั้งหมด</p>
+
+<div class="heart">
+<div class="heart-h">หัวใจ 1 — สมการ ADR: "ควันเดินทางยังไง"</div>
+<p>ADR = Advection (พา) + Diffusion (กระจาย) + Reaction/Removal (หาย) · เป็นสมการฟิสิกส์ที่อธิบายว่าฝุ่นในอากาศเคลื่อนที่อย่างไร</p>
+<div class="ana"><b>หยดหมึกลงในแม่น้ำ:</b> หมึกจะ (1) <b>ไหลตามน้ำ</b> ไปทางปลายน้ำ = advection (ลมพาควัน) · (2) <b>ค่อย ๆ บานเป็นวงกว้าง</b> = diffusion (ควันกระจายเจือจาง) · (3) <b>จางหายไป</b> เมื่อเวลาผ่าน = reaction/removal (ฝุ่นตกลงพื้น/ฝนชะ) · ฝุ่น PM2.5 ก็ทำตัวเหมือนหมึกในแม่น้ำอากาศ โดยมี "ลม" เป็นกระแสน้ำ</div>
+<div class="deep"><b>เชิงคณิต:</b> <code>∂C/∂t = −∇·(uC) + ∇·(K∇C) − λC + S</code> · โดย C=ความเข้มข้นฝุ่น, u=ลม (advection), K=สัมประสิทธิ์การกระจาย (diffusion), λ=อัตราการหาย (removal/deposition), S=แหล่งปล่อย (emission) · นี่คือสมการอนุรักษ์มวลของสสารในของไหล — รากฐานของแบบจำลองบรรยากาศทุกตัว · HazeNet ไม่ได้แก้สมการนี้ตรง ๆ แต่ "เรียนรู้ตัวดำเนินการ (operator) ที่ทำตัวเหมือนสมการนี้" จากข้อมูล</div>
+</div>
+
+<div class="heart">
+<div class="heart-h">หัวใจ 2 — Superposition: "ควันบวกกันได้"</div>
+<p>ถ้าสมการเป็นเชิงเส้นต่อแหล่งปล่อย → ควันรวม = ควันจากไฟ A + ควันจากไฟ B + ... บวกกันตรง ๆ</p>
+<div class="ana"><b>เสียงในห้อง:</b> ถ้ามีคน 3 คนพูดพร้อมกัน เสียงที่หูเราได้ยิน = เสียงคน 1 + เสียงคน 2 + เสียงคน 3 รวมกัน · ในทางทฤษฎี ถ้าเรารู้ "ส่วนผสม" เราก็<b>แยกเสียงแต่ละคนกลับออกมาได้</b> · ควันก็เหมือนกัน — ถ้าบวกกันแบบเชิงเส้น เราก็แยกได้ว่าฝุ่นตรงนี้มาจากไฟไหนกี่ %</div>
+<div class="deep"><b>ทำไมสำคัญ:</b> นี่คือ<b>กุญแจของ "การบอกแหล่งที่มา" (attribution) ทั้งหมด</b> · ถ้าระบบเป็นเชิงเส้นต่อ emission เราติด "ป้ายสี" ให้ควันจากแต่ละแหล่ง (tagged tracer) แล้วตามไปดูปลายทางได้ · ในเชิงคณิตคือสมการ ADR เป็น linear ใน S → คำตอบเขียนเป็นผลรวม/อินทิกรัลของ "Green's function" คูณแหล่งแต่ละจุดได้ · เชื่อมตรงไป [หัวใจ 3]</div>
+</div>
+
+<div class="heart">
+<div class="heart-h">หัวใจ 3 — Conditionally-Linear Operator: "สูตรขึ้นกับลม แต่บวกกันได้"</div>
+<p>นี่คือสถาปัตยกรรมหลักของโมเดล · "ตัวดำเนินการ" ที่บอกว่าควันเดินทางยังไง — โดย<b>รูปแบบการเดินทางเปลี่ยนตามสภาพอากาศ</b> (ลม/ความสูงชั้นผสม/ฝน) <b>แต่ยังบวกกันเชิงเส้นต่อแหล่งปล่อย</b></p>
+<div class="ana"><b>โต๊ะมิกซ์เสียง:</b> ห้อง (สภาพอากาศ) กำหนดว่าเสียงแต่ละแทร็กก้องยังไง — แต่เพลงสุดท้าย = ผลรวมของทุกแทร็ก · เพราะมันเป็น "ผลรวม" เราจึงดึงแทร็กเดียวออกมาฟังได้ · HazeNet ก็เป็นโต๊ะมิกซ์: "ลม" ปรับว่าควันแต่ละแหล่งลอยไปทางไหน แต่ผลรวมยังแยกกลับเป็นรายแหล่งได้</div>
+<div class="deep"><b>ทำไมต้อง "conditionally"-linear ไม่ใช่ linear เฉย ๆ:</b> ถ้าเชิงเส้นล้วน โมเดลจะโง่เกิน (ควันลอยทางเดียวเสมอ) · ถ้า nonlinear ล้วน (เหมือน AI กล่องดำ) จะแยกแหล่งไม่ได้ · "conditionally-linear" = ฉลาด (เคอร์เนลขึ้นกับ met แบบ nonlinear) แต่<b>คงคุณสมบัติ superposition ต่อ emission ไว้</b> → ได้ทั้งความแม่นและความสามารถแยกแหล่ง · นี่คือ "เทคโนโลยีใหม่" ที่เป็นแก่นของงาน</div>
+</div>
+
+<div class="center card">
+<svg viewBox="0 0 660 90" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI">
+  <g font-size="12" text-anchor="middle">
+   <rect x="20" y="30" width="170" height="36" rx="8" fill="rgba(247,120,186,.12)" stroke="#f778ba"/><text x="105" y="53" fill="#f778ba">1. ADR (ควันเดินทาง)</text>
+   <rect x="245" y="30" width="170" height="36" rx="8" fill="rgba(247,120,186,.12)" stroke="#f778ba"/><text x="330" y="53" fill="#f778ba">2. Superposition (บวกได้)</text>
+   <rect x="470" y="30" width="170" height="36" rx="8" fill="rgba(247,120,186,.12)" stroke="#f778ba"/><text x="555" y="48" fill="#f778ba">3. Cond-Linear</text><text x="555" y="62" fill="#f778ba" font-size="10">(โครงสร้างโมเดล)</text>
+  </g>
+  <g stroke="#f778ba" stroke-width="2" fill="none" marker-end="url(#h)"><path d="M190 48 L243 48"/><path d="M415 48 L468 48"/></g>
+  <defs><marker id="h" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#f778ba"/></marker></defs>
+  <text x="330" y="18" fill="#9aa7b4" font-size="10.5" text-anchor="middle">ลูกโซ่ความคิด: ฟิสิกส์ → คุณสมบัติ → สถาปัตยกรรมโมเดล</text>
+</svg>
+</div>
+
+<!-- 5 powers -->
+<h2 id="powers">5. โมเดลทำอะไรได้บ้าง — 3 พลัง (+1)</h2>
+<div class="power"><p class="power-t">พลัง 1 — พยากรณ์ (Forecast)</p>ใส่สภาพอากาศ + จุดไฟวันนี้ → ทำนายแผนที่ฝุ่น PM2.5 ของวันถัด ๆ ไป · <span class="muted">นี่คือสิ่งที่ AI กล่องดำก็ทำได้ — แต่เราจะทำให้แม่นพอ ๆ กัน</span></div>
+<div class="power"><p class="power-t">พลัง 2 — บอกแหล่งที่มา (Attribution) ⭐ จุดขาย</p>บอกได้ว่า "ฝุ่นที่เชียงใหม่วันนี้ มาจากพม่า X% / ลาว Y% / ในประเทศ Z%" · <span class="muted">มาจากหัวใจ 2+3 โดยตรง — เป็นความสามารถที่ AI กล่องดำทำไม่ได้</span></div>
+<div class="power"><p class="power-t">พลัง 3 — ย้อนรอยหาต้นเหตุ (Inversion)</p>ทำงานถอยหลัง: เห็นฝุ่นปลายทาง → คำนวณกลับว่าต้นทางปล่อยเท่าไร / ดับไฟตรงไหนช่วยได้สุด · <span class="muted">เพราะโมเดลทั้งตัว "หาอนุพันธ์ได้" (differentiable) เราจึงไหลย้อนกลับได้</span></div>
+<div class="power"><p class="power-t">พลัง +1 — บอกความไม่แน่นอน (Uncertainty)</p>ไม่ใช่ตอบเลขเดียวลอย ๆ แต่บอก "มั่นใจแค่ไหน" เช่นพยากรณ์อากาศที่บอก "ฝนตก 70%" · <span class="muted">สำคัญมากเวลาเอาไปเตือนภัยสุขภาพจริง</span></div>
+
+<!-- 6 journey -->
+<h2 id="journey">6. เดินทางตั้งแต่ต้นจนจบ — เราจะทำอะไรบ้าง (เวอร์ชันจริง 2 เดือน)</h2>
+<p>นี่คือลำดับที่จะลงมือจริง · หลักคิดเดียวคือ <b>"เริ่มจิ๋วแต่ครบวงจร แล้วค่อยขยาย"</b> และ <b>"เจอปัญหาที่ฆ่าโปรเจกต์ให้เร็วและถูกที่สุด"</b></p>
+
+<div class="step"><div class="step-n">0</div><div><p class="step-t">เรียนพื้นฐาน <span class="muted">(ทำเสร็จแล้ว ✓)</span></p>เข้าใจทฤษฎี (โมดูล 0–5) — ข้อมูล, ฟิสิกส์, โมเดล, การวัดผล · = ไฟล์ความรู้ทั้งหมดที่เราสร้างมา</div></div>
+
+<div class="step"><div class="step-n">1</div><div><p class="step-t">เทสความเป็นไปได้ (Feasibility — 3 ประตู)</p>เช็กก่อนว่า <b>(ก) ดึงข้อมูลได้ไหม</b> (ลม/ไฟ/ภูเขา/ค่าฝุ่น) · <b>(ข) ข้อมูลช่วงที่เลือกครบไหม</b> · เป็นการเช็กถูก ๆ ว่าไม่มีกำแพงตันซ่อนอยู่ <span class="muted">→ ไฟล์ feasibility-checklist</span></div></div>
+
+<div class="step"><div class="step-n">2</div><div><p class="step-t">โครงกระดูกที่เดินได้ (Walking Skeleton / Lab 0)</p>ต่อท่อทั้งเส้นแบบ<b>จิ๋วสุด</b> ให้วิ่งครบ: ดึงข้อมูลกล่องเล็ก (เชียงใหม่ 1 สัปดาห์) → รวมเข้าตาราง → โมเดลจิ๋ว → วัดผล · เป้าคือ "ท่อไม่รั่ว" ไม่ใช่ "แม่น" <span class="muted">→ ไฟล์ lab-0</span></div></div>
+
+<div class="step"><div class="step-n">3</div><div><p class="step-t">พิสูจน์ว่าไอเดียเวิร์ก (Science Spike / Lab 1)</p>ทดสอบหัวใจ 3 ดวงแบบจิ๋ว: โมเดล physics ทำงานไหม + <b>แยกควัน 2 แหล่ง (พม่า/ในประเทศ) ได้ไหม</b> + วาดแผนที่กลุ่มควันออกมาดูเข้าท่าไหม</div></div>
+
+<div class="step"><div class="step-n">4</div><div><p class="step-t">ขยายทีละแกน (Scale-up Ladder)</p>เมื่อจิ๋วเขียวแล้ว ค่อยขยาย<b>ทีละอย่าง</b>: เวลา → ข้อมูลมากขึ้น → พื้นที่ทั้งภูมิภาค → โมเดลจริง (หัวใจ 3) → พยากรณ์ไกลขึ้น · เช็กว่ายังเขียวทุกขั้น</div></div>
+
+<div class="step"><div class="step-n">5</div><div><p class="step-t">เทรนจริงบน A100 (Main Run)</p>เตรียมพร้อม (config แช่แข็ง + ประมาณงบ GPU + cache ข้อมูล) แล้วเทรนโมเดลเต็ม ได้ "checkpoint" = สมองที่เทรนเสร็จ <span class="muted">→ ไฟล์ readiness</span></div></div>
+
+<div class="step"><div class="step-n">6</div><div><p class="step-t">วัดผล + เทียบคู่แข่ง (Evaluate)</p>วัดความแม่น + <b>เทียบกับวิธีง่าย ๆ (persistence)</b> ว่าเราดีกว่าจริง + ทดสอบว่าตัวเลขเชื่อถือได้ (ไม่ใช่ฟลุ๊ก)</div></div>
+
+<div class="step"><div class="step-n">7</div><div><p class="step-t">ทำเดโม + repo + เขียนข้อจำกัด → ส่ง 🎯</p>ทำแอป/โน้ตบุ๊กที่ <b>ใส่วันที่ → โชว์พยากรณ์ฝุ่น + แผนที่กลุ่มควัน + ความไม่แน่นอน</b> · จัด repo ให้คนอื่น clone ไปรันต่อได้ + เขียน "ข้อจำกัด" อย่างซื่อสัตย์</div></div>
+
+<!-- 7 two versions -->
+<h2 id="two">7. ทำไมแผนดูเปลี่ยนไปมา — มันคือ "เป้าหมายซ้อนกัน" ไม่ใช่ขัดกัน</h2>
+<p>ที่ปรับแผนหลายรอบ เพราะเราคุยกัน 2 ระดับ · จริง ๆ มันคือวงกลมเล็กที่อยู่ในวงกลมใหญ่ ไม่ได้ขัดกัน:</p>
+<div class="center card">
+<svg viewBox="0 0 560 230" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI">
+  <ellipse cx="280" cy="115" rx="265" ry="105" fill="rgba(188,140,255,.07)" stroke="#bc8cff" stroke-dasharray="5 4"/>
+  <ellipse cx="280" cy="120" rx="135" ry="62" fill="rgba(63,185,80,.1)" stroke="#3fb950"/>
+  <text x="280" y="112" fill="#3fb950" font-size="13" text-anchor="middle" font-weight="bold">เวอร์ชันจริง (ตอนนี้)</text>
+  <text x="280" y="132" fill="#9aa7b4" font-size="10.5" text-anchor="middle">2 เดือน · เดโม+repo · A100 จำกัด</text>
+  <text x="280" y="35" fill="#bc8cff" font-size="13" text-anchor="middle" font-weight="bold">เวอร์ชันฝัน (อนาคต)</text>
+  <text x="280" y="205" fill="#9aa7b4" font-size="10.5" text-anchor="middle">โปรแกรมวิจัยระดับโลก · SOTA · ตีพิมพ์ · หลายเดือน–ปี</text>
+</svg>
+</div>
+<table>
+<tr><th></th><th>เวอร์ชันจริง (ทำตอนนี้)</th><th>เวอร์ชันฝัน (ต่อยอดได้)</th></tr>
+<tr><td>เป้าส่ง</td><td>เดโม + repo ที่รันได้</td><td>เปเปอร์ระดับโลก + benchmark สาธารณะ</td></tr>
+<tr><td>เวลา</td><td>~2 เดือน</td><td>หลายเดือน–ปี</td></tr>
+<tr><td>compute</td><td>A100 Colab ~15 ชม.</td><td>ไม่จำกัด (LANTA/cloud)</td></tr>
+<tr><td>พลังที่โชว์</td><td>พยากรณ์ + attribution + uncertainty (จิ๋ว)</td><td>+ inversion + causal + CTM twin + foundation</td></tr>
+<tr><td>การพิสูจน์</td><td>เทียบ persistence + 1 ablation</td><td>baseline ครบ + CV เต็ม + significance</td></tr>
+</table>
+<div class="green-box"><b>สำคัญ:</b> เวอร์ชันจริง 2 เดือน <b>คือเมล็ดพันธุ์</b>ของเวอร์ชันฝัน — ทำอันเล็กให้ดีก่อน แล้วมันโตเป็นอันใหญ่ได้ · <b>ตอนนี้เราโฟกัสวงกลมสีเขียว (เวอร์ชันจริง)</b></div>
+
+<!-- 8 diff -->
+<h2 id="diff">8. สรุป — ต่างจากงานปัจจุบันยังไง</h2>
+<ul>
+<li><b>ต่างจากสถานีวัด:</b> เราพยากรณ์อนาคต + ครอบทั้งพื้นที่ (ไม่ใช่แค่จุดที่มีเครื่อง)</li>
+<li><b>ต่างจากแบบจำลองฟิสิกส์ (CMAQ):</b> เราเร็วกว่ามาก + เรียนจากข้อมูลจริง + ไม่ต้องพึ่งบัญชี emission ที่แน่นอน</li>
+<li><b>ต่างจาก AI กล่องดำ (Aurora/GraphCast):</b> เรา<b>บอกแหล่งที่มาและย้อนรอยได้</b> เพราะใส่ฟิสิกส์ในโครงสร้าง — ไม่ใช่แค่ทายเลข</li>
+<li><b>จุดที่เป็นของเราคนเดียว:</b> รวม "พยากรณ์ + บอกแหล่ง + ย้อนรอย" ในโมเดลเดียวที่เร็วและเรียนรู้ได้ → ยังไม่มีใครทำครบ</li>
+</ul>
+
+<!-- 9 limit -->
+<h2 id="limit">9. ขีดจำกัดที่ต้องพูดตรง ๆ (ความซื่อสัตย์ = คุณภาพงาน)</h2>
+<div class="danger"><b>เราจะไม่อวดเกินจริง:</b>
+<ul>
+<li><b>ไม่มีใครรู้ "ความจริง" ว่าควันมาจากไหนกี่ %</b> — เพราะพม่า/ลาวไม่มีสถานีวัด → การพิสูจน์ attribution จึงต้องใช้วิธีอ้อม (จำลองสถานการณ์ที่เรารู้คำตอบ แล้วดูว่าโมเดลกู้ได้ไหม)</li>
+<li><b>compute เราจำกัด</b> (เวอร์ชัน 2 เดือน) → โมเดล/ความละเอียดจะยังไม่ใหญ่</li>
+<li><b>ข้อมูลดาวเทียมหายช่วงมีเมฆ/กลางคืน</b> · สถานีวัดน้อย → ความแม่นมีเพดาน</li>
+<li><b>พยากรณ์ไกลมาก ๆ ไม่ได้</b> — ธรรมชาติมีขีดจำกัดการทำนาย (เหมือนพยากรณ์อากาศที่แม่นแค่ไม่กี่วัน)</li>
+<li><b>เวอร์ชัน 2 เดือนพิสูจน์ว่า "ระบบทำงานได้" ไม่ใช่ "แม่นที่สุดในโลก"</b> — อันหลังคือเวอร์ชันฝัน</li>
+</ul></div>
+
+<!-- 10 here -->
+<h2 id="here">10. ตอนนี้คุณอยู่ตรงไหน + ก้าวต่อไป</h2>
+<div class="youarehere"><b>📍 คุณอยู่ที่นี่:</b> เรียนพื้นฐานครบ (ขั้น 0 ✓) + มีแผนทุกขั้นเขียนไว้แล้ว · <b>ก้าวต่อไปคือ ขั้น 1 — เทสว่าดึงข้อมูลจริงได้ไหม</b> (เริ่มที่ ERA5/ลม เพราะคิวรอนานสุด ควรยิงขอไว้ก่อน)</div>
+<p>ไฟล์ทั้งหมดที่เรามี เรียงตามลำดับใช้งาน:</p>
+<ol>
+<li><b>hazenet-learning-roadmap</b> — แผนที่หลักสูตรทั้งหมด</li>
+<li><b>บทเรียน 1.x–5.x</b> — ทฤษฎีลงลึกแต่ละหัวข้อ</li>
+<li><b>hazenet-big-picture</b> (ไฟล์นี้) — ภาพรวมร้อยทุกอย่าง</li>
+<li><b>lab-feasibility-checklist</b> — ขั้น 1 (เทสข้อมูล)</li>
+<li><b>lab-0-walking-skeleton</b> — ขั้น 2 (ท่อจิ๋ว)</li>
+<li><b>lab-readiness-checklist</b> — ขั้น 5–7 (เตรียมรันจริง + ส่ง)</li>
+<li><b>best-version-experiment-plan</b> — เวอร์ชันฝัน (อนาคต)</li>
+</ol>
+
+<hr>
+<p class="center muted">HazeNet · เป้าตอนนี้: AI ที่พยากรณ์ฝุ่น + บอกว่าควันมาจากไหน + ย้อนรอยได้ · เริ่มจิ๋วครบวงจร → ขยาย → ส่งเป็นเดโม+repo · แล้วต่อยอดสู่งานระดับโลก</p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>0.2 — PyTorch & Autograd (สอนละเอียดจากศูนย์)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:30px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  pre{background:#0a0e14;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;margin:12px 0;font-size:14px;line-height:1.6}
+  code{font-family:"Consolas","Courier New",monospace}
+  pre code{color:#e6edf3}
+  .cm{color:#6e7a89}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#7ee787}
+  p code,li code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+  .step{display:inline-block;width:24px;height:24px;border-radius:50%;background:var(--panel2);border:1px solid var(--green);color:var(--green);text-align:center;line-height:23px;font-weight:bold;font-size:13px;margin-right:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>0.2 — PyTorch &amp; Autograd</h1>
+<p class="tagline">เครื่องมือที่ใช้สร้างและเทรนโมเดลทุกตัวในโปรเจกต์ + "เวทมนตร์" ที่ทำให้โมเดลเรียนรู้เอง</p>
+<p class="sub">ต่อจาก 0.1 โดยตรง · เน้น autograd (หัวใจ) · ผูกกับ HazeNet ตลอด · พิมพ์ตามใน Colab ได้</p>
+
+<div class="lead">
+<b>PyTorch มี 2 พลังที่ NumPy ไม่มี:</b> <b class="k">(1) รันบน GPU</b> (เร็วขึ้นหลายสิบเท่า) · <b class="k">(2) autograd</b> — คำนวณ "gradient" อัตโนมัติ ซึ่งคือสิ่งที่ทำให้โมเดล<b>เรียนรู้</b>ได้เอง · ที่เหลือ syntax เกือบเหมือน NumPy เป๊ะ (คุณรู้ 0.1 มาแล้ว = รู้ PyTorch ไป 80%)
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. Tensor ใน PyTorch (ต่อจาก 0.1)</a><br>
+<a href="#p2">2. gradient คืออะไร (สัญชาตญาณ)</a><br>
+<a href="#p3">3. Autograd: .backward() &amp; .grad ★</a><br>
+<a href="#p4">4. Hello World: ลดค่าฟังก์ชันด้วย gradient</a><br>
+<a href="#p5">5. nn.Module — สร้างโมเดล</a><br>
+<a href="#p6">6. Loss function</a><br>
+<a href="#p7">7. Optimizer + Training Loop ศักดิ์สิทธิ์ ★</a><br>
+<a href="#p8">8. GPU · train/eval · no_grad</a><br>
+<a href="#p9">9. ตัวอย่างเต็ม (เทรนจริง)</a><br>
+<a href="#p10">10. เชื่อมกับ HazeNet (autograd = adjoint ฟรี)</a><br>
+<a href="#cheat">11. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. Tensor ใน PyTorch — เหมือน NumPy + ติดปีก</h2>
+<pre><code><span class="kw">import</span> torch
+
+<span class="cm"># สร้างเหมือน NumPy เป๊ะ</span>
+x = torch.zeros(85, 105)            <span class="cm"># แผนที่ว่าง</span>
+y = torch.tensor([1.0, 2.0, 3.0])
+x.shape          <span class="cm"># เหมือนเดิม</span>
+x.sum(dim=0)     <span class="cm"># ⚠️ torch ใช้ dim แทน axis (ความหมายเดียวกัน)</span>
+
+<span class="cm"># สลับไปมากับ NumPy ได้</span>
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+a = torch.from_numpy(np.zeros((2,3), dtype=np.float32))   <span class="cm"># NumPy → Torch</span>
+b = a.numpy()                                             <span class="cm"># Torch → NumPy</span></code></pre>
+
+<h4>2 สิ่งที่ tensor มีเพิ่ม: device และ requires_grad</h4>
+<pre><code>t = torch.zeros(85, 105)
+t.device          <span class="cm"># →</span> <span class="out">cpu</span>     <span class="cm"># อยู่บน CPU หรือ GPU</span>
+t = t.cuda()      <span class="cm"># ส่งขึ้น GPU  (หรือ t.to("cuda"))</span>
+
+g = torch.zeros(3, requires_grad=True)   <span class="cm"># "ขอให้ติดตาม gradient ของตัวนี้ด้วย"</span></code></pre>
+<div class="warn"><b>กฎทอง:</b> tensor ที่จะคำนวณด้วยกัน <b>ต้องอยู่ device เดียวกัน</b> — เอา tensor บน CPU บวกกับ tensor บน GPU จะ error · และต้อง <code>float32</code> ให้ตรงกัน · error 2 อันนี้คือ bug ที่เจอบ่อยสุดของมือใหม่</div>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. gradient คืออะไร — สัญชาตญาณก่อนสมการ</h2>
+<p><b>gradient</b> = "ถ้าขยับ input นิดนึง output จะเปลี่ยนไปเท่าไรและทิศไหน" (เชิงคณิตคือ ความชัน/อนุพันธ์)</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 240" width="92%" xmlns="http://www.w3.org/2000/svg">
+  <text x="280" y="22" fill="#e6edf3" font-size="14" text-anchor="middle">นึกภาพ loss เป็น "หุบเขา" — เราอยากเดินลงไปจุดต่ำสุด</text>
+  <!-- parabola -->
+  <path d="M 60 60 Q 280 320 500 60" fill="none" stroke="#58a6ff" stroke-width="2.5"/>
+  <!-- axis -->
+  <line x1="40" y1="200" x2="520" y2="200" stroke="#30363d"/>
+  <text x="500" y="218" fill="#9aa7b4" font-size="12">ค่าพารามิเตอร์ (สิ่งที่โมเดลปรับ)</text>
+  <text x="30" y="80" fill="#9aa7b4" font-size="12" transform="rotate(-90 30 110)">loss (ความผิด)</text>
+  <!-- ball on left slope -->
+  <circle cx="150" cy="148" r="11" fill="#f778ba"/>
+  <text x="150" y="135" fill="#f778ba" font-size="11" text-anchor="middle">เราอยู่นี่</text>
+  <!-- gradient arrow (slope) -->
+  <line x1="150" y1="148" x2="195" y2="178" stroke="#e3b341" stroke-width="2.5" marker-end="url(#g2)"/>
+  <defs><marker id="g2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#e3b341"/></marker></defs>
+  <text x="245" y="178" fill="#e3b341" font-size="11">gradient ชี้ทาง "ขึ้น"</text>
+  <!-- step direction -->
+  <line x1="150" y1="160" x2="110" y2="178" stroke="#3fb950" stroke-width="2.5" marker-end="url(#g3)"/>
+  <defs><marker id="g3" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#3fb950"/></marker></defs>
+  <text x="60" y="190" fill="#3fb950" font-size="11">เราเดิน "สวนทาง" gradient</text>
+  <!-- bottom -->
+  <circle cx="280" cy="202" r="6" fill="#56d4dd"/>
+  <text x="280" y="228" fill="#56d4dd" font-size="11" text-anchor="middle">เป้าหมาย: จุดต่ำสุด (loss น้อยสุด)</text>
+</svg>
+</div>
+<p><b>gradient descent</b> = เดิน "สวนทาง" gradient ทีละก้าวเล็ก ๆ เพื่อลง "หุบเขา" ของ loss → โมเดลค่อย ๆ ดีขึ้น · <b>autograd ทำหน้าที่คำนวณ gradient ตัวนี้ให้เราอัตโนมัติ</b> ไม่ว่าโมเดลจะซับซ้อนแค่ไหน</p>
+<p class="muted">(รายละเอียดเชิงลึกของ gradient descent อยู่ในหัวข้อ 0.3 — ที่นี่รู้แค่สัญชาตญาณก็พอ)</p>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. Autograd — หัวใจของ PyTorch <span class="pin">★</span></h2>
+<p>เมื่อ tensor มี <code>requires_grad=True</code> PyTorch จะ <b>จดทุกการคำนวณ</b> ที่เกิดกับมันไว้เป็น "กราฟ" พอเราสั่ง <code>.backward()</code> มันจะไล่กราฟย้อนกลับคำนวณ gradient ให้ทุกตัว</p>
+<pre><code>x = torch.tensor(<span class="nm">2.0</span>, requires_grad=<span class="kw">True</span>)
+
+y = x**<span class="nm">2</span> + <span class="nm">3</span>*x          <span class="cm"># y = x² + 3x   (PyTorch แอบจดสูตรไว้)</span>
+
+y.backward()              <span class="cm"># ★ คำนวณ dy/dx ย้อนกลับ</span>
+
+<span class="fn">print</span>(x.grad)            <span class="cm"># →</span> <span class="out">tensor(7.)</span>   <span class="cm"># dy/dx = 2x+3 = 2(2)+3 = 7 ✓</span></code></pre>
+
+<div class="center card">
+<svg class="svg" viewBox="0 0 620 130" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <!-- forward -->
+  <rect x="30" y="35" width="90" height="44" rx="8" fill="#1c2330" stroke="#3fb950"/><text x="75" y="62" fill="#e6edf3" font-size="14" text-anchor="middle">x = 2</text>
+  <rect x="180" y="35" width="120" height="44" rx="8" fill="#1c2330" stroke="#3fb950"/><text x="240" y="62" fill="#e6edf3" font-size="13" text-anchor="middle">y = x²+3x</text>
+  <rect x="360" y="35" width="90" height="44" rx="8" fill="#1c2330" stroke="#3fb950"/><text x="405" y="62" fill="#e6edf3" font-size="14" text-anchor="middle">y = 10</text>
+  <line x1="120" y1="57" x2="178" y2="57" stroke="#3fb950" stroke-width="2" marker-end="url(#fw)"/>
+  <line x1="300" y1="57" x2="358" y2="57" stroke="#3fb950" stroke-width="2" marker-end="url(#fw)"/>
+  <defs><marker id="fw" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#3fb950"/></marker>
+        <marker id="bw" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#f778ba"/></marker></defs>
+  <text x="240" y="24" fill="#3fb950" font-size="12" text-anchor="middle">forward (คำนวณไปข้างหน้า)</text>
+  <!-- backward -->
+  <line x1="358" y1="95" x2="122" y2="95" stroke="#f778ba" stroke-width="2" marker-end="url(#bw)"/>
+  <text x="240" y="120" fill="#f778ba" font-size="12" text-anchor="middle">.backward() ไล่ย้อน → x.grad = 7</text>
+</svg>
+</div>
+
+<table>
+<tr><th>ส่วนประกอบ</th><th>คืออะไร</th></tr>
+<tr><td><code>requires_grad=True</code></td><td>"ติดตาม gradient ของตัวนี้" (พารามิเตอร์โมเดลทุกตัวเป็นแบบนี้)</td></tr>
+<tr><td><code>.backward()</code></td><td>สั่งคำนวณ gradient ย้อนกลับจาก loss</td></tr>
+<tr><td><code>.grad</code></td><td>ที่เก็บผล gradient ที่คำนวณได้</td></tr>
+</table>
+<div class="warn"><b>ข้อควรระวังใหญ่:</b> <code>.grad</code> จะ <b>บวกสะสม</b> ทุกครั้งที่ <code>backward()</code> ไม่ลบให้เอง → ก่อน backward รอบใหม่ ต้อง <b>เคลียร์ก่อนเสมอ</b> (ในการเทรนจริงใช้ <code>optimizer.zero_grad()</code> — ดูส่วน 7) · ลืมข้อนี้ = โมเดลเทรนเพี้ยน เป็น bug คลาสสิก</div>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. Hello World ของการเรียนรู้ — ลดค่าฟังก์ชันด้วยมือ</h2>
+<p>ก่อนเทรนโมเดลจริง มาดู "หัวใจการเรียนรู้" แบบเปลือย ๆ: หาค่า <code>x</code> ที่ทำให้ <code>(x−3)²</code> น้อยสุด (คำตอบคือ x=3) โดยให้ autograd พาเราไป</p>
+<pre><code>x = torch.tensor(<span class="nm">0.0</span>, requires_grad=<span class="kw">True</span>)   <span class="cm"># เริ่มมั่ว ๆ ที่ 0</span>
+lr = <span class="nm">0.1</span>                                       <span class="cm"># ขนาดก้าวเดิน (learning rate)</span>
+
+<span class="kw">for</span> step <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">30</span>):
+    loss = (x - <span class="nm">3</span>)**<span class="nm">2</span>            <span class="cm"># ความผิด (อยากให้น้อยสุด)</span>
+    loss.backward()                <span class="cm"># คำนวณ d(loss)/dx</span>
+    <span class="kw">with</span> torch.no_grad():        <span class="cm"># ปรับค่าโดยไม่ให้ autograd จด</span>
+        x -= lr * x.grad           <span class="cm"># เดินสวนทาง gradient</span>
+    x.grad.zero_()                 <span class="cm"># เคลียร์ gradient ก่อนรอบหน้า</span>
+
+<span class="fn">print</span>(x.item())     <span class="cm"># →</span> <span class="out">~2.999</span>   <span class="cm"># เข้าใกล้ 3 ✓ โมเดล"เรียนรู้"แล้ว!</span></code></pre>
+<div class="why"><b>นี่คือทั้งหมดของ deep learning ในรูปย่อ:</b> มี loss → หา gradient → เดินสวนทาง → ทำซ้ำ · ส่วนที่เหลือ (nn.Module, optimizer) แค่ทำให้ pattern นี้ <b>สะดวกและขยายไปพารามิเตอร์ล้านตัวได้</b> เท่านั้นเอง</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. nn.Module — วิธี "ห่อ" โมเดล</h2>
+<p>โมเดลจริงมีพารามิเตอร์เป็นล้าน เราไม่จัดการเองทีละตัว แต่ห่อไว้ในคลาส <code>nn.Module</code></p>
+<pre><code><span class="kw">import</span> torch.nn <span class="kw">as</span> nn
+
+<span class="kw">class</span> <span class="fn">TinyNet</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        <span class="fn">super</span>().__init__()
+        self.fc1 = nn.Linear(<span class="nm">10</span>, <span class="nm">32</span>)    <span class="cm"># ชั้นเชิงเส้น: 10 เข้า → 32 ออก</span>
+        self.fc2 = nn.Linear(<span class="nm">32</span>, <span class="nm">1</span>)     <span class="cm"># 32 → 1</span>
+
+    <span class="kw">def</span> <span class="fn">forward</span>(self, x):              <span class="cm"># บอกว่าข้อมูลไหลยังไง</span>
+        x = torch.relu(self.fc1(x))    <span class="cm"># ผ่านชั้น 1 + activation</span>
+        x = self.fc2(x)                <span class="cm"># ผ่านชั้น 2</span>
+        <span class="kw">return</span> x
+
+model = TinyNet()
+<span class="fn">print</span>(<span class="fn">sum</span>(p.numel() <span class="kw">for</span> p <span class="kw">in</span> model.parameters()))   <span class="cm"># นับพารามิเตอร์ทั้งหมด</span></code></pre>
+<table>
+<tr><th>ชิ้นส่วน</th><th>หน้าที่</th></tr>
+<tr><td><code>__init__</code></td><td>ประกาศ "ชั้น" ที่โมเดลมี (เก็บพารามิเตอร์)</td></tr>
+<tr><td><code>forward</code></td><td>นิยามว่าข้อมูลไหลผ่านชั้นยังไง (เรียกตอน <code>model(x)</code>)</td></tr>
+<tr><td><code>nn.Linear(a, b)</code></td><td>ชั้นเชิงเส้น y = Wx + b (W, b เป็นพารามิเตอร์ที่เรียนรู้)</td></tr>
+<tr><td><code>torch.relu</code></td><td>activation — ใส่ความไม่เชิงเส้นให้โมเดลเรียน pattern ซับซ้อนได้</td></tr>
+</table>
+<div class="why"><b>เชื่อมกับงานเรา:</b> โมเดล HazeNet ทั้งตัว (conditionally-linear operator) จะเป็น <code>nn.Module</code> หนึ่งตัว · <code>forward</code> ของมันจะรับ <code>(C_t, ลม, ไฟ)</code> → คืน <code>C_{t+1}</code> · ส่วน AFNO ที่ทำนายสัมประสิทธิ์ก็เป็น Module ย่อยข้างใน · ทุกอย่างประกอบจาก building block พวกนี้</div>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. Loss function — วัด "ความผิด"</h2>
+<pre><code>loss_fn = nn.MSELoss()             <span class="cm"># Mean Squared Error = เฉลี่ย (pred−true)²</span>
+
+pred = torch.tensor([2.0, 4.0])
+true = torch.tensor([3.0, 3.0])
+loss = loss_fn(pred, true)         <span class="cm"># = mean([1, 1]) = 1.0</span></code></pre>
+<div class="why"><b>เชื่อมกับงานเรา:</b> <code>MSELoss</code> คือพื้นฐานของการวัดว่าฝุ่นที่พยากรณ์ห่างจากของจริงแค่ไหน — มันคือ <code>RMSE²</code> นั่นเอง (RMSE = √MSE ที่คุณเจอใน 0.1) · เราจะใช้ตัวนี้ (อาจดัดแปลงเพิ่ม physics) เป็น loss หลักตอนเทรน</div>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. Optimizer + Training Loop ศักดิ์สิทธิ์ <span class="pin">★ จำให้ขึ้นใจ</span></h2>
+<p><b>optimizer</b> คือตัวจัดการ "เดินสวนทาง gradient" ให้พารามิเตอร์ทุกตัว (แทนที่จะเขียน <code>x -= lr*x.grad</code> เองเหมือนส่วน 4)</p>
+<pre><code>opt = torch.optim.Adam(model.parameters(), lr=<span class="nm">1e-3</span>)
+loss_fn = nn.MSELoss()
+
+<span class="kw">for</span> epoch <span class="kw">in</span> <span class="fn">range</span>(num_epochs):
+    <span class="kw">for</span> x, y <span class="kw">in</span> dataloader:          <span class="cm"># ดึงข้อมูลทีละ batch</span>
+        opt.zero_grad()              <span class="cm">①  เคลียร์ gradient เก่า</span>
+        pred = model(x)              <span class="cm">②  forward: คำนวณคำทำนาย</span>
+        loss = loss_fn(pred, y)      <span class="cm">③  วัดความผิด</span>
+        loss.backward()             <span class="cm">④  หา gradient ของทุกพารามิเตอร์</span>
+        opt.step()                   <span class="cm">⑤  ปรับพารามิเตอร์ (เดินลงหุบเขา)</span></code></pre>
+
+<div class="card">
+<b>5 ขั้นนี้คือ "วงจรการเรียนรู้" ที่ทุกโมเดลในโลกใช้ — ท่องให้ได้:</b>
+<p style="margin:8px 0"><span class="step">1</span><code>zero_grad</code> เคลียร์ของเก่า → <span class="step">2</span><code>model(x)</code> ทำนาย → <span class="step">3</span><code>loss_fn</code> วัดผิด → <span class="step">4</span><code>backward</code> หา gradient → <span class="step">5</span><code>step</code> ปรับ</p>
+</div>
+<div class="warn"><b>ลำดับห้ามสลับ + ห้ามลืม zero_grad:</b> ถ้าลืม <code>zero_grad()</code> gradient จะสะสมข้ามรอบ (ดูคำเตือนส่วน 3) โมเดลจะเทรนพัง · <code>Adam</code> เป็น optimizer ที่นิยมสุด ปรับ learning rate ให้อัตโนมัติ ใช้ <code>lr=1e-3</code> เป็นจุดเริ่มมาตรฐาน</div>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. GPU · train/eval · no_grad</h2>
+<pre><code>device = <span class="st">"cuda"</span> <span class="kw">if</span> torch.cuda.is_available() <span class="kw">else</span> <span class="st">"cpu"</span>
+model = model.to(device)               <span class="cm"># ส่งโมเดลขึ้น GPU</span>
+x = x.to(device); y = y.to(device)     <span class="cm"># ข้อมูลต้องอยู่ device เดียวกับโมเดล</span>
+
+<span class="cm"># ตอนประเมินผล (ไม่เทรน): ปิด autograd → เร็วขึ้น + ประหยัดแรม</span>
+model.eval()
+<span class="kw">with</span> torch.no_grad():
+    pred = model(x_test)
+
+model.train()                          <span class="cm"># กลับเข้าโหมดเทรน</span></code></pre>
+<table>
+<tr><th>คำสั่ง</th><th>ใช้เมื่อ</th></tr>
+<tr><td><code>.to(device)</code></td><td>ย้ายโมเดล/ข้อมูลขึ้น GPU</td></tr>
+<tr><td><code>model.eval()</code> / <code>model.train()</code></td><td>สลับโหมด (บางชั้นเช่น dropout/batchnorm ทำงานต่างกัน 2 โหมด)</td></tr>
+<tr><td><code>torch.no_grad()</code></td><td>ตอน inference/ประเมิน — ไม่ต้องจด gradient ประหยัดแรม GPU</td></tr>
+</table>
+<div class="why"><b>เชื่อมกับงานเรา:</b> A100 บน Colab แรมจำกัด — <code>no_grad()</code> ตอนประเมิน + <code>float32</code> (จาก 0.1) + batch size พอเหมาะ คือ 3 เครื่องมือกันแรมหมด (OOM) ที่จะใช้ตลอดโปรเจกต์</div>
+
+<!-- ============ 9 ============ -->
+<h2 id="p9">9. ตัวอย่างเต็ม — เทรนโมเดลจริง (รันได้)</h2>
+<pre><code><span class="kw">import</span> torch, torch.nn <span class="kw">as</span> nn
+
+<span class="cm"># ข้อมูลของเล่น: เรียนฟังก์ชัน y = 2x + 1</span>
+X = torch.randn(<span class="nm">200</span>, <span class="nm">1</span>)
+Y = <span class="nm">2</span>*X + <span class="nm">1</span> + <span class="nm">0.1</span>*torch.randn(<span class="nm">200</span>, <span class="nm">1</span>)   <span class="cm"># มี noise นิดหน่อย</span>
+
+model   = nn.Linear(<span class="nm">1</span>, <span class="nm">1</span>)                       <span class="cm"># โมเดลง่ายสุด: หา w, b</span>
+opt     = torch.optim.Adam(model.parameters(), lr=<span class="nm">0.05</span>)
+loss_fn = nn.MSELoss()
+
+<span class="kw">for</span> epoch <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">200</span>):
+    opt.zero_grad()                     <span class="cm">①</span>
+    pred = model(X)                     <span class="cm">②</span>
+    loss = loss_fn(pred, Y)             <span class="cm">③</span>
+    loss.backward()                     <span class="cm">④</span>
+    opt.step()                          <span class="cm">⑤</span>
+    <span class="kw">if</span> epoch % <span class="nm">50</span> == <span class="nm">0</span>:
+        <span class="fn">print</span>(epoch, loss.item())
+
+<span class="cm"># ดูว่าโมเดลเรียนได้ w≈2, b≈1 ไหม</span>
+<span class="fn">print</span>(model.weight.item(), model.bias.item())   <span class="cm"># →</span> <span class="out">~2.0, ~1.0 ✓</span></code></pre>
+<p class="muted">โมเดลนี้เริ่มจากค่าสุ่ม แล้ว "เรียนรู้" ว่า y = 2x+1 ด้วยตัวเอง ผ่านวงจร 5 ขั้น · เปลี่ยน <code>nn.Linear</code> เป็นโมเดลอะไรก็ได้ โครงเดิมไม่เปลี่ยน — <b>นี่คือ template ที่คุณจะใช้เทรน HazeNet</b></p>
+
+<!-- ============ 10 ============ -->
+<h2 id="p10">10. เชื่อมกับ HazeNet — และความลับ "adjoint ฟรี"</h2>
+<h4>โมเดลเราในร่าง PyTorch (โครงคร่าว)</h4>
+<pre><code><span class="kw">class</span> <span class="fn">HazeNetOperator</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        <span class="fn">super</span>().__init__()
+        self.coef_net = AFNO(...)        <span class="cm"># ทำนายสัมประสิทธิ์ g, D, K จาก Met</span>
+
+    <span class="kw">def</span> <span class="fn">forward</span>(self, C, wind, fire, met):
+        g, D, K = self.coef_net(met)     <span class="cm"># เรียนรู้สัมประสิทธิ์</span>
+        C = advect(C, wind)              <span class="cm"># 𝒜 ฟิสิกส์ (semi-Lagrangian)</span>
+        C = C + g*fire - D*C             <span class="cm"># เชิงเส้นใน C (หัวข้อ 3.5)</span>
+        <span class="kw">return</span> C                         <span class="cm"># = C_{t+1}</span>
+</code></pre>
+<p>เทรนด้วยวงจร 5 ขั้นเดิมเป๊ะ: ทำนาย <code>C_{t+1}</code> → เทียบฝุ่นจริง (MSE) → backward → step</p>
+
+<div class="ex"><b>★ ความลับที่ทำให้งานเราเป็น A* (เชื่อมหัวข้อ 3.7):</b><br>
+autograd ไม่ได้คำนวณ gradient แค่ของ "พารามิเตอร์" เท่านั้น — มันคำนวณ gradient ของ <b>อะไรก็ได้ที่ requires_grad</b> รวมถึง <b>อินพุต</b> ด้วย! ดังนั้น:
+<pre style="margin-top:8px"><code>fire = fire.requires_grad_(<span class="kw">True</span>)
+dust_downstream = model(C, wind, fire, met).sum()
+dust_downstream.backward()
+fire.grad      <span class="cm"># = ∂(ฝุ่นปลายทาง)/∂(ไฟต้นทาง) = "adjoint"</span></code></pre>
+นี่คือ <b>"adjoint" ที่ WRF-Chem ต้องสร้างแยกเป็นปี ๆ — แต่เราได้ฟรีจาก <code>.backward()</code> หนึ่งบรรทัด</b> · มันบอกว่า "ไฟตรงไหนมีผลต่อฝุ่นเมืองมากสุด" → เป็นฐานของ source inversion (แก้ย้อนหาแหล่ง) และ counterfactual ทั้งหมด · <b>autograd ที่คุณเพิ่งเรียน = หัวใจที่ทำให้ความสามารถเรือธงของเราเป็นจริง</b></div>
+
+<!-- ============ CHEAT ============ -->
+<h2 id="cheat">11. Cheat Sheet + แบบฝึกหัด</h2>
+<div class="card">
+<table>
+<tr><th>ต้องการ</th><th>คำสั่ง</th></tr>
+<tr><td>สร้าง/ติดตาม gradient</td><td><code>torch.tensor(.., requires_grad=True)</code></td></tr>
+<tr><td>หา gradient</td><td><code>loss.backward()</code> → อ่านที่ <code>x.grad</code></td></tr>
+<tr><td>นิยามโมเดล</td><td><code>class M(nn.Module): __init__ / forward</code></td></tr>
+<tr><td>loss</td><td><code>nn.MSELoss()</code></td></tr>
+<tr><td>optimizer</td><td><code>torch.optim.Adam(model.parameters(), lr=1e-3)</code></td></tr>
+<tr><td><b>วงจรเทรน</b></td><td><code>zero_grad → model(x) → loss → backward → step</code></td></tr>
+<tr><td>GPU / inference</td><td><code>.to("cuda")</code> · <code>with torch.no_grad():</code></td></tr>
+</table>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด</p>
+<ol>
+<li>เรียง 5 ขั้นของวงจรเทรนให้ถูก: <code>step, backward, zero_grad, loss, forward</code></li>
+<li>ถ้าลืม <code>opt.zero_grad()</code> จะเกิดอะไร?</li>
+<li><code>x = torch.tensor(5.0, requires_grad=True)</code>, <code>y = 3*x</code>, <code>y.backward()</code> — <code>x.grad</code> เท่าไร?</li>
+<li>ทำไมตอนประเมินผลต้องใช้ <code>torch.no_grad()</code>?</li>
+</ol>
+<details>
+<summary style="cursor:pointer;color:var(--cyan)">▶ เฉลย</summary>
+<ol style="margin-top:8px">
+<li><code>zero_grad → forward → loss → backward → step</code></li>
+<li>gradient สะสมข้ามรอบ → การปรับพารามิเตอร์เพี้ยน → โมเดลเทรนไม่ลง/พัง</li>
+<li><code>3.0</code> (เพราะ dy/dx = 3)</li>
+<li>ไม่ต้องคำนวณ/เก็บ gradient → เร็วขึ้น + ประหยัดแรม GPU (สำคัญมากกับ A100 จำกัด)</li>
+</ol>
+</details>
+</div>
+
+<hr>
+<div class="lead">
+<b>จบ 0.2 แล้วคุณควร:</b> เข้าใจว่า autograd คำนวณ gradient ให้อัตโนมัติ · เขียนวงจรเทรน 5 ขั้นได้ · นิยามโมเดลด้วย <code>nn.Module</code> · และเห็นแล้วว่า <b class="k">autograd คือสิ่งเดียวกับที่ให้ "adjoint ฟรี" สำหรับ source inversion ของเรา</b><br><br>
+<b>ขั้นต่อไปแนะนำ:</b> <b>0.3 Gradient descent / loss / optimization</b> (เจาะลึก "การเดินลงหุบเขา" ที่เกริ่นไว้) หรือกระโดดไปสายโดเมน <b>1.1 PM2.5/AOD/FRP</b>
+</div>
+
+<p class="center muted">HazeNet · Knowledge · 0.2 PyTorch &amp; Autograd</p>
+
+<hr>
+<h2 style="color:var(--purple);border-bottom:2px solid var(--purple)">★ ส่วนเสริม — สิ่งที่เรียนรู้เพิ่มเติมจากการถามตอบ</h2>
+<p class="muted">เนื้อหาส่วนนี้ขยายจากคำถามจริงที่เกิดขึ้น — อ่านต่อจากส่วน 1–11 ได้เลย</p>
+
+<!-- ============ 12 ============ -->
+<h2 id="p12">12. .backward() ดิฟอะไร? — ตอบชัดๆ</h2>
+<p>หลายคนงงว่า <code>.backward()</code> "ดิฟอะไร" — คำตอบคือมันดิฟ <b>loss ตาม weight เสมอ</b></p>
+
+<div class="card" style="border-color:var(--green)">
+<b style="color:var(--green)">สูตรที่ backward หา:</b>
+<pre><code>∂loss/∂w   ← อ่านว่า "เดล loss เดล w"
+
+แปลตรงๆ: "ถ้าขยับ w นิดเดียว → loss จะเปลี่ยนเท่าไร"</code></pre>
+</div>
+
+<p>ถ้าสมการยาวหลายชั้น PyTorch ใช้ <b>chain rule</b> ไล่คูณทีละขั้น:</p>
+<pre><code><span class="cm"># สมมติมีโซ่:</span>
+y    = x * w        <span class="cm"># ขั้น 1</span>
+z    = y + b        <span class="cm"># ขั้น 2</span>
+loss = z ** 2       <span class="cm"># ขั้น 3</span>
+
+<span class="cm"># chain rule ไล่ย้อน:</span>
+<span class="cm"># ∂loss/∂w = ∂loss/∂z × ∂z/∂y × ∂y/∂w</span>
+<span class="cm">#           =   2z    ×    1   ×   x</span>
+<span class="cm"># PyTorch คำนวณทั้งหมดนี้ให้อัตโนมัติ</span>
+
+loss.backward()
+<span class="fn">print</span>(w.grad)   <span class="cm"># = 2z × x  ← ผลจาก chain rule</span></code></pre>
+
+<div class="why"><b>สรุปสั้น:</b> <code>.backward()</code> = สั่งให้ PyTorch คำนวณ chain rule ทั้งหมดแทนเรา · <code>.grad</code> = กล่องเก็บผลลัพธ์ · optimizer เปิดกล่องนี้แล้วปรับ weight ด้วย <code>opt.step()</code></div>
+
+<div class="card">
+<b>วงจรการเรียนรู้ทั้งหมดในภาพเดียว:</b>
+<pre><code>opt.zero_grad()          <span class="cm">① เคลียร์กล่อง .grad เก่า</span>
+y_pred = model(x)        <span class="cm">② forward — คำนวณคำทำนาย + จด graph</span>
+loss = loss_fn(y_pred, y)<span class="cm">③ วัดความผิด</span>
+loss.backward()          <span class="cm">④ หา ∂loss/∂w ของ weight ทุกตัว → เก็บใน .grad</span>
+opt.step()               <span class="cm">⑤ w = w − lr × w.grad  (เดินลงเขา)</span></code></pre>
+</div>
+
+<!-- ============ 13 ============ -->
+<h2 id="p13">13. โครงสร้าง TinyNet ละเอียด — nn.Module ให้อะไรฟรีบ้าง</h2>
+<p>เมื่อเขียน <code>class TinyNet(nn.Module)</code> = "ขอสืบทอดความสามารถจากแม่แบบ" — ได้ของฟรีทันที:</p>
+
+<table>
+<tr><th>ฟังก์ชัน</th><th>ทำอะไร</th></tr>
+<tr><td><code>model.parameters()</code></td><td>คืน weights ทั้งหมด (ให้ optimizer ใช้)</td></tr>
+<tr><td><code>model.train()</code></td><td>โหมดเทรน (เปิด dropout ฯลฯ)</td></tr>
+<tr><td><code>model.eval()</code></td><td>โหมดทดสอบ (ปิด dropout)</td></tr>
+<tr><td><code>model.to(device)</code></td><td>ย้ายทั้งโมเดลไป GPU/CPU</td></tr>
+<tr><td><code>model(x)</code></td><td>เรียก <code>forward()</code> อัตโนมัติ</td></tr>
+</table>
+
+<p><b>ทำไม <code>self.</code> ต้องมีก่อนทุก layer?</b></p>
+<pre><code><span class="cm"># ถ้าไม่มี self. → เครื่องจักรวางบนพื้น แล้วหายหลัง __init__ จบ</span>
+<span class="kw">def</span> <span class="fn">__init__</span>(self):
+    super().__init__()
+    fc1 = nn.Linear(<span class="nm">10</span>, <span class="nm">32</span>)   <span class="cm"># ❌ ไม่มี self. → หาย → parameters() มองไม่เห็น</span>
+    self.fc1 = nn.Linear(<span class="nm">10</span>, <span class="nm">32</span>) <span class="cm"># ✅ เก็บในโมเดล → อยู่ตลอด</span></code></pre>
+
+<p><b>ทำไม <code>model(x)</code> ไม่ใช่ <code>model.forward(x)</code>?</b></p>
+<p>PyTorch ไม่ได้เรียก <code>forward()</code> ตรงๆ — มันเรียกผ่าน <code>__call__</code> ของ <code>nn.Module</code> ซึ่งมีระบบเพิ่มเติม (hooks สำหรับ debug ฯลฯ) · ให้เรียก <code>model(x)</code> เสมอ</p>
+
+<!-- ============ 14 ============ -->
+<h2 id="p14">14. nn.Linear(10, 32) — รับ 10 ออก 32 ยังไง ทำไม 352 ตัว</h2>
+<p>เริ่มจากกรณีง่ายสุด แล้วค่อยขยาย</p>
+
+<h3>กรณีที่ 1: 1 input → 1 output</h3>
+<pre><code>y = x × w + b
+<span class="cm"># x = ตัวเลขเข้า, w = weight 1 ตัว, b = bias 1 ตัว</span>
+<span class="cm"># พารามิเตอร์ = 1 + 1 = 2 ตัว</span></code></pre>
+
+<h3>กรณีที่ 2: 3 input → 1 output</h3>
+<pre><code>y = x1×w1 + x2×w2 + x3×w3 + b
+<span class="cm"># w = 3 ตัว, b = 1 ตัว → รวม 4 ตัว</span>
+<span class="cm"># สูตร: (input × output) + output = 3×1 + 1 = 4</span></code></pre>
+
+<h3>กรณีที่ 3: 3 input → 4 output (แก่นสำคัญ)</h3>
+<p>แต่ละ output ใช้ <b>ชุด weight ของตัวเอง</b> — คำนวณแยกกัน 4 รอบ:</p>
+<pre><code>output1 = x1×w11 + x2×w21 + x3×w31 + b1
+output2 = x1×w12 + x2×w22 + x3×w32 + b2
+output3 = x1×w13 + x2×w23 + x3×w33 + b3
+output4 = x1×w14 + x2×w24 + x3×w34 + b4
+<span class="cm"># weights = 3×4 = 12, bias = 4 → รวม 16 ตัว</span></code></pre>
+
+<div class="card" style="border-color:var(--amber)">
+<b style="color:var(--amber)">กลับมาที่ nn.Linear(10, 32):</b>
+<pre><code>weights = 10 × 32 = 320 ตัว
+bias    =      32 =  32 ตัว
+              รวม = 352 ตัว  ✓</code></pre>
+<p style="margin:6px 0 0"><b>สูตรทั่วไป:</b> <code>nn.Linear(a, b)</code> → พารามิเตอร์ = <code>(a × b) + b</code></p>
+</div>
+
+<!-- ============ 15 ============ -->
+<h2 id="p15">15. bias b — สุ่มมาแล้วปรับด้วยมั้ย?</h2>
+<p><b>ปรับด้วยครับ</b> — b เป็นพารามิเตอร์เหมือน weight ทุกอย่าง มี <code>requires_grad=True</code> อัตโนมัติ</p>
+
+<pre><code><span class="cm"># backward() หา gradient ทั้ง W และ b พร้อมกัน</span>
+loss.backward()
+<span class="cm"># → ∂loss/∂W เก็บใน W.grad</span>
+<span class="cm"># → ∂loss/∂b เก็บใน b.grad</span>
+
+<span class="cm"># step() ปรับทั้งคู่พร้อมกัน</span>
+opt.step()
+<span class="cm"># → W = W − lr × W.grad</span>
+<span class="cm"># → b = b − lr × b.grad</span></code></pre>
+
+<p><b>ทำไมต้องมี bias?</b> — ถ้าไม่มี b เส้นต้องผ่านจุดศูนย์กำเนิดเสมอ ยืดหยุ่นน้อย</p>
+<pre><code><span class="cm"># ไม่มี b:  y = 2x     → ถ้า x=0 แล้ว y=0 เสมอ</span>
+<span class="cm"># มี b:     y = 2x + 3 → ถ้า x=0 แล้ว y=3  (ขยับได้)</span>
+<span class="cm"># เหมือน y = mx + c ของเส้นตรง — ถ้าไม่มี c เส้นต้องผ่านจุด (0,0)</span></code></pre>
+
+<!-- ============ 16 ============ -->
+<h2 id="p16">16. ทำไมต้อง 32 output? ตัวเดียวไม่ได้หรอ?</h2>
+<p>ได้ — แต่โมเดลจะโง่มาก เพราะ output แต่ละตัวจับ <b>pattern คนละชนิด</b></p>
+
+<div class="card">
+<b>อุปมา: ทีมนักสืบ</b>
+<pre><code>output=1  → นักสืบคนเดียว ดูข้อมูลทุกอย่างแล้วสรุปเลย
+           → มองแค่ "รายได้สูง = ซื้อ" ตื้นๆ
+
+output=32 → ทีม 32 คน แต่ละคนเชี่ยวชาญคนละด้าน
+           → คนที่ 1: ดูหนี้สิน
+           → คนที่ 2: ดูอายุ+รายได้
+           → คนที่ 3: ดูภูมิภาค+ราคาย่าน
+           → ...
+           → ชั้นสุดท้ายรวบความเห็น 32 ชิ้น → สรุป</code></pre>
+</div>
+
+<h3>ทำไมแต่ละ output ถึงจับ pattern ต่างกัน?</h3>
+<p>เพราะ <b>สุ่ม weight ต่างกันตอนเริ่ม</b> + <b>relu ทำให้แยกตัวกัน</b></p>
+<pre><code><span class="cm"># weight สุ่มต่างกัน → แต่ละ output "มองข้อมูลคนละมุม"</span>
+y1 = x1×0.23 + x2×0.87 + ...   <span class="cm"># ชุดนี้สนใจ feature แบบนึง</span>
+y2 = x1×0.95 + x2×0.02 + ...   <span class="cm"># ชุดนี้สนใจ feature อีกแบบ</span>
+
+<span class="cm"># หลัง relu บางตัวดับ (=0) บางตัวสว่าง (>0) ต่างกันต่อข้อมูลแต่ละชุด</span>
+<span class="cm"># → แต่ละ output เชี่ยวชาญ pattern ต่างกันโดยธรรมชาติ ไม่ใช่เราสั่ง</span></code></pre>
+
+<div class="warn"><b>ถ้าไม่มี relu:</b> ชั้น 2 ชั้น (หรือ N ชั้น) รวมกันได้เป็นชั้นเดียวเสมอ → มี 32 output ก็ไม่ต่างจาก 1 output · relu คือสิ่งที่ทำให้หลายชั้นมีความหมาย</div>
+
+<h3>จะรู้ได้ยังไงว่าควรใช้กี่ output?</h3>
+<table>
+<tr><th>หลักคิด</th><th>รายละเอียด</th></tr>
+<tr><td>ดูงานคล้ายกัน</td><td>คนอื่นใช้เท่าไร → เริ่มตรงนั้น</td></tr>
+<tr><td>ดูปริมาณข้อมูล</td><td>ข้อมูลน้อย = โมเดลเล็ก, ข้อมูลเยอะ = โมเดลใหญ่ได้</td></tr>
+<tr><td>วัดบน validation set</td><td>ลอง 16 → 32 → 64 → เลือกที่ val loss ต่ำสุด</td></tr>
+<tr><td>ใช้เลขยกกำลัง 2</td><td>32, 64, 128, 256 — GPU คำนวณเร็วกว่า</td></tr>
+</table>
+<p class="muted">ไม่มีสูตรตายตัว — ทุกคนในวงการก็ลองแล้ววัด</p>
+
+<!-- ============ 17 ============ -->
+<h2 id="p17">17. โมเดลใหญ่ ≠ ฉลาดขึ้นเสมอ — Overfitting + Vanishing Gradient</h2>
+
+<h3>ปัญหา 1: Overfitting — ท่องจำแทนที่จะเข้าใจ</h3>
+<pre><code><span class="cm"># เด็กที่จำเฉลยข้อสอบเก่า:</span>
+ข้อสอบเก่า → ทำได้ 100%  ✓
+ข้อสอบใหม่ → ทำได้ 20%   ✗  ← ท่องจำ ไม่ได้เข้าใจ
+
+<span class="cm"># โมเดลใหญ่เกิน + ข้อมูลน้อย:</span>
+training loss   = 0.001  (จำทุก data point)
+validation loss = 2.500  (ข้อมูลใหม่ทำนายพลาด)</code></pre>
+
+<h3>ปัญหา 2: Vanishing Gradient — gradient หายกลางทาง</h3>
+<p>ยิ่งชั้นลึก gradient ที่ไล่ย้อนกลับยิ่งเล็กลงเรื่อยๆ จนชั้นแรกๆ ไม่ได้รับ gradient และไม่เรียนอะไรเลย</p>
+<pre><code><span class="cm"># เหมือนโทรศัพท์สายยาว 100 คน:</span>
+คนที่ 100 → 99 → 98 → ... → 1
+ข่าวจางหายและเพี้ยนก่อนถึงต้น
+
+<span class="cm"># gradient ก็เหมือนกัน:</span>
+loss → ชั้น 10 (เต็ม) → ชั้น 5 (เล็กลง) → ชั้น 1 (แทบศูนย์)
+→ ชั้นแรกไม่ได้เรียน</code></pre>
+
+<div class="why"><b>เชื่อมกับ HazeNet:</b> เราอยู่บน A100 เครื่องเดียว 15 ชั่วโมง + สถานีวัด PM2.5 ไทยมีไม่มาก → โมเดลใหญ่เกินทำให้ overfitting กับสถานีไม่กี่สิบจุด · เป้าหมายคือหา "จุดพอดี" ไม่ใช่ใหญ่ที่สุด</div>
+
+<!-- ============ 18 ============ -->
+<h2 id="p18">18. Adam Optimizer — ทำงานยังไงเบื้องหลัง</h2>
+
+<h3>ปัญหาของ SGD ที่ Adam แก้</h3>
+<table>
+<tr><th>ปัญหา SGD</th><th>อาการ</th></tr>
+<tr><td>ก้าวขนาดเดิมทุก weight</td><td>weight บางตัวเรียนช้า บางตัวกระโดดข้ามหุบ</td></tr>
+<tr><td>ทิศสั่นไปมา</td><td>gradient สลับบวก/ลบ → เดินซ้ายขวา ไปช้า</td></tr>
+</table>
+
+<h3>Adam แก้ด้วยการจำ "ประวัติ" 2 อย่าง</h3>
+<pre><code><span class="cm"># m = ค่าเฉลี่ยทิศทาง (Momentum)  → แก้การสั่น</span>
+<span class="cm"># v = ค่าเฉลี่ยขนาด²  (Variance)  → แก้ขนาดก้าว</span>
+
+<span class="cm"># ทั้งสองเริ่มที่ 0 และอัปเดตทุก step:</span>
+m = 0.9  × m_เก่า + 0.1  × gradient   <span class="cm"># 90% จำอดีต + 10% ปัจจุบัน</span>
+v = 0.999 × v_เก่า + 0.001 × gradient² <span class="cm"># จำขนาด gradient ที่ผ่านมา</span></code></pre>
+
+<div class="card">
+<b>ทำไม m แก้การสั่น?</b>
+<pre><code>รอบ 1: gradient = +10  → m =  0 + 1    =  1.0
+รอบ 2: gradient = -10  → m = 0.9 - 1   = -0.1  ← เกือบศูนย์ ไม่สั่น!
+รอบ 3: gradient = +10  → m = -0.09 + 1 =  0.91
+
+<span class="cm"># m เฉลี่ยออก → ทิศทางนิ่ง เดินตรงกว่า SGD มาก</span></code></pre>
+</div>
+
+<div class="card">
+<b>ทำไม / √v แก้ขนาดก้าว?</b>
+<pre><code>gradient ใหญ่มาตลอด → v ใหญ่ → √v ใหญ่ → หารแล้วก้าวเล็กลง ✓
+gradient เล็กมาตลอด → v เล็ก → √v เล็ก → หารแล้วก้าวใหญ่ขึ้น ✓
+<span class="cm"># ปรับขนาดก้าวอัตโนมัติต่อ weight แต่ละตัว!</span></code></pre>
+</div>
+
+<h3>สูตรอัปเดต weight ของ Adam (ครบ)</h3>
+<pre><code><span class="cm"># ขั้น 1: gradient ปกติจาก backward()</span>
+g = ∂loss/∂w
+
+<span class="cm"># ขั้น 2: อัปเดต m และ v</span>
+m = 0.9   × m + 0.1   × g
+v = 0.999 × v + 0.001 × g²
+
+<span class="cm"># ขั้น 3: แก้ bias (รอบแรกๆ m,v เริ่มที่ 0 จึงเล็กเกิน)</span>
+m̂ = m / (1 - 0.9^t)    <span class="cm"># t = รอบที่เท่าไร</span>
+v̂ = v / (1 - 0.999^t)
+
+<span class="cm"># ขั้น 4: ปรับ weight</span>
+w = w - lr × m̂ / (√v̂ + 1e-8)
+<span class="cm"># 1e-8 กันหารศูนย์</span></code></pre>
+
+<div class="why"><b>ชื่อ Adam มาจาก:</b> <b>A</b>daptive <b>M</b>oment <b>E</b>stimation · Adaptive = ปรับขนาดก้าวเองได้ · Moment = m (moment 1) และ v (moment 2)</div>
+
+<table>
+<tr><th></th><th>SGD</th><th>Adam</th></tr>
+<tr><td>ทิศทาง</td><td>gradient ล้วนๆ สั่น</td><td>เฉลี่ยจากอดีต นิ่งกว่า</td></tr>
+<tr><td>ขนาดก้าว</td><td>คงที่ทุก weight</td><td>ปรับอัตโนมัติต่อ weight</td></tr>
+<tr><td>จำอดีต</td><td>❌</td><td>✅ (m และ v)</td></tr>
+<tr><td>RAM</td><td>น้อย</td><td>มากกว่า (เก็บ m,v เพิ่ม)</td></tr>
+<tr><td>ความนิยม</td><td>ใช้เฉพาะบางงาน</td><td>default สำหรับงานส่วนใหญ่</td></tr>
+</table>
+
+<div class="warn"><b>แต่ละ weight มี m และ v ของตัวเอง</b> — Adam จำประวัติแยกกันทุกตัว · โมเดลที่มี 1 ล้าน weight ก็มี m และ v 1 ล้านคู่ → RAM เพิ่ม 2 เท่าของ weight</div>
+
+<!-- ============ 19 ============ -->
+<h2 id="p19">19. ภาพรวม PyTorch เบื้องหลังทั้งหมด — จบในที่เดียว</h2>
+
+<div class="card" style="border-color:var(--purple)">
+<b style="color:var(--purple)">3 ระบบใหญ่ที่ทำงานเบื้องหลัง:</b>
+
+<h4>ระบบ 1: Computation Graph — สมุดจดการคำนวณ</h4>
+<pre><code><span class="cm"># ทุก operation บน tensor ที่มี requires_grad=True</span>
+<span class="cm"># PyTorch แอบสร้าง node และเชื่อมเป็น graph</span>
+
+x ──┐
+    ├──[MulBackward]──→ y ──┐
+w ──┘                        ├──[AddBackward]──→ loss
+b ───────────────────────────┘
+
+<span class="cm"># แต่ละ node จำ: input มาจากไหน + สูตรอนุพันธ์ของตัวเอง</span></code></pre>
+
+<h4>ระบบ 2: Backward Pass — ไล่ย้อนด้วย chain rule</h4>
+<pre><code><span class="cm"># loss.backward() → เดินย้อนกราฟจากขวาไปซ้าย</span>
+loss → [AddBackward] → y.grad, b.grad
+     → [MulBackward] → w.grad
+
+<span class="cm"># ผลสุดท้ายเก็บใน .grad ของทุก parameter</span></code></pre>
+
+<h4>ระบบ 3: Optimizer — ปรับ weight ตาม .grad</h4>
+<pre><code><span class="cm"># opt.step() วนไปทุก parameter:</span>
+<span class="cm"># SGD:  w = w - lr × w.grad</span>
+<span class="cm"># Adam: w = w - lr × m̂ / (√v̂ + ε)  (ปรับขนาดก้าวด้วย)</span></code></pre>
+</div>
+
+<table>
+<tr><th>สิ่ง</th><th>เราเขียนเอง</th><th>PyTorch ทำให้</th></tr>
+<tr><td>โครงสร้างโมเดล</td><td>✅ __init__</td><td></td></tr>
+<tr><td>การไหลของข้อมูล</td><td>✅ forward</td><td></td></tr>
+<tr><td>วงจร 5 ขั้น</td><td>✅</td><td></td></tr>
+<tr><td>จด computation graph</td><td></td><td>✅</td></tr>
+<tr><td>chain rule ทุกชั้น</td><td></td><td>✅</td></tr>
+<tr><td>เก็บ .grad</td><td></td><td>✅</td></tr>
+<tr><td>Adam m,v update</td><td></td><td>✅</td></tr>
+<tr><td>GPU acceleration</td><td></td><td>✅</td></tr>
+</table>
+
+<div class="chk">
+<p class="q">แบบฝึกหัดเพิ่มเติม (จากการเรียนรู้ใหม่)</p>
+<ol>
+<li><code>nn.Linear(5, 16)</code> มีพารามิเตอร์กี่ตัว? (คำนวณให้ได้)</li>
+<li>ถ้าไม่มี relu เลยในโมเดล 5 ชั้น — มันต่างจากโมเดล 1 ชั้นยังไง?</li>
+<li>Adam จำอะไร 2 อย่าง และแต่ละอย่างแก้ปัญหาอะไร?</li>
+<li>ทำไมโมเดลใหญ่ขึ้นถึงไม่ได้ฉลาดขึ้นเสมอ? (ตอบให้ครบ 2 เหตุผล)</li>
+</ol>
+<details>
+<summary style="cursor:pointer;color:var(--cyan)">▶ เฉลย</summary>
+<ol style="margin-top:8px">
+<li>(5×16) + 16 = 80 + 16 = <b>96 ตัว</b></li>
+<li>ไม่ต่างเลย — ทุกชั้นรวมกันได้เป็นสมการเชิงเส้นชั้นเดียวเสมอ relu คือสิ่งที่ทำให้หลายชั้นมีความหมาย</li>
+<li><b>m</b> (ค่าเฉลี่ยทิศทาง) แก้การสั่นของ gradient · <b>v</b> (ค่าเฉลี่ยขนาด²) แก้ขนาดก้าวให้ปรับอัตโนมัติต่อ weight</li>
+<li>(1) <b>Overfitting</b> — โมเดลท่องจำ training data แทนที่จะเข้าใจ · (2) <b>Vanishing gradient</b> — ชั้นลึกเกิน gradient หายก่อนถึงชั้นแรก ไม่ได้เรียนอะไร</li>
+</ol>
+</details>
+</div>
+
+<p class="center muted">HazeNet · Knowledge · 0.2 PyTorch &amp; Autograd</p>
+
+</div>
+</body>
+</html>

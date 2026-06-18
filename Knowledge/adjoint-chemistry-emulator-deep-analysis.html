@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forward+Adjoint Chemistry Emulator — วิเคราะห์เชิงลึก (ครึ่งหลังของ HazeNet)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:28px;line-height:1.28;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:24px;margin:50px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19.5px;margin:30px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .hz{border:1px solid var(--green);background:rgba(63,185,80,.06);border-radius:10px;padding:14px 20px;margin:16px 0}
+  .hz .h{color:var(--green);font-weight:bold;font-size:15.5px;margin-bottom:4px}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.4px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{line-height:1.95}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--green);color:var(--green);margin-left:6px}
+  svg{max-width:100%;height:auto;display:block;margin:8px auto}
+  .legend{font-size:13px;color:var(--muted);text-align:center;margin-top:4px}
+
+  .eq{background:#11161d;border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin:16px 0;text-align:center;font-size:18px;font-family:"Cambria Math","Times New Roman",serif;overflow-x:auto}
+  .eq .small{font-size:14px;color:var(--muted)}
+  .fwd{color:var(--blue);font-weight:bold} .adj{color:var(--pink);font-weight:bold}
+
+  /* results bars */
+  .bar-row{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:13.5px}
+  .bar-name{width:200px;flex-shrink:0;color:var(--muted)}
+  .bar-track{flex:1;background:var(--panel2);border-radius:5px;height:20px;position:relative;overflow:hidden}
+  .bar-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,#3fb95088,#3fb950)}
+  .bar-val{width:60px;text-align:right;flex-shrink:0}
+
+  .tag{font-size:11.5px;padding:1px 8px;border-radius:10px;border:1px solid var(--border);color:var(--muted);background:var(--panel2);margin-left:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>🔄 Forward + Adjoint Chemistry Emulator — วิเคราะห์เชิงลึก <span class="pin">ครึ่งหลังของ HazeNet</span></h1>
+<p class="tagline">"Deep Learning Emulator Towards Both Forward and Adjoint Modes of Atmospheric Gas-Phase Chemical Process" — เปเปอร์ที่พิสูจน์ว่า source inversion ของเราทำได้จริง</p>
+<p class="sub">ต้นฉบับ: Atmosphere (MDPI) 2025, vol.16(9), 1109 · 21 ก.ย. 2025 · <a href="https://www.mdpi.com/2073-4433/16/9/1109">DOI 10.3390/atmos16091109</a></p>
+
+<div class="lead">
+<b>ทำไมเลือกอ่านตัวนี้ต่อจาก FastCTM:</b> FastCTM สอน <span class="fwd">"ครึ่งหน้า"</span> ของ HazeNet = ตัว <b>forward model</b> (พยากรณ์ฝุ่นไปข้างหน้า).
+แต่จุดขายจริงของเราคือ <span class="adj">"ครึ่งหลัง"</span> = <b>source inversion</b> (กลับทิศหาว่าฝุ่นมาจากแหล่งไหน) — ซึ่ง FastCTM แทบไม่แตะ.
+<br><br>เปเปอร์นี้คือ <b>ครึ่งหลังที่ขาดไป</b>: มันพิสูจน์ด้วยตัวเลขจริงว่า "เอา NN เคมีมาทำ <span class="adj">adjoint (กลับทิศ)</span> ได้ฟรีผ่าน autodiff" — แม่นถึง R²=0.995. นี่คือหลักฐานชิ้นเอกของบท 3.7 ที่คุณเรียนมา.
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#s1">1. ภาพใหญ่ — เปเปอร์นี้แก้อะไร</a><br>
+<a href="#s2">2. ทำไม "เคมี" คือคอขวด (ทฤษฎี Stiff ODE)</a><br>
+<a href="#s3">3. ทฤษฎี Adjoint = Autodiff = .backward()</a><br>
+<a href="#s4">4. ทำไม adjoint แบบดั้งเดิม "นรก"</a><br>
+<a href="#s5">5. สถาปัตยกรรม FiLM-ResNet</a><br>
+<a href="#s6">6. สองโหมดจากโมเดลเดียว (forward + adjoint)</a><br>
+<a href="#s7">7. ผลลัพธ์ + วิธี validate adjoint</a><br>
+<a href="#s8">8. ข้อจำกัด (ซื่อสัตย์)</a><br>
+<a href="#s9">9. ⭐ เปเปอร์นี้ ↔ HazeNet — เทียบทุกจุด</a><br>
+<a href="#s10">10. สรุป + เช็กลิสต์</a><br>
+</div>
+
+<!-- 1 -->
+<h2 id="s1">1. ภาพใหญ่ — เปเปอร์นี้แก้ปัญหาอะไร</h2>
+<p>ในแบบจำลองคุณภาพอากาศ (CMAQ) มี 2 "โหมด" การใช้งาน:</p>
+<table>
+<tr><th>โหมด</th><th>ทำอะไร</th><th>ใช้ทำอะไร</th></tr>
+<tr><td><span class="fwd">Forward (ไปข้างหน้า)</span></td><td>emission → ความเข้มข้นฝุ่น</td><td>พยากรณ์ปกติ ("พรุ่งนี้ฝุ่นเท่าไหร่")</td></tr>
+<tr><td><span class="adj">Adjoint (กลับทิศ)</span></td><td>ความไว ∂(ฝุ่น)/∂(emission) — ฝุ่นที่จุดนี้ "ไว" ต่อแหล่งไหน</td><td>source inversion, data assimilation, "ลดที่ไหนได้ผลสุด"</td></tr>
+</table>
+<p><b>ปัญหา:</b> ทั้งสองโหมด<b>ช้ามาก</b> และตัวการหลักคือ <b>"เคมีก๊าซ" (gas-phase chemistry)</b> — เปเปอร์ระบุชัดว่าเป็น "คอขวดการคำนวณหลัก" ทั้งใน forward และ adjoint.</p>
+<p><b>ไอเดีย:</b> เทรน NN เลียนแบบเฉพาะ "ตัวแก้เคมี" (chemistry solver) ของ CMAQ → ได้ทั้ง forward (เร็วขึ้น 80–130×) <b>และ</b> adjoint (เร็วขึ้น 45–102×) จากโมเดลเดียว เพราะ NN หาอนุพันธ์ได้.</p>
+
+<div class="hz"><div class="h">🎯 ทำไมตรงกับเราเป๊ะ</div>
+HazeNet = forward (พยากรณ์ฝุ่น) + adjoint (หาแหล่ง). เปเปอร์นี้คือ <b>proof-of-concept ของ "ครึ่ง adjoint"</b> ในโดเมนเคมีบรรยากาศ — โดเมนเดียวกับเรา, งบเล็กเหมือนเรา. ถ้าเขาทำได้ R²=0.995 → ยืนยันว่าแนวทาง source inversion ของเรา "ไม่ใช่ฝัน".
+</div>
+
+<!-- 2 -->
+<h2 id="s2">2. ทำไม "เคมี" คือคอขวด — ทฤษฎี Stiff ODE</h2>
+<p>เพื่อเข้าใจว่าทำไมเปเปอร์นี้โจมตี "เคมี" โดยเฉพาะ ต้องรู้จักคำว่า <b>Stiff ODE (สมการเชิงอนุพันธ์แบบแข็ง)</b>.</p>
+
+<div class="card">
+<p><b>เคมีบรรยากาศ = ระบบสมการ ODE ของอัตราการเกิด/สลายสารหลายสิบตัว:</b></p>
+<div class="eq" style="font-size:16px">dC<sub>i</sub>/dt = (สารเกิด) − (สารสลาย) &nbsp;<span class="small">สำหรับสารทุกตัว i พร้อมกัน</span></div>
+<p><b>ปัญหา "stiff":</b> ปฏิกิริยาในบรรยากาศมีอัตราต่างกัน<b>มหาศาล</b> — บางปฏิกิริยาเกิดใน<b>เสี้ยววินาที</b> (เช่น radical OH) บางอันใช้เวลา<b>หลายชั่วโมง</b>. เมื่อมีทั้งเร็วจัดและช้าจัดปนกัน เรียกว่า "stiff".</p>
+</div>
+
+<svg viewBox="0 0 720 150" role="img" aria-label="stiff ode timescales">
+  <text x="360" y="20" text-anchor="middle" fill="#e6edf3" font-size="13.5" font-weight="bold">ปฏิกิริยาเคมีในอากาศ: เร็วจัด ↔ ช้าจัด อยู่ในระบบเดียวกัน = "stiff"</text>
+  <line x1="60" y1="70" x2="660" y2="70" stroke="#30363d" stroke-width="2"/>
+  <circle cx="120" cy="70" r="6" fill="#f85149"/><text x="120" y="100" text-anchor="middle" fill="#f85149" font-size="11">OH radical<br/></text><text x="120" y="115" text-anchor="middle" fill="#9aa7b4" font-size="10">~μวินาที</text>
+  <circle cx="300" cy="70" r="6" fill="#e3b341"/><text x="300" y="100" text-anchor="middle" fill="#e3b341" font-size="11">NO₂ photolysis</text><text x="300" y="115" text-anchor="middle" fill="#9aa7b4" font-size="10">~นาที</text>
+  <circle cx="500" cy="70" r="6" fill="#3fb950"/><text x="500" y="100" text-anchor="middle" fill="#3fb950" font-size="11">O₃ สะสม</text><text x="500" y="115" text-anchor="middle" fill="#9aa7b4" font-size="10">~ชั่วโมง</text>
+  <text x="60" y="60" fill="#9aa7b4" font-size="10">เร็ว</text><text x="640" y="60" fill="#9aa7b4" font-size="10">ช้า</text>
+</svg>
+
+<div class="why"><b>ทำไม stiff = ช้า:</b> ตัวแก้สมการต้องเดินด้วย "ก้าวเวลาจิ๋ว ๆ" เพื่อตามปฏิกิริยาที่เร็วที่สุดให้ทัน (ไม่งั้นคำตอบระเบิด) → ต้องใช้ <b>implicit solver (เช่น Rosenbrock)</b> ที่ต้องคำนวณ <b>Jacobian matrix</b> (เมทริกซ์อนุพันธ์) ทุกก้าว → แพงมหาศาล. นี่คือเหตุผลที่เคมีกิน 50–90% ของเวลารัน CMAQ.</div>
+
+<div class="hz"><div class="h">🎯 เชื่อมกับเรา</div>
+จำได้ไหมว่า FastCTM โมดูลเคมี (④) ก็เป็นจุดอ่อน (NH₄⁺ R²=0.30)? <b>นี่คือเหตุผลเชิงลึก</b> — เคมีทั้งช้าและซับซ้อนเพราะ stiffness. เปเปอร์นี้โจมตีจุดนี้ตรง ๆ. สำหรับ HazeNet: ถ้าเราเทรน NN ให้ "ข้าม" การแก้ stiff ODE ได้ในก้าวเดียว = ได้ทั้งความเร็ว<b>และ</b>ความ differentiable (ซึ่ง stiff solver ดั้งเดิมไม่มี).</div>
+
+<!-- 3 -->
+<h2 id="s3">3. ทฤษฎีหัวใจ — Adjoint = Automatic Differentiation = .backward()</h2>
+<p>นี่คือทฤษฎีที่สำคัญที่สุดของเปเปอร์ และเป็นแกนของบท 3.7 ที่คุณเรียน. ขอปูจากศูนย์:</p>
+
+<h3>3.1 "Sensitivity" คืออะไร และทำไมต้องการ</h3>
+<p>เราอยากรู้: "ถ้าเพิ่ม emission ที่จุด A นิดนึง ฝุ่นที่เชียงใหม่จะเปลี่ยนเท่าไหร่?" = <b>∂(ฝุ่นเชียงใหม่)/∂(emission ที่ A)</b>. นี่คือ "ความไว (sensitivity)".</p>
+<p>ถ้ามี emission แค่จุดเดียวก็ง่าย — ลองเพิ่มแล้วดู (finite difference). แต่ถ้ามี <b>16,384 จุด</b> (กริด 128×128) ต้องลองทีละจุด = รัน 16,384 รอบ = <b>เป็นไปไม่ได้</b>.</p>
+
+<h3>3.2 Adjoint method = ได้ความไว "ทุกจุดพร้อมกัน" ในรอบเดียว</h3>
+<div class="green-box">
+<b>เวทมนตร์ของ adjoint:</b> แทนที่จะลองเปลี่ยน input ทีละตัว (forward sensitivity, แพงตามจำนวน input) — adjoint คำนวณ<b>ย้อนกลับ</b>จาก output ทีเดียว แล้วได้ความไวเทียบกับ <b>input ทุกตัวพร้อมกัน</b>. ต้นทุน ≈ รัน forward แค่ 1–2 รอบ ไม่ว่าจะมี input กี่ล้านตัว.
+</div>
+
+<svg viewBox="0 0 720 200" role="img" aria-label="adjoint backward pass">
+  <defs><marker id="af" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#58a6ff"/></marker>
+  <marker id="ab" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f778ba"/></marker></defs>
+  <rect x="40" y="80" width="120" height="50" rx="8" fill="#161b22" stroke="#58a6ff"/><text x="100" y="110" text-anchor="middle" fill="#58a6ff" font-size="13">Q (emission)</text>
+  <rect x="230" y="80" width="120" height="50" rx="8" fill="#11201a" stroke="#3fb950"/><text x="290" y="110" text-anchor="middle" fill="#3fb950" font-size="13">NN เคมี</text>
+  <rect x="420" y="80" width="120" height="50" rx="8" fill="#161b22" stroke="#58a6ff"/><text x="480" y="110" text-anchor="middle" fill="#58a6ff" font-size="13">C (ฝุ่น)</text>
+  <rect x="600" y="80" width="90" height="50" rx="8" fill="#161b22" stroke="#e3b341"/><text x="645" y="110" text-anchor="middle" fill="#e3b341" font-size="13">Loss</text>
+  <!-- forward -->
+  <line x1="160" y1="95" x2="228" y2="95" stroke="#58a6ff" stroke-width="2" marker-end="url(#af)"/>
+  <line x1="350" y1="95" x2="418" y2="95" stroke="#58a6ff" stroke-width="2" marker-end="url(#af)"/>
+  <line x1="540" y1="95" x2="598" y2="95" stroke="#58a6ff" stroke-width="2" marker-end="url(#af)"/>
+  <text x="370" y="55" text-anchor="middle" fill="#58a6ff" font-size="12">① Forward: คำนวณไปข้างหน้า →</text>
+  <!-- backward -->
+  <line x1="598" y1="118" x2="542" y2="118" stroke="#f778ba" stroke-width="2" marker-end="url(#ab)"/>
+  <line x1="418" y1="118" x2="352" y2="118" stroke="#f778ba" stroke-width="2" marker-end="url(#ab)"/>
+  <line x1="228" y1="118" x2="162" y2="118" stroke="#f778ba" stroke-width="2" marker-end="url(#ab)"/>
+  <text x="370" y="160" text-anchor="middle" fill="#f778ba" font-size="12">② Adjoint/Backward: ไหลย้อนกลับ ← ได้ ∂Loss/∂Q ทุกจุดพร้อมกัน</text>
+</svg>
+
+<h3>3.3 ความจริงที่เปลี่ยนทุกอย่าง: Adjoint = Backpropagation</h3>
+<div class="eq" style="font-size:17px"><span class="adj">Adjoint method</span> &nbsp;=&nbsp; <span style="color:var(--green)">Reverse-mode Automatic Differentiation</span> &nbsp;=&nbsp; <code style="color:var(--amber)">loss.backward()</code></div>
+<p>ทั้งสามคำนี้คือ<b>สิ่งเดียวกันทางคณิตศาสตร์ 100%</b>. นักวิทยาศาสตร์บรรยากาศเรียก "adjoint", คน ML เรียก "backprop / autograd", แต่มันคืออัลกอริทึมเดียวกัน (chain rule ย้อนกลับ).</p>
+<div class="why"><b>นี่คือ insight ทั้งหมดของเปเปอร์:</b> ถ้าตัวแก้เคมีเป็น <b>NN</b> (ไม่ใช่ Rosenbrock solver) → adjoint ของมันก็คือ <code>.backward()</code> ที่ PyTorch/TF ให้มา<b>ฟรี</b> — ไม่ต้องเขียน adjoint code เองเลย. แค่เรียก autodiff. นั่นคือทำไมเขาได้ "ทั้งสองโหมดจากโมเดลเดียว".</div>
+
+<div class="hz"><div class="h">🎯 เชื่อมกับเรา — นี่คือบท 3.7 ตัวเป็น ๆ</div>
+บท 3.7 เราอ้างว่า "adjoint = .backward()". เปเปอร์นี้คือ<b>การพิสูจน์เชิงตัวเลข</b>ของคำกล่าวนั้น: เขาเอา sensitivity ที่ได้จาก autodiff ของ NN ไปเทียบกับ sensitivity อ้างอิง → ได้ R²=0.995 (เกือบเป๊ะ). → เราเอาตัวเลขนี้ไปอ้างใน proposal ได้ว่า "วิธี source inversion ของเรามีงานยืนยันแล้วว่าแม่น".</div>
+
+<!-- 4 -->
+<h2 id="s4">4. ทำไม adjoint แบบดั้งเดิมถึง "นรก" (และทำไมเราถึงได้เปรียบ)</h2>
+<p>เพื่อเห็นคุณค่าของ "adjoint ฟรีจาก autodiff" ต้องรู้ว่าวิธีเดิมมันทรมานแค่ไหน:</p>
+<table>
+<tr><th></th><th>Adjoint ดั้งเดิม (เช่น CMAQ-Adj)</th><th>Adjoint จาก NN (เปเปอร์นี้ + เรา)</th></tr>
+<tr><td>วิธีได้มา</td><td>เขียน "adjoint code" ด้วยมือ — derive อนุพันธ์ของทุกสมการแล้ว code กลับทิศทีละบรรทัด</td><td>เรียก <code>.backward()</code></td></tr>
+<tr><td>เวลาพัฒนา</td><td><b>หลายปี</b> (งาน "The Adjoint of CMAQ" เป็นงานวิจัยใหญ่ทั้งชิ้น)</td><td><b>0 วัน</b> (autodiff ให้ฟรี)</td></tr>
+<tr><td>แก้/อัปเดต</td><td>เปลี่ยนสมการ = เขียน adjoint ใหม่ทั้งหมด</td><td>เทรนใหม่ → autodiff ตามให้เอง</td></tr>
+<tr><td>ความเร็ว</td><td>ช้า (stiff Jacobian)</td><td>เร็ว 45–102×</td></tr>
+</table>
+<div class="why"><b>"The Adjoint of CMAQ" (Hakami et al., ES&T 2007)</b> — งานคลาสสิกที่ใช้ความพยายามมหาศาลเขียน adjoint ของ CMAQ ด้วยมือ. เปเปอร์ที่เราอ่านอยู่นี้แสดงว่า: ถ้าใช้ NN emulator คุณ "ข้าม" ความทรมานทั้งหมดนั้นไปได้เลย. <a href="https://pubs.acs.org/doi/abs/10.1021/es070944p">(ดูงาน adjoint ดั้งเดิม)</a></div>
+
+<!-- 5 -->
+<h2 id="s5">5. สถาปัตยกรรม — FiLM-ResNet</h2>
+<p>เปเปอร์ใช้สถาปัตยกรรมชื่อ <b>FiLM-ResNet</b> = <b>ResNet</b> (โครงหลัก) + <b>FiLM layers</b> (ตัวปรับตามเงื่อนไข). มาดูทั้งสองทฤษฎี:</p>
+
+<h3>5.1 ResNet — เรียน "ส่วนต่าง" ไม่ใช่ค่าเต็ม</h3>
+<p><b>ปัญหาที่ ResNet แก้:</b> network ลึก ๆ เทรนยาก (gradient หาย — vanishing gradient). <b>วิธีของ ResNet (He et al. 2016):</b> ให้แต่ละบล็อกเรียน "ส่วนที่ต้องเปลี่ยน (residual)" แล้วบวกกลับเข้า input ผ่าน "skip connection".</p>
+
+<svg viewBox="0 0 620 150" role="img" aria-label="resnet block">
+  <defs><marker id="ar3" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#56d4dd"/></marker></defs>
+  <rect x="30" y="60" width="90" height="44" rx="7" fill="#161b22" stroke="#58a6ff"/><text x="75" y="87" text-anchor="middle" fill="#58a6ff" font-size="13">C (input)</text>
+  <rect x="200" y="60" width="120" height="44" rx="7" fill="#11201a" stroke="#3fb950"/><text x="260" y="80" text-anchor="middle" fill="#3fb950" font-size="12">layers</text><text x="260" y="96" text-anchor="middle" fill="#9aa7b4" font-size="10">เรียน F(C) = ΔC</text>
+  <circle cx="420" cy="82" r="20" fill="#161b22" stroke="#e3b341"/><text x="420" y="87" text-anchor="middle" fill="#e3b341" font-size="16">+</text>
+  <rect x="500" y="60" width="100" height="44" rx="7" fill="#161b22" stroke="#58a6ff"/><text x="550" y="80" text-anchor="middle" fill="#58a6ff" font-size="12">C + F(C)</text><text x="550" y="96" text-anchor="middle" fill="#9aa7b4" font-size="10">= C ใหม่</text>
+  <line x1="120" y1="82" x2="198" y2="82" stroke="#56d4dd" stroke-width="2" marker-end="url(#ar3)"/>
+  <line x1="320" y1="82" x2="398" y2="82" stroke="#56d4dd" stroke-width="2" marker-end="url(#ar3)"/>
+  <line x1="440" y1="82" x2="498" y2="82" stroke="#56d4dd" stroke-width="2" marker-end="url(#ar3)"/>
+  <!-- skip -->
+  <path d="M75,60 Q75,25 250,25 Q420,25 420,60" stroke="#bc8cff" stroke-width="2" fill="none" stroke-dasharray="5 4" marker-end="url(#ar3)"/>
+  <text x="250" y="18" text-anchor="middle" fill="#bc8cff" font-size="11">skip connection (ส่ง C ตรงมาบวก)</text>
+</svg>
+
+<div class="why"><b>ทำไม ResNet เหมาะกับเคมีพอดี:</b> เคมีคือ "ความเข้มข้นเปลี่ยนไป<b>นิดหน่อย</b>ในแต่ละก้าวเวลา" → เรียน ΔC (ส่วนต่าง) ง่ายกว่าเรียน C ใหม่ทั้งก้อน. โครง C_new = C + F(C) จึงเป็น "ภาษาธรรมชาติ" ของการเดินเวลา. <b>เหมือน FastCTM ที่ใช้ C(t+1)=C(t)+ΔC เป๊ะ!</b></div>
+
+<h3>5.2 FiLM — ปรับ network ตาม "เงื่อนไข" (กลางวัน/กลางคืน)</h3>
+<p><b>ปัญหาที่ FiLM แก้:</b> เคมีบรรยากาศ<b>กลางวันกับกลางคืนคนละโลก</b> — กลางวันมีแสงแดดขับ "photolysis" (เช่น NO₂ + แสง → โอโซน), กลางคืนไม่มี. ถ้าใช้ network เดียวตรง ๆ มันจะงงว่าตอนนี้กลางวันหรือคืน.</p>
+<p><b>วิธีของ FiLM (Feature-wise Linear Modulation, Perez et al. 2018):</b> ให้ "เงื่อนไข" (condition) มาปรับ feature ภายใน network ด้วยการ <b>คูณ (γ) และบวก (β)</b>:</p>
+<div class="eq" style="font-size:17px">FiLM(x) = <span style="color:var(--cyan)">γ(condition)</span> · x + <span style="color:var(--amber)">β(condition)</span></div>
+<p>เมื่อ γ, β ถูกคำนวณจากเงื่อนไข (เช่น มี/ไม่มีแสงแดด, อุณหภูมิ). → network เดียวปรับตัวเองให้เข้ากับสภาวะได้.</p>
+
+<div class="danger" style="border-color:var(--green);background:rgba(63,185,80,.08)">
+<b style="color:var(--green)">💡 การค้นพบสำคัญสำหรับเรา — FiLM คือ "Conditionally-Linear Operator" (บท 3.5) ตัวเป็น ๆ!</b><br><br>
+ดูสูตร FiLM ให้ดี: <code>γ(met)·C + β(met)</code> — มันคือ<b>โอเปอเรเตอร์ที่เป็นเชิงเส้นใน C แต่สัมประสิทธิ์ (γ, β) ขึ้นกับเงื่อนไข (met)</b>. นี่คือนิยามของ "conditionally-linear operator" ที่คุณเรียนในบท 3.5 เป๊ะ ๆ!
+<br><br>แปลว่า: <b>FiLM คือวิธี implement บท 3.5 ที่พิสูจน์แล้วในงานจริง</b> — และเพราะมันเชิงเส้นใน C → <b>ปลอดภัยกับ tagged-tracer (3.6)</b>: ทุก tracer ใช้ γ, β ชุดเดียวกัน (มาจาก met เดียวกัน) แยกแล้วบวกกลับได้. นี่คือสะพานเชื่อม FastCTM (K=Encoder(met)) → FiLM → บท 3.5 → บท 3.6 ทั้งหมด.
+</div>
+
+<!-- 6 -->
+<h2 id="s6">6. สองโหมดจากโมเดลเดียว</h2>
+<p>เมื่อมี FiLM-ResNet ที่เทรนแล้ว (differentiable ทั้งตัว) ก็ได้ทั้งสองโหมดทันที:</p>
+<div class="card">
+<p><span class="fwd"><b>Forward mode:</b></span> ป้อนความเข้มข้น + เงื่อนไข → network คายความเข้มข้นใหม่หลังเคมีทำงาน 1 ก้าวเวลา</p>
+<pre><code><span class="nm">C_next</span> = <span class="fn">FiLM_ResNet</span>(C_now, condition)   <span class="cm"># เร็ว 80–130×</span></code></pre>
+<p><span class="adj"><b>Adjoint mode:</b></span> เรียก autodiff → ได้ความไวของ output เทียบ input ทุกตัว</p>
+<pre><code><span class="nm">C_next</span> = <span class="fn">FiLM_ResNet</span>(C_now, condition)
+loss = <span class="fn">objective</span>(C_next)
+loss.<span class="fn">backward</span>()        <span class="cm"># ← adjoint! ได้ ∂loss/∂C_now ฟรี เร็ว 45–102×</span>
+sensitivity = C_now.grad</code></pre>
+</div>
+<div class="why"><b>จุดที่ต้องซึ้ง:</b> โหมด adjoint <b>ไม่ต้องเขียนโค้ดเพิ่มเลยนอกจาก <code>.backward()</code></b>. นี่คือความต่างมหาศาลจาก CMAQ-Adj ที่ต้องเขียน adjoint code แยกเป็นปี ๆ. และเพราะใช้โมเดล forward ตัวเดิม → adjoint "สอดคล้อง" กับ forward อัตโนมัติ (consistent).</div>
+
+<!-- 7 -->
+<h2 id="s7">7. ผลลัพธ์ + วิธี validate adjoint</h2>
+<h3>7.1 ความแม่น</h3>
+<div style="margin:14px 0">
+  <div class="bar-row"><span class="bar-name"><span class="fwd">Forward</span> (74% ของสาร)</span><span class="bar-track"><span class="bar-fill" style="width:99.9%"></span></span><span class="bar-val">R²&gt;0.999</span></div>
+  <div class="bar-row"><span class="bar-name"><span class="adj">Adjoint</span> (sensitivity)</span><span class="bar-track"><span class="bar-fill" style="width:99.5%"></span></span><span class="bar-val">R²=0.995</span></div>
+</div>
+<p class="muted">Forward: 74% ของสารก๊าซทำนาย ΔC ในก้าวเดียวด้วย R²&gt;0.999 · Adjoint: ความไวจาก autodiff สูงสุด R²=0.995</p>
+
+<h3>7.2 ความเร็ว</h3>
+<table>
+<tr><th>โหมด</th><th>Speed-up vs ตัวแก้ดั้งเดิม</th></tr>
+<tr><td><span class="fwd">Forward</span></td><td><b>80× – 130×</b> (ขึ้นกับ CPU/GPU)</td></tr>
+<tr><td><span class="adj">Adjoint</span></td><td><b>45× – 102×</b></td></tr>
+</table>
+
+<h3>7.3 วิธี validate adjoint (สำคัญสำหรับเรา)</h3>
+<p>เขาพิสูจน์ว่า adjoint จาก autodiff "ถูก" โดยเอาความไวที่ได้จาก <code>.backward()</code> ไป<b>เทียบกับความไวอ้างอิง</b> (เช่น finite-difference / ตัวแก้ดั้งเดิม) แล้ววัด R². ได้ 0.995 = เกือบเป๊ะ → ยืนยันว่า "autodiff ให้ adjoint ที่ถูกต้อง".</p>
+<div class="hz"><div class="h">🎯 เมธอดนี้ = validation plan ของเรา</div>
+HazeNet ต้องทำเหมือนกัน: หลังได้ gradient จาก <code>.backward()</code> (สำหรับ source inversion) ต้อง<b>เทียบกับ finite-difference</b> ในจุดทดสอบ เพื่อพิสูจน์ว่า sensitivity ของเราถูก. นี่คือ "gradient check" — ขั้นตอนที่กรรมการจะถามหา. เปเปอร์นี้ให้ template ของการ validate ที่อ้างอิงได้.</div>
+
+<!-- 8 -->
+<h2 id="s8">8. ข้อจำกัด (ซื่อสัตย์)</h2>
+<table>
+<tr><th>ข้อจำกัด</th><th>ผลต่อการนำมาใช้</th></tr>
+<tr><td>เป็น <b>box model (0 มิติ)</b> — เลียนแบบ "เฉพาะเคมี" ในกล่องเดียว ไม่มีการขนส่งเชิงพื้นที่</td><td>พิสูจน์ "หลักการ adjoint" ได้ แต่ยังไม่ใช่ inverse problem เต็มรูป (ที่ต้องมี transport ด้วย)</td></tr>
+<tr><td>26% ของสารยัง R² ไม่ถึง 0.999</td><td>สารที่ยาก (เหมือน NH₄⁺ ของ FastCTM) ยังเป็นปัญหา</td></tr>
+<tr><td>validate แค่ <b>ก้าวเวลาเดียว (single timestep)</b></td><td>error สะสมตอน rollout ยาว ยังไม่ถูกทดสอบ (เชื่อมกับ rollout stability, Tier 5)</td></tr>
+<tr><td>ตีพิมพ์ใน Atmosphere (MDPI)</td><td>วารสารระดับกลาง — น่าเชื่อถือแต่ไม่ใช่ Nature/Science (อ้างอิงได้ แต่ไม่ใช่ flagship)</td></tr>
+</table>
+
+<!-- 9 -->
+<h2 id="s9">9. ⭐ เปเปอร์นี้ ↔ HazeNet — เทียบทุกจุด</h2>
+
+<h3>9.1 FastCTM + เปเปอร์นี้ = สองครึ่งของ HazeNet</h3>
+<svg viewBox="0 0 760 210" role="img" aria-label="two halves of HazeNet">
+  <rect x="20" y="50" width="200" height="110" rx="10" fill="#161b22" stroke="#58a6ff"/>
+  <text x="120" y="75" text-anchor="middle" fill="#58a6ff" font-size="14" font-weight="bold">FastCTM</text>
+  <text x="120" y="97" text-anchor="middle" fill="#9aa7b4" font-size="11.5">ครึ่ง FORWARD</text>
+  <text x="120" y="116" text-anchor="middle" fill="#9aa7b4" font-size="11">5 โมดูลฟิสิกส์</text>
+  <text x="120" y="133" text-anchor="middle" fill="#9aa7b4" font-size="11">พยากรณ์ฝุ่นไปข้างหน้า</text>
+
+  <text x="290" y="100" text-anchor="middle" fill="#3fb950" font-size="28">+</text>
+
+  <rect x="330" y="50" width="200" height="110" rx="10" fill="#161b22" stroke="#f778ba"/>
+  <text x="430" y="75" text-anchor="middle" fill="#f778ba" font-size="14" font-weight="bold">เปเปอร์นี้</text>
+  <text x="430" y="97" text-anchor="middle" fill="#9aa7b4" font-size="11.5">ครึ่ง ADJOINT</text>
+  <text x="430" y="116" text-anchor="middle" fill="#9aa7b4" font-size="11">adjoint = autodiff</text>
+  <text x="430" y="133" text-anchor="middle" fill="#9aa7b4" font-size="11">กลับทิศหาแหล่ง</text>
+
+  <text x="600" y="100" text-anchor="middle" fill="#3fb950" font-size="24">→</text>
+
+  <rect x="630" y="40" width="120" height="130" rx="10" fill="#11201a" stroke="#3fb950" stroke-width="2"/>
+  <text x="690" y="95" text-anchor="middle" fill="#3fb950" font-size="15" font-weight="bold">HazeNet</text>
+  <text x="690" y="118" text-anchor="middle" fill="#e6edf3" font-size="11">forward +</text>
+  <text x="690" y="134" text-anchor="middle" fill="#e6edf3" font-size="11">adjoint +</text>
+  <text x="690" y="150" text-anchor="middle" fill="#e6edf3" font-size="11">attribution</text>
+</svg>
+
+<h3>9.2 สิ่งที่เรา "ลอก/ยืนยันได้" จากเปเปอร์นี้</h3>
+<table>
+<tr><th>หยิบมาใช้</th><th>เหตุผล</th></tr>
+<tr><td><b>adjoint ผ่าน <code>.backward()</code></b></td><td>พิสูจน์แล้ว R²=0.995 → source inversion เราทำได้จริง (บท 3.7)</td></tr>
+<tr><td><b>FiLM layer</b> สำหรับ condition ด้วย met</td><td>= conditionally-linear operator (3.5) ที่ implement ได้จริง + ปลอดภัยกับ tagged-tracer</td></tr>
+<tr><td><b>ResNet</b> เรียน ΔC</td><td>เข้ากับการเดินเวลา C(t+1)=C(t)+ΔC (เหมือน FastCTM)</td></tr>
+<tr><td><b>gradient check</b> (เทียบ AD vs finite-difference)</td><td>วิธี validate inversion ของเรา — กรรมการจะถามหา</td></tr>
+<tr><td>ตัวเลข speed-up (forward 80–130×, adjoint 45–102×)</td><td>ตั้งความคาดหวังที่สมจริงสำหรับ HazeNet</td></tr>
+</table>
+
+<h3>9.3 สิ่งที่เรา "ไปไกลกว่า" เปเปอร์นี้</h3>
+<div class="green-box">
+<ul>
+<li><b>เขาทำแค่เคมี (0 มิติ) — เราทำทั้งระบบ:</b> HazeNet รวม transport + diffusion + chemistry + deposition + emission แล้ว adjoint <b>ทั้ง pipeline</b> (ไม่ใช่แค่กล่องเคมี).</li>
+<li><b>เขาทำ sensitivity — เราทำ inversion เต็มรูป:</b> เขาแค่<b>คำนวณ</b>ความไว. เรา<b>ใช้</b>ความไวนั้นใน optimization loop เพื่อ<b>กู้คืน emission Q จริง</b> จากค่าที่วัดได้ (บท 3.7 full inversion).</li>
+<li><b>เราเพิ่ม spatial attribution:</b> tagged-tracer (3.6) แยกแหล่งเชิงพื้นที่ (เมียนมา/ลาว/ไทย) — เปเปอร์นี้ไม่มี.</li>
+<li><b>เราเพิ่ม uncertainty:</b> quantile/CRPS (3.9).</li>
+</ul>
+</div>
+
+<div class="warn"><b>บทเรียนเตือนใจจากข้อจำกัดเขา:</b> เขา validate แค่ "ก้าวเวลาเดียว". แต่ source inversion ของเราต้อง backprop ผ่าน <b>rollout ยาวหลายสิบชั่วโมง</b> → gradient อาจระเบิด/หาย (vanishing/exploding ตอน backprop ยาว). เราต้องเตรียม <b>gradient checkpointing</b> (บท 3.7) + จับตา rollout stability (Tier 5). อย่าคิดว่า "ก้าวเดียวแม่น = ยาวก็แม่น".</div>
+
+<!-- 10 -->
+<h2 id="s10">10. สรุป + เช็กลิสต์นำไปใช้</h2>
+<div class="lead">
+<b>เปเปอร์นี้ในหนึ่งประโยค:</b> "เอา NN (FiLM-ResNet) มาเลียนแบบตัวแก้เคมีของ CMAQ — ได้ทั้ง forward (เร็ว 80–130×, R²&gt;0.999) และ adjoint (เร็ว 45–102×, R²=0.995) จากโมเดลเดียว เพราะ NN หาอนุพันธ์ได้ → autodiff ให้ adjoint ฟรี แทนการเขียน adjoint code เป็นปี ๆ."
+</div>
+
+<h4>✅ เช็กลิสต์ดึงมาใส่ HazeNet:</h4>
+<ul>
+<li>☐ ยืนยันแนวทาง source inversion ด้วย <code>.backward()</code> (มีงานพิสูจน์แล้ว R²=0.995)</li>
+<li>☐ ใช้ <b>FiLM</b> condition โมดูลด้วย met → implement บท 3.5 + ปลอดภัยกับ tagged-tracer</li>
+<li>☐ ใช้ <b>ResNet</b> (เรียน ΔC + skip connection) เป็นบล็อกพื้นฐาน</li>
+<li>☐ ทำ <b>gradient check</b> (AD vs finite-difference) เป็นหลักฐานความถูกต้อง</li>
+<li>☐ adjoint <b>ทั้ง pipeline</b> ไม่ใช่แค่เคมี + ใช้ทำ inversion เต็มรูป (ไปไกลกว่าเขา)</li>
+<li>☐ เตรียม gradient checkpointing สำหรับ backprop ผ่าน rollout ยาว</li>
+</ul>
+
+<div class="hz"><div class="h">🎯 ประโยคพูดกับกรรมการ</div>
+"แนวทาง source inversion ของ HazeNet — ใช้ automatic differentiation แทน adjoint code ดั้งเดิม — มีงานยืนยันแล้วในโดเมนเคมีบรรยากาศ (Atmosphere 2025) ว่าให้ sensitivity ที่แม่นถึง R²=0.995 และเร็วขึ้น ~50–100×. <b>HazeNet ต่อยอดด้วยการ adjoint ทั้ง pipeline (ไม่ใช่แค่เคมี) และใช้มันทำ source inversion เชิงพื้นที่เต็มรูป ผ่าน tagged-tracer</b> — ซึ่งยังไม่มีใครทำกับปัญหาหมอกควันข้ามแดนอาเซียน"
+</div>
+
+<hr>
+<p class="muted center">วิเคราะห์จากต้นฉบับ: "Deep Learning Emulator Towards Both Forward and Adjoint Modes of Atmospheric Gas-Phase Chemical Process", Atmosphere 2025, 16(9), 1109 · <a href="https://www.mdpi.com/2073-4433/16/9/1109">mdpi.com/2073-4433/16/9/1109</a><br>
+อ้างอิงประกอบ: The Adjoint of CMAQ (Hakami et al. 2007) · FiLM (Perez et al. 2018) · ResNet (He et al. 2016) · Stiff ODE/Rosenbrock (Sandu et al.)<br>
+ตัวเลขผลลัพธ์อ้างอิงจากเปเปอร์ · การเชื่อมโยงกับ HazeNet เป็นการวิเคราะห์เพื่อการเรียนรู้<br>
+อ่านคู่กับ: fastctm-deep-analysis.html (ครึ่ง forward) · 3.7 differentiable inversion · 3.5 conditionally-linear · 3.6 tagged-tracer</p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HazeCast v2 — Validation Data Feasibility (V3/V4 เช็กของจริง)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.75;font-size:16px;}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 20px 80px}
+  h1{font-size:28px;line-height:1.3;margin:0 0 6px}
+  h2{font-size:22px;margin:44px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:18px;margin:24px 0 8px;color:var(--cyan)}
+  p{margin:10px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:16px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px 22px;margin:16px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.5px}
+  th,td{border:1px solid var(--border);padding:9px 12px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  a{color:var(--blue)}
+  code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.07)}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.07)}
+  .ok{border-left:4px solid var(--green);background:rgba(63,185,80,.07)}
+  ul{margin:8px 0;padding-left:22px}li{margin:5px 0}
+  .muted{color:var(--muted)}
+  .tag{display:inline-block;font-size:12px;padding:2px 9px;border-radius:20px;border:1px solid var(--border);margin-right:6px}
+  .t-gold{background:rgba(227,179,65,.14);color:var(--amber);border-color:var(--amber)}
+  .t-ind{background:rgba(86,212,221,.12);color:var(--cyan);border-color:var(--cyan)}
+  b.k{color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Validation Data Feasibility — เช็กว่า V3/V4 ทำได้จริงไหม</h1>
+<p class="sub">เป้าหมาย: ก่อนลงแรงเขียนโค้ด ต้องรู้ว่ามี "ground-truth" ให้ validate attribution (C2) และ counterfactual (C3) จริงหรือไม่ — ผลคือ <b>มีจริง</b> มีตัวเลขตีพิมพ์เทียบตรง</p>
+
+<div class="lead">
+<b>คำตัดสิน:</b> <b class="k">C2 validate ได้แน่นอน</b> (2 หลักฐานคนละแกน) · <b class="k">C3 validate ได้ระดับ aggregate</b> (WRF-Chem source-off) แต่ <b>per-event dynamic counterfactual ต้องพึ่ง natural experiment</b> ที่ยังต้องล่าหาเหตุการณ์จริง → contribution ไม่กลวง แต่ V4 per-event ยังเป็นจุดเสี่ยงที่ต้องจัดการ</div>
+
+<h2>หลักฐานที่ใช้ validate ได้ (3 ชิ้น)</h2>
+
+<h3><span class="tag t-gold">① ตรงเป้าสุด</span> WRF-Chem source-off — ภาคเหนือ 2019</h3>
+<div class="card">
+<p><b>ทำไมสำคัญ:</b> นี่คือการทดลอง <b>brute-force source-off แบบเดียวกับ counterfactual (C3) ของเรา</b> ที่ตีพิมพ์แล้ว — Case 1 (ปล่อยทุกแหล่ง) − Case 2 (ตัดควันข้ามแดน) = สัดส่วนควันข้ามแดน</p>
+<table>
+<tr><th>จังหวัด</th><th>ควันข้ามแดน (µg/m³)</th><th>% ของ PM2.5 ทั้งหมด</th></tr>
+<tr><td>เชียงราย</td><td>29.41</td><td><b>45%</b></td></tr>
+<tr><td>แม่ฮ่องสอน</td><td>13.80</td><td>37%</td></tr>
+<tr><td>ตาก</td><td>9.77</td><td>31%</td></tr>
+<tr><td>น่าน</td><td>14.68</td><td>29%</td></tr>
+<tr><td>เชียงใหม่</td><td>11.20</td><td>29%</td></tr>
+<tr><td>พะเยา</td><td>14.03</td><td>28%</td></tr>
+<tr><td>แพร่</td><td>9.65</td><td>24%</td></tr>
+<tr><td>ลำปาง</td><td>8.76</td><td>23%</td></tr>
+<tr><td>ลำพูน</td><td>7.67</td><td>22%</td></tr>
+<tr><td><b>เฉลี่ย 9 จังหวัด</b></td><td><b>13.22</b></td><td><b>30%</b></td></tr>
+</table>
+<p class="muted">WRF-Chem 3.4.1 · กริด 20 km · ม.ค.–พ.ค. 2019 (152 วัน) · validate กับ 10 สถานี PCD (ส่วนใหญ่ underestimate)</p>
+<p><b>ใช้กับเรายังไง:</b> รัน counterfactual "ตัด tracer ข้ามแดน" → สัดส่วน % รายจังหวัดของเราควรอยู่ในช่วงเดียวกัน → calibration target ของ C3 (ระดับ aggregate)</p>
+<p><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC11280843/">PMC11280843</a> · <a href="https://www.mdpi.com/2305-6304/12/7/462">Toxics 2024, 12(7), 462</a></p>
+</div>
+
+<h3><span class="tag t-ind">② หลักฐานอิสระ</span> PMF receptor model — เชียงใหม่</h3>
+<div class="card">
+<p><b>ทำไมเป็นทองคำ:</b> PMF เป็น receptor model จากการวัดองค์ประกอบเคมีจริงในอากาศ <b>ไม่อิงโมเดล transport ใด ๆ</b> → ตรวจ C2 ของเราได้แบบ "อิสระจริง" (ไม่ใช่เอาโมเดลตรวจโมเดล)</p>
+<table>
+<tr><th>แหล่ง (ช่วงหมอกควัน)</th><th>µg/m³</th><th>~% (PM2.5 รวม 116)</th></tr>
+<tr><td>Biomass burning</td><td><b>59.3</b></td><td><b>~51%</b></td></tr>
+<tr><td>Secondary sulfate</td><td>26.2</td><td>~23%</td></tr>
+<tr><td>Dust</td><td>16.1</td><td>~14%</td></tr>
+<tr><td>Traffic</td><td>14.6</td><td>~13%</td></tr>
+</table>
+<p class="muted">51 ตัวอย่าง · แหล่งหลัก = ชายแดนไทย-เมียนมา · อินเดียส่งข้ามแดน 23% (ช่วง SH) · ช่วง non-haze PM2.5 = 35 µg/m³</p>
+<p><b>ใช้กับเรายังไง:</b> สัดส่วน "biomass burning" ของ Fingerprint เราต้องสอดคล้อง ~51% นี้ — ตรวจ <u>ประเภท</u>แหล่ง (ไม่ใช่อำเภอ)</p>
+<p><a href="https://www.sciencedirect.com/science/article/abs/pii/S1352231024001924">Atmospheric Environment 2024 (S1352231024001924)</a> · <a href="https://ui.adsabs.harvard.edu/abs/2024AtmEn.32720517C/abstract">ADS</a></p>
+</div>
+
+<h3><span class="tag t-gold">③ แหล่งเทียบที่ 2</span> WRF-CMAQ + ISAM + brute force — ทั้งประเทศ</h3>
+<div class="card">
+<p>7 ภาคส่วน (Open Biomass Burning, Residential, Industrial, Power, Road, Other Transport, Other Anthropogenic). "Other" (รวมข้ามแดน+ธรรมชาติ) = ตัวครองหลัก peak <b>62.7%</b> ในภาคเหนือชนบท; OBB = แหล่งในประเทศหลักของภาคเหนือ</p>
+<p><b>ใช้กับเรายังไง:</b> ตรวจสัดส่วน in-domain vs out-domain ของเรา + เป็นแหล่งยืนยันที่ 2 ของ TB%</p>
+<p><a href="https://www.sciencedirect.com/science/article/pii/S2666765726000207">ScienceDirect S2666765726000207 (2026)</a></p>
+</div>
+
+<h3>โบนัสสำหรับ Health Layer (ชั้น 4)</h3>
+<div class="card">
+<p>Source Attribution + <b>Health Burden</b> of PM2.5 in Mainland Thailand — เชื่อม attribution → ภาระสุขภาพ ใช้ปรับเทียบ dose-response ของ Health Layer ได้</p>
+<p><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12444943/">PMC12444943</a></p>
+</div>
+
+<h2>Caveat ที่ต้องประกาศ (ไม่งั้นโดนยำ)</h2>
+<div class="card warn">
+<table>
+<tr><th>ปัญหา</th><th>ผลกระทบ</th><th>ทางแก้</th></tr>
+<tr><td>ตัวเลขเป็น<b>ค่าเฉลี่ยรายฤดู</b> (5 เดือน) ไม่ใช่ source-off รายวัน</td><td>เทียบ C3 ได้แค่ระดับ aggregate ไม่ใช่ per-event</td><td>validate shares กับค่านี้ + validate dynamic ด้วย natural experiment แยก</td></tr>
+<tr><td>PMF บอก<b>ประเภท</b>แหล่ง ไม่บอก<b>อำเภอ</b></td><td>tracer เราเป็นเชิงภูมิศาสตร์</td><td>PMF ตรวจ "% biomass"; ภูมิศาสตร์ใช้ TB% + FIRMS hotspot</td></tr>
+<tr><td>WRF-Chem 20 km; เรา 0.1° (~11 km)</td><td>เทียบได้ระดับจังหวัด ไม่ใช่ pixel</td><td>รายงาน province-aggregate</td></tr>
+<tr><td>ส่วนใหญ่ปี <b>2019</b>; test เรา 2023/2025</td><td>pattern คล้ายแต่ไม่เท่า</td><td>ใส่ปี 2019 ในชุดข้อมูลด้วย</td></tr>
+</table>
+</div>
+
+<div class="card danger">
+<b>จุดเสี่ยงที่เหลือ (ต้องจัดการ):</b> <b>per-event dynamic counterfactual</b> ("ถ้าดับไฟ อ.X <u>พรุ่งนี้</u>") <u>ไม่มีใครทำ ground-truth ไว้</u> → ต้องล่า <b>natural experiment</b>: หาเหตุการณ์ที่ฝน/เหตุอื่นดับไฟในพื้นที่หนึ่งกะทันหัน (hotspot หายใน FIRMS) แล้วดูว่าฝุ่นปลายทางลดตามที่โมเดลทำนายไหม — <u>ต้องค้นหาเหตุการณ์จริงให้เจออย่างน้อย 2–3 เคสก่อนเคลม C3 per-event</u></div>
+
+<h2>สรุปความเสี่ยง V3/V4</h2>
+<div class="lead">
+<table style="margin:0">
+<tr><th>การทดลอง</th><th>มี ground-truth?</th><th>ความเสี่ยง</th></tr>
+<tr><td><b>V3 — Attribution (C2)</b></td><td>✅ WRF-Chem + PMF (2 แกน)</td><td><b style="color:var(--green)">ต่ำมาก</b></td></tr>
+<tr><td><b>V4 — Counterfactual aggregate (C3)</b></td><td>✅ WRF-Chem source-off</td><td><b style="color:var(--green)">ต่ำ</b></td></tr>
+<tr><td><b>V4 — Counterfactual per-event (C3)</b></td><td>⚠️ ต้องสร้างจาก natural experiment</td><td><b style="color:var(--amber)">ปานกลาง — จัดการก่อน</b></td></tr>
+</table>
+<p style="margin:12px 0 0"><b>บรรทัดสุดท้าย:</b> ลงแรงเขียนโค้ดได้ — contribution ไม่กลวง · งานต่อไปก่อนโค้ด: <b>ค้นหา natural-experiment เคสจริง 2–3 เคส</b> เพื่ออุดจุดเสี่ยงเดียวที่เหลือ</p>
+</div>
+
+</div>
+</body>
+</html>

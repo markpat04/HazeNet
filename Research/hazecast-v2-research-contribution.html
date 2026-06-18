@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HazeCast v2 — Research Contribution + Physics + Validation (ร่างละเอียด)</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --border:#30363d;
+    --text:#e6edf3; --muted:#9aa7b4; --green:#3fb950;
+    --blue:#58a6ff; --purple:#bc8cff; --amber:#e3b341; --red:#f85149; --cyan:#56d4dd;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--text);
+    font-family:"Segoe UI",Tahoma,sans-serif; line-height:1.75; font-size:16px;}
+  .wrap{max-width:1080px; margin:0 auto; padding:32px 20px 80px}
+  h1{font-size:29px; line-height:1.3; margin:0 0 6px}
+  h2{font-size:23px; margin:46px 0 14px; padding-bottom:8px; border-bottom:2px solid var(--border); color:var(--green)}
+  h3{font-size:19px; margin:26px 0 8px; color:var(--cyan)}
+  h4{font-size:16.5px; margin:18px 0 6px; color:var(--purple)}
+  p{margin:10px 0}
+  .sub{color:var(--muted); font-size:15px; margin:0 0 8px}
+  .lead{background:var(--panel); border:1px solid var(--border); border-left:4px solid var(--green);
+    padding:16px 20px; border-radius:8px; margin:20px 0}
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:10px; padding:18px 22px; margin:16px 0}
+  .eq{background:#11161d; border:1px solid var(--border); border-left:3px solid var(--blue);
+    border-radius:8px; padding:14px 18px; margin:14px 0; font-size:16px; overflow-x:auto;
+    font-family:"Cambria Math","Segoe UI",serif; line-height:2}
+  .eq .lbl{display:block; color:var(--muted); font-size:12.5px; font-family:"Segoe UI",sans-serif; margin-top:4px}
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:14.5px}
+  th,td{border:1px solid var(--border); padding:9px 12px; text-align:left; vertical-align:top}
+  th{background:var(--panel2); color:var(--green)}
+  code{background:#11161d; border:1px solid var(--border); border-radius:5px; padding:1px 6px; color:var(--amber); font-size:14px}
+  .pill{display:inline-block; font-size:12.5px; padding:2px 10px; border-radius:20px; margin:2px 4px 2px 0; border:1px solid var(--border)}
+  .p-keep{background:rgba(63,185,80,.12); color:var(--green); border-color:var(--green)}
+  .p-new{background:rgba(188,140,255,.12); color:var(--purple); border-color:var(--purple)}
+  .p-sota{background:rgba(86,212,221,.12); color:var(--cyan); border-color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber); background:rgba(227,179,65,.07)}
+  .danger{border-left:4px solid var(--red); background:rgba(248,81,73,.07)}
+  .ok{border-left:4px solid var(--green); background:rgba(63,185,80,.07)}
+  ul{margin:8px 0; padding-left:22px} li{margin:5px 0}
+  .muted{color:var(--muted)}
+  .num{font-size:13px; color:var(--blue); font-weight:bold; letter-spacing:1px}
+  .center{text-align:center}
+  .star{color:var(--cyan)}
+  b.k{color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>HazeCast v2 — Research Contribution · Physics · Validation</h1>
+<p class="sub">ร่างละเอียด: เปลี่ยนจาก "ระบบที่ดี" ให้เป็น "งานวิจัยที่ยากพอจะได้เหรียญทอง" ด้วยการกระจุกความยากที่จุดเดียวที่ลึกจริง + ฝังสมการฟิสิกส์เฉพาะที่มันถูกต้อง</p>
+
+<div class="lead">
+<b>คำตัดสินเรื่อง "ใช้ฟิสิกส์ดีมั้ย":</b> <b class="k">ดีมาก</b> — เพิ่มความน่าเชื่อถือ, generalize ได้, ประหยัดข้อมูล (สำคัญมากเพราะเรามี GPU เดียว), และที่สำคัญที่สุด <u>ความสามารถ attribution + counterfactual ของเรา "มีอยู่ไม่ได้" ถ้าไม่มีโครงสร้างฟิสิกส์เชิงเส้น</u> — แต่ต้องมีวินัย: <b>อย่าบังคับฟิสิกส์ตรงที่มันไม่จริง</b> (PM2.5 ไม่ใช่สารอนุรักษ์ — มี secondary aerosol + การตกสะสม) บังคับเกิน = ผิดกายภาพ + แม่นยำลดลง</div>
+
+<h2>0. แกนคิดเดียว: สมการ Advection-Diffusion-Reaction (ADR)</h2>
+<p>ฟิสิกส์การเคลื่อนที่ของฝุ่นในอากาศคือสมการนี้ (เป็นสมการที่ WRF-Chem แก้เชิงตัวเลข):</p>
+<div class="eq">
+∂C/∂t = −∇·(<b>u</b>C) + ∇·(K∇C) + E − L·C + R<sub>chem</sub>
+<span class="lbl">C = ความเข้มข้น PM2.5 · <b>u</b> = ลม · K = สัมประสิทธิ์การกระจายปั่นป่วน · E = การปล่อย (ไฟ) · L = อัตราการสูญเสีย (ตกสะสม/ชะล้าง) · R<sub>chem</sub> = เคมี (เกิด secondary aerosol)</span>
+</div>
+
+<div class="card ok">
+<b class="star">★ ข้อสังเกตทางคณิตที่เป็นกุญแจของทั้งโปรเจกต์:</b><br>
+4 พจน์แรก (advection, diffusion, emission, linear sink) <b>เป็นเชิงเส้นใน C</b> → ใช้หลัก <b>superposition</b> ได้
+<div class="eq" style="margin-top:10px">
+C = Σ<sub>s</sub> C⁽ˢ⁾ &nbsp;&nbsp;&nbsp; โดยแต่ละ tracer C⁽ˢ⁾ วิ่งตามสมการตัวขนส่งตัวเดียวกัน แต่ปล่อยจาก E⁽ˢ⁾ ของตัวเองเท่านั้น
+<span class="lbl">s = แหล่งกำเนิด (เมียนมา / ลาว / ไทยรายอำเภอ / ป่า / เกษตร)</span>
+</div>
+→ <b>attribution แม่นแบบ exact</b> และ <b>counterfactual ("ดับไฟ s") = C − C⁽ˢ⁾ ตรง ๆ</b><br>
+พจน์เดียวที่ทำลายเชิงเส้นคือ R<sub>chem</sub> — จุดที่เราต้องประกาศขอบเขตซื่อสัตย์ (ดูข้อ 4)
+</div>
+
+<h2>1. สถาปัตยกรรม: Operator Splitting (ฟิสิกส์ + เรียนรู้)</h2>
+<p>เราไม่เอาเน็ตเดาทุกอย่าง และไม่เอาฟิสิกส์ล้วน — เราแยกหนึ่งสเต็ปเวลาออกเป็น 2 ส่วน (เทคนิค <b>Strang/operator splitting</b> จากการแก้ PDE เชิงตัวเลข):</p>
+<div class="eq">
+C<sub>t+1</sub> = <span style="color:var(--green)">𝒜(C<sub>t</sub>, <b>u</b><sub>t</sub>)</span> <span style="color:var(--purple)">⊕ ℱ<sub>θ</sub>(C<sub>t</sub>, Fire<sub>t</sub>, Met<sub>t</sub>, AOD<sub>t</sub>, Static)</span>
+<span class="lbl"><span style="color:var(--green)">𝒜 = ตัวขนส่ง semi-Lagrangian (ฟิสิกส์ แม่นตรง)</span> · <span style="color:var(--purple)">ℱ_θ = ส่วนเรียนรู้ (diffusion ใต้กริด + ปล่อย + sink + แก้ error ที่ฟิสิกส์ง่ายพลาด)</span></span>
+</div>
+
+<h3>1.1 ส่วนฟิสิกส์ 𝒜 — Semi-Lagrangian Advection</h3>
+<p>ลากย้อนรอยอนุภาคตามเส้น characteristic แล้ว interpolate ค่าจากตำแหน่งต้นทาง — นี่คือวิธีมาตรฐานใน NWP (ตอบโจทย์ "ลมพัดควันไปไหน" ตรงตามกายภาพ ไม่ปล่อยให้เน็ตเดา)</p>
+<div class="card warn">
+<b>ต้องซื่อสัตย์:</b> semi-Lagrangian แบบ interpolation มาตรฐาน <u>ไม่อนุรักษ์มวลอย่างเคร่งครัด</u> → ต้องใช้ <b>flux-form semi-Lagrangian (FFSL)</b> หรือใส่ <b>mass-fixer</b> ภายหลัง และต้องเลือก interpolation ที่ <b>monotone</b> (น้ำหนัก ≥ 0) เพื่อรับประกันว่าควันไม่ติดลบและไม่เกิด overshoot</div>
+
+<h3>1.2 ส่วนเรียนรู้ ℱ_θ — "Conditionally-Linear Neural Operator" (หัวใจความใหม่)</h3>
+<p>นี่คือจุดที่ผมออกแบบให้ <b>ความใหม่เชิงวิจัย</b> เกิดขึ้น และเป็นเหตุผลที่ attribution ของเรา exact ได้ — เราออกแบบ ℱ_θ ให้ <b>เป็นเชิงเส้นในสนามความเข้มข้น C แต่สัมประสิทธิ์ขึ้นกับสภาพอากาศแบบไม่เชิงเส้น</b>:</p>
+<div class="eq">
+C<sub>t+1</sub>⁽ˢ⁾ = 𝒜<sub>mono</sub> C<sub>t</sub>⁽ˢ⁾ &nbsp;+&nbsp; g<sub>θ</sub>(Met,Static) · E<sub>t</sub>⁽ˢ⁾ &nbsp;−&nbsp; D<sub>θ</sub>(Met,Static) ⊙ C<sub>t</sub>⁽ˢ⁾
+<span class="lbl">𝒜<sub>mono</sub> = ตัวขนส่ง+กระจาย ที่ไม่เป็นลบ · g<sub>θ</sub> ≥ 0 = ตัวคูณการปล่อยที่เรียนรู้ · 0 ≤ D<sub>θ</sub> &lt; 1 = อัตราการสูญเสียที่เรียนรู้ (ตกสะสม/ชะล้าง)</span>
+</div>
+<div class="card">
+<b>ทำไมการออกแบบนี้ถึง "ฉลาด":</b>
+<ul>
+<li><b class="k">เชิงเส้นใน C</b> → ผลรวม tracer เท่าเดิม: Σ<sub>s</sub> C⁽ˢ⁾ = C <u>เป๊ะ</u> (superposition exact) → attribution ไม่มี error เชิงโครงสร้าง</li>
+<li><b class="k">ไม่เป็นลบโดยโครงสร้าง</b> (ทุกพจน์ ≥ 0, D_θ &lt; 1) → <u>ไม่ต้องใช้ softplus ปิดท้าย</u> ซึ่งจะทำลายเชิงเส้น (เพราะ softplus(a+b) ≠ softplus(a)+softplus(b)) — non-negativity กลายเป็น "คุณสมบัติของ scheme" ไม่ใช่การ clamp เอาท์พุต</li>
+<li><b class="k">ความไม่เชิงเส้น/การเรียนรู้ทั้งหมดอยู่ใน "สัมประสิทธิ์"</b> (g_θ, D_θ, K ใน 𝒜) ที่ขึ้นกับ Met/Static → ยังจับ physics ที่ซับซ้อน (ลมเปลี่ยน, ความชื้นเร่งการตก) ได้ครบ</li>
+</ul>
+<p class="muted" style="margin-bottom:0">สัมประสิทธิ์ g_θ, D_θ, K สามารถให้ AFNO/U-Net เป็นตัวทำนายจาก Met/Static ได้ — AFNO ทำงานในโดเมนความถี่ จับ pattern เชิงพื้นที่ระยะไกล (แนวเทือกเขา, ลมมรสุม) ได้ดี</p>
+</div>
+
+<h2>2. Research Contribution — 1 ประโยคที่ต้อง defend ได้</h2>
+<div class="lead">
+<b>"เราเสนอ <span class="star">physics-constrained, conditionally-linear neural transport emulator</span> สำหรับ PM2.5 ที่ฝัง <span class="star">differentiable source-attribution</span> ไว้ในตัวด้วยหลัก superposition ทำให้ตอบ <span class="star">counterfactual intervention</span> ('ถ้าดับไฟตรงนี้ ฝุ่นเมืองลดเท่าไร') ได้ในการ inference ครั้งเดียวระดับวินาที พร้อม validity bound ที่ calibrate เทียบ WRF-Chem — สิ่งที่แบบจำลองเคมี-ขนส่งเชิงกายภาพต้องใช้คลัสเตอร์รันเป็นวันต่อหนึ่งสถานการณ์"</b>
+</div>
+<p>แตกเป็น 3 contribution ย่อยที่ "ยากและใหม่จริง" แต่ละอันมีของพิสูจน์:</p>
+
+<table>
+<tr><th>#</th><th>Contribution</th><th>ใหม่/ยากตรงไหน</th><th>เทียบงานเดิม</th></tr>
+<tr>
+<td><b>C1</b></td>
+<td><b>Conditionally-linear neural operator</b> ที่อนุรักษ์มวล (เชิงสัมพัทธ์) + ไม่เป็นลบ โดยโครงสร้าง</td>
+<td>คุณสมบัติเชิงคณิต<u>พิสูจน์ได้</u> ไม่ใช่ปล่อยเน็ตเดา; non-negativity จาก scheme ไม่ใช่ clamp</td>
+<td>PM2.5-GNN/AirFormer = nonlinear ล้วน ไม่มี guarantee; AirPhyNet มี physics แต่ไม่มี attribution</td>
+</tr>
+<tr>
+<td><b>C2</b></td>
+<td><b>Differentiable tagged-tracer attribution</b> ฝังใน forward model (Smoke Fingerprint)</td>
+<td>attribution ปกติทำ offline (HYSPLIT/PMF); เราทำ <u>inline + exact ด้วย superposition</u> + differentiable (ไหลกลับเข้า training ได้)</td>
+<td>HYSPLIT back-traj ช้า รันทีละจุด; receptor model (PMF) เป็น statistical หลังเหตุการณ์</td>
+</tr>
+<tr>
+<td><b>C3</b></td>
+<td><b>Validated counterfactual intervention</b> + Burn-Window search</td>
+<td>เคลม "ดับไฟ → ลดฝุ่น %" แล้ว <u>validate เทียบ WRF-Chem source-off</u> + รัน scenario search พันรอบ (เป็นไปได้เพราะ emulator วินาที)</td>
+<td>WRF-Chem source-off = 1 สถานการณ์/วัน; ไม่มีใครทำ optimizer บนมัน</td>
+</tr>
+</table>
+
+<h2>3. แผนการ Validate (ทำให้ "ยากพอ" เป็นจริง ไม่ใช่แค่พูด)</h2>
+<p>contribution จะ "นับ" ก็ต่อเมื่อมีการทดลองพิสูจน์ ต่อไปนี้คือชุดการทดลองที่ต้องรันจริง:</p>
+
+<h3>V1 · Forecast Skill (พิสูจน์ว่าแกนแม่นกว่าของเดิม)</h3>
+<div class="card">
+<b>เทียบ baseline (ต้องแข็ง ไม่ใช่ persistence อย่างเดียว):</b>
+<span class="pill p-sota">Persistence</span><span class="pill p-sota">Climatology</span><span class="pill p-sota">PCD operational forecast</span><span class="pill p-sota">PM2.5-GNN</span><span class="pill p-sota">AirPhyNet</span><span class="pill p-sota">ConvLSTM</span>
+<br><b>Metric:</b> RMSE/MAE · <b>CSI/POD/FAR</b> ที่เกณฑ์ 37.5 & 75 µg/m³ · <b>onset-lead</b> (จับวันเริ่มวิกฤตล่วงหน้ากี่ชม.) · ประเมินแบบ <b>leave-stations-out + spatially-blocked CV</b> (กันรั่ว)
+</div>
+
+<h3>V2 · Mass-Budget Closure (พิสูจน์ C1)</h3>
+<div class="card">
+ตรวจว่า งบมวลปิด: <code>Σ E (ปล่อย) − Σ L·C (สูญเสีย) = Δ(มวลสะสม) + flux ออกขอบเขต</code> ภายใน ε เล็ก ๆ ต่อทุก timestep<br>
+<b>ตัวเลขเป้า:</b> relative mass residual &lt; ~1–2% (ส่วนเกินคือ R<sub>chem</sub> ที่เราไม่จับ — ต้องรายงานตรง ๆ)
+</div>
+
+<h3>V3 · Attribution Validity (พิสูจน์ C2)</h3>
+<div class="card">
+<ul>
+<li><b>Superposition error:</b> วัด ‖C − Σ<sub>s</sub>C⁽ˢ⁾‖ — ถ้าออกแบบ conditionally-linear ถูก ควร ≈ 0 (machine precision); ถ้าเพิ่มพจน์เคมีไม่เชิงเส้น รายงาน error ที่โตขึ้น</li>
+<li><b>เทียบสัดส่วนแหล่ง</b> กับ (ก) WRF-Chem tagged-tracer จากวรรณกรรม (ข) <b>PMF receptor modeling</b> ที่สถานีไทย (ค) สัดส่วน hotspot ข้ามแดนจาก FIRMS — ดูว่า "เมียนมา X%" ของเราสอดคล้องหลักฐานอิสระไหม</li>
+</ul>
+</div>
+
+<h3>V4 · Counterfactual Validity (พิสูจน์ C3 — ยากและสำคัญสุด)</h3>
+<div class="card danger">
+<ul>
+<li><b>เทียบ WRF-Chem source-off:</b> หาผลการทดลอง "ปิดแหล่ง s" จากเปเปอร์ → เทียบ ΔC ของเรากับของ WRF-Chem → รายงาน <b>calibration / validity bound</b></li>
+<li><b>Natural experiment (ฉลาดและฟรี):</b> หาเหตุการณ์ที่ <u>ฝนดับไฟจริง</u>ในบางพื้นที่ (hotspot หายใน FIRMS) = "source-off ธรรมชาติ" → ดูว่าโมเดลทำนายการลดของฝุ่นปลายทางถูกไหม</li>
+<li><b>ประกาศขอบเขต:</b> เสนอเป็น <b>"first-order intervention estimate"</b> มี CI เสมอ ไม่ใช่คำพยากรณ์ศักดิ์สิทธิ์ (เพราะการลบไฟ = ถามนอก distribution บางส่วน)</li>
+</ul>
+</div>
+
+<h3>V5 · Ablation (พิสูจน์ว่าทุกชิ้น "จำเป็น")</h3>
+<table>
+<tr><th>ตัด/สลับอะไร</th><th>คาดว่าเห็นอะไร → พิสูจน์อะไร</th></tr>
+<tr><td>ไม่มี advection (CNN ล้วน)</td><td>skill ระยะไกลตก, generalize ไฟ pattern ใหม่แย่ → physics ช่วยจริง</td></tr>
+<tr><td>structural non-neg ↔ softplus clamp</td><td>clamp ทำ superposition error โต → ออกแบบเราจำเป็นต่อ attribution</td></tr>
+<tr><td>conditionally-linear ↔ nonlinear ℱ_θ เต็ม</td><td>เห็น trade-off: nonlinear แม่นขึ้นนิดแต่ attribution error โต → justify การเลือกของเรา</td></tr>
+<tr><td>physics constraint on/off</td><td>วัดผลต่อ data-efficiency (สำคัญเพราะข้อมูล/GPU จำกัด)</td></tr>
+</table>
+
+<h2>4. วินัยเรื่องฟิสิกส์ — "ใช้ดีมั้ย" ตอบแบบมีเงื่อนไข</h2>
+<div class="card ok">
+<b>ฟิสิกส์ช่วยตรงไหน (ใส่เต็มที่):</b>
+<ul>
+<li><b>Advection/transport</b> — แข็ง ถูกต้อง ใส่เป็น hard constraint ได้เลย</li>
+<li><b>Non-negativity + linear deposition</b> — ถูกต้องเชิงกายภาพ ใส่เป็นโครงสร้างได้</li>
+<li><b>Generalization + data efficiency</b> — physics prior ช่วยให้เรียนจากข้อมูลน้อย/GPU เดียวได้ (เหตุผลสำคัญที่สุดสำหรับข้อจำกัดเรา)</li>
+<li><b>ปลดล็อก attribution/counterfactual</b> — โครงสร้างเชิงเส้นคือสิ่งที่ทำให้ฟีเจอร์เรือธงเป็นไปได้</li>
+</ul>
+</div>
+<div class="card danger">
+<b>ฟิสิกส์ทำร้ายเราตรงไหน (ห้ามบังคับ):</b>
+<ul>
+<li><b>PM2.5 ไม่ใช่สารอนุรักษ์!</b> — มี secondary organic aerosol (R<sub>chem</sub>) + hygroscopic growth + การตกสะสม → <u>บังคับ "อนุรักษ์มวลเคร่งครัด" = ผิดกายภาพ และทำ skill แย่ลง</u></li>
+<li><b>ทางออก:</b> อนุรักษ์มวลของ <u>primary smoke tracer</u> (ควันชีวมวลที่ปล่อยตรง) + ให้ ℱ_θ เรียนรู้ sink/chemistry เป็นพจน์แยก → จับขอบเขตที่ linearity จริง (ควัน primary, ระยะสั้น 24–48 ชม. ที่ transport ครอง) ซึ่ง<u>ตรงกับ use-case เราพอดี</u> (ควันเผาข้ามแดน = primary PM เป็นหลัก)</li>
+<li><b>หลักการ:</b> <b>hard physics เฉพาะที่ถูก, learn ส่วนที่เหลือ, รายงานที่ที่ฟิสิกส์เป็นแค่ approximation</b></li>
+</ul>
+</div>
+
+<h2>5. สรุป: นี่ทำให้ "ยากพอ" จริงไหม</h2>
+<div class="lead">
+<table style="margin:0 0 12px">
+<tr><th>ก่อน</th><th>หลังร่างนี้</th></tr>
+<tr><td>"เอา FourCastNet มาใส่ PM2.5" (วิศวกรรม)</td><td>neural operator ที่มี<b>คุณสมบัติคณิตพิสูจน์ได้</b> + attribution exact ฝังใน + counterfactual ที่ validate (งานวิจัย)</td></tr>
+<tr><td>ความยากกระจายบาง 4 ชั้น</td><td>ความยาก<b>กระจุกลึก</b>ที่ C1–C3 (1 แกน) + breadth เป็น impact wrapper</td></tr>
+<tr><td>ไม่มี contribution statement</td><td>มี 1 ประโยค defend ได้ + 5 ชุดการทดลองพิสูจน์</td></tr>
+</table>
+<b>ความยาก: 6 → ~8.5</b> — และที่สำคัญ ความยากนี้เป็นเชิง<b>แนวคิด</b> (ไม่ต้องใช้ 8×A100) จึงเหมาะกับข้อจำกัด 1 GPU / 2 เดือน ของเราพอดี<br>
+<b class="k">การผสมหลายงาน</b> เกิดจริงและมีเหตุผล: AFNO (spectral operator) + semi-Lagrangian (NWP) + operator splitting (PDE numerics) + tagged-tracer (atmospheric chemistry) + AirPhyNet/PM2.5-GNN (physics-guided baselines) — ไม่ใช่จับยัดมั่ว แต่แต่ละชิ้นเติมช่องว่างที่ชิ้นอื่นไม่มี
+</div>
+
+<div class="card warn">
+<b>ราคาที่ต้องจ่าย (ตรง ๆ):</b> conditionally-linear operator <u>อาจแม่นน้อยกว่า</u> nonlinear เต็มเล็กน้อย — เราต้องโชว์ใน ablation ว่า "ยอมเสีย accuracy นิดเพื่อได้ attribution exact + interpretability" เป็นการแลกที่คุ้ม (ถ้า nonlinear ชนะขาด ต้องกล้าเปลี่ยนเป็น nonlinear + วัด superposition error แทน) · การ validate counterfactual (V4) คือส่วนเสี่ยงสุด ถ้าหา WRF-Chem source-off เทียบไม่ได้ ให้ลงน้ำหนัก natural experiment แทน
+</div>
+
+</div>
+</body>
+</html>

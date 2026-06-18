@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Related Work — งานวิจัย State-of-the-Art ที่เกี่ยวข้องกับ HazeNet</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:1020px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:30px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:24px;margin:50px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:30px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{line-height:1.95}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--amber);color:var(--amber);margin-left:6px}
+
+  /* paper cards */
+  .paper{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:15px 20px;margin:16px 0;border-left:4px solid var(--blue)}
+  .paper.t1{border-left-color:var(--green)} .paper.t2{border-left-color:var(--cyan)}
+  .paper.t3{border-left-color:var(--purple)} .paper.t4{border-left-color:var(--amber)}
+  .paper.t5{border-left-color:var(--pink)} .paper.t6{border-left-color:var(--muted)}
+  .paper-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:3px}
+  .paper-title{font-size:17px;font-weight:bold;color:var(--text)}
+  .stars{font-size:13px;color:var(--amber);letter-spacing:1px}
+  .venue{font-size:12.5px;color:var(--muted)}
+  .lab{font-size:11.5px;padding:1px 8px;border-radius:10px;border:1px solid var(--border);color:var(--muted);background:var(--panel2)}
+  .repro{font-size:11.5px;padding:1px 8px;border-radius:10px}
+  .repro.ok{border:1px solid var(--green);color:var(--green);background:rgba(63,185,80,.1)}
+  .repro.partial{border:1px solid var(--amber);color:var(--amber);background:rgba(227,179,65,.1)}
+  .repro.no{border:1px solid var(--red);color:var(--red);background:rgba(248,81,73,.1)}
+  .linkrow{font-size:13.5px;margin-top:9px}
+  .linkrow a{margin-right:16px;white-space:nowrap}
+  .rel{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:9px 14px;border-radius:0 8px 8px 0;margin:11px 0;font-size:14.6px}
+  .rel b{color:var(--green)}
+  .flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0;font-size:12.6px}
+  .chip{background:var(--panel2);border:1px solid var(--border);border-radius:7px;padding:4px 9px;white-space:nowrap}
+  .chip.hot{border-color:var(--green);color:var(--green)}
+  .arrow{color:var(--cyan);font-weight:bold}
+
+  /* anatomy grid */
+  .anatomy{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}
+  @media(max-width:680px){.anatomy{grid-template-columns:1fr}}
+  .stage{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+  .stage .n{font-size:12px;color:var(--muted)}
+  .stage .t{font-weight:bold;color:var(--cyan);font-size:15px;margin:2px 0 4px}
+  .stage .w{font-size:12.5px;color:var(--muted)}
+  .stage.core{border-color:var(--green);box-shadow:0 0 0 1px var(--green) inset}
+
+  /* timeline */
+  .tl{position:relative;margin:18px 0;padding-left:26px;border-left:2px solid var(--border)}
+  .tl-item{position:relative;margin:0 0 16px}
+  .tl-dot{position:absolute;left:-35px;top:3px;width:15px;height:15px;border-radius:50%;background:var(--green);border:3px solid var(--bg)}
+  .tl-year{font-weight:bold;color:var(--cyan);font-size:15.5px}
+
+  /* synthesis equation */
+  .synth{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch;margin:16px 0}
+  .sbox{flex:1;min-width:150px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-size:13px}
+  .sbox .h{font-weight:bold;color:var(--purple);font-size:13.5px;margin-bottom:3px}
+  .plus{display:flex;align-items:center;font-size:22px;color:var(--muted)}
+
+  .legend{font-size:13px;color:var(--muted);text-align:center;margin-top:6px}
+  svg{max-width:100%;height:auto;display:block;margin:6px auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>📚 Related Work — งานวิจัย State-of-the-Art ที่เกี่ยวข้องกับ HazeNet</h1>
+<p class="tagline">แผนที่ภูมิทัศน์งานวิจัยปัจจุบัน (2022–2026) ที่เกี่ยวกับทุกส่วนประกอบของโปรเจกต์เรา — เน้นโมเดล · pipeline · การรวมฟิสิกส์+คณิตศาสตร์เข้ากับ AI</p>
+<p class="sub">รวบรวมจากการค้นคว้าออนไลน์ มิ.ย. 2026 · เรียงตามความใกล้เคียงกับงานเรา · ตัวเลข/ผลทั้งหมดอ้างอิงจากลิงก์ต้นฉบับ</p>
+
+<div class="lead">
+<b>เอกสารนี้ตอบ 4 คำถาม:</b><br>
+① งานวิจัยปัจจุบันอะไรบ้างที่เกี่ยวกับเรา และ <b>ทำอะไร</b> (อธิบายแบบเข้าใจง่าย)<br>
+② แต่ละงาน <b>workflow</b> ทำงานยังไง<br>
+③ มัน <b>เกี่ยวกับ HazeNet ตรงไหน</b> — เราหยิบอะไรมาใช้ / เป็นคู่เทียบ / เป็นแรงบันดาลใจ<br>
+④ <b>ช่องว่าง</b> ที่ยังไม่มีใครทำ = จุดขายของเรา<br><br>
+อ่านจาก <b>Tier 1 → Tier 6</b> = ใกล้ตัวเรามากที่สุด → รอบนอกที่สุด
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#map">0. แผนที่ภูมิทัศน์ + Timeline</a><br>
+<a href="#t1">Tier 1 ⭐⭐⭐ — DNA ของ HazeNet</a><br>
+<a href="#t2">Tier 2 ⭐⭐⭐ — Air-Quality Emulation</a><br>
+<a href="#t3">Tier 3 ⭐⭐ — ฟิสิกส์ + คณิตศาสตร์ ผสาน AI</a><br>
+<a href="#t4">Tier 4 ⭐⭐ — Attribution & Inverse Problem</a><br>
+<a href="#t5">Tier 5 ⭐ — Uncertainty & Generative</a><br>
+<a href="#t6">Tier 6 ⭐ — Data & Foundation Models</a><br>
+<a href="#synth">7. สังเคราะห์: HazeNet = ผลรวมของอะไร</a><br>
+<a href="#gap">8. ช่องว่างงานวิจัย = จุดขายเรา</a><br>
+<a href="#refs">9. รายการลิงก์ทั้งหมด</a><br>
+</div>
+
+<!-- ============ 0 MAP ============ -->
+<h2 id="map">0. แผนที่ภูมิทัศน์งานวิจัย + Timeline</h2>
+
+<h3>0.1 เป้าวงกลม — เรียงตามความใกล้เคียงกับเรา</h3>
+<p>ยิ่งวงในยิ่งใกล้ "DNA" ของ HazeNet — งานที่สถาปัตยกรรม/วิธีคิดเหมือนเราที่สุดอยู่ตรงกลาง:</p>
+
+<svg viewBox="0 0 720 430" role="img" aria-label="แผนที่เป้าวงกลมงานวิจัย">
+  <defs>
+    <radialGradient id="g1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#3fb95033"/><stop offset="100%" stop-color="#3fb95011"/>
+    </radialGradient>
+  </defs>
+  <!-- rings outer -> inner -->
+  <circle cx="360" cy="215" r="205" fill="#1c2330" stroke="#30363d"/>
+  <circle cx="360" cy="215" r="165" fill="#161b22" stroke="#30363d"/>
+  <circle cx="360" cy="215" r="112" fill="#11201a" stroke="#3fb95055"/>
+  <circle cx="360" cy="215" r="58" fill="url(#g1)" stroke="#3fb950"/>
+  <!-- center -->
+  <text x="360" y="210" text-anchor="middle" fill="#e6edf3" font-size="18" font-weight="bold">HazeNet</text>
+  <text x="360" y="230" text-anchor="middle" fill="#9aa7b4" font-size="12">(โปรเจกต์เรา)</text>
+  <!-- ring labels -->
+  <text x="360" y="130" text-anchor="middle" fill="#3fb950" font-size="13.5" font-weight="bold">Tier 1 · DNA</text>
+  <text x="360" y="146" text-anchor="middle" fill="#9aa7b4" font-size="11">FastCTM · NeuralGCM · Aurora</text>
+
+  <text x="360" y="80" text-anchor="middle" fill="#56d4dd" font-size="13.5" font-weight="bold">Tier 2–3 · โมเดล + ฟิสิกส์/คณิต</text>
+  <text x="360" y="96" text-anchor="middle" fill="#9aa7b4" font-size="11">CTM-emulators · PINN · FNO · GraphCast</text>
+
+  <text x="360" y="36" text-anchor="middle" fill="#e3b341" font-size="13.5" font-weight="bold">Tier 4–6 · Attribution / UQ / Data</text>
+  <text x="360" y="52" text-anchor="middle" fill="#9aa7b4" font-size="11">adjoint · GenCast · Himawari · FINN · ERA5</text>
+</svg>
+<p class="legend">วงในสุด = หยิบมาใช้ตรง ๆ &nbsp;|&nbsp; วงกลาง = วิธีการหลัก &nbsp;|&nbsp; วงนอก = ส่วนประกอบรอบ ๆ (ข้อมูล/ตัวเทียบ)</p>
+
+<h3>0.2 กายวิภาคของ HazeNet — แต่ละส่วนมีงานวิจัยรองรับ</h3>
+<p>โปรเจกต์เราแบ่งเป็น 6 สเตจ แต่ละสเตจมีงาน SOTA ที่เกี่ยวข้องโดยตรง (รายละเอียดในแต่ละ Tier):</p>
+
+<div class="anatomy">
+  <div class="stage"><div class="n">สเตจ 1</div><div class="t">📡 Data Pipeline</div><div class="w">FIRMS · ERA5 · Himawari · Air4Thai · DEM<br><span class="muted">→ Tier 6</span></div></div>
+  <div class="stage"><div class="n">สเตจ 2</div><div class="t">🧊 Datacube + Encoder</div><div class="w">regrid → tensor · foundation-model encoder<br><span class="muted">→ Tier 6 (Prithvi)</span></div></div>
+  <div class="stage core"><div class="n">สเตจ 3 — หัวใจ</div><div class="t">⚙️ Differentiable Core</div><div class="w">emulator ของ transport·diffusion·chemistry·deposition<br><span class="muted">→ Tier 1–3</span></div></div>
+  <div class="stage"><div class="n">สเตจ 4</div><div class="t">🏷️ Attribution + 🔄 Inversion</div><div class="w">tagged-tracer · adjoint = .backward()<br><span class="muted">→ Tier 4</span></div></div>
+  <div class="stage"><div class="n">สเตจ 5</div><div class="t">🎲 Uncertainty</div><div class="w">Quantile / Ensemble / CRPS<br><span class="muted">→ Tier 5</span></div></div>
+  <div class="stage"><div class="n">สเตจ 6</div><div class="t">🗺️ Output</div><div class="w">forecast + source map + 90% CI<br><span class="muted">→ ใช้งานจริง</span></div></div>
+</div>
+
+<h3>0.3 Timeline — สนามนี้เพิ่งระเบิดเมื่อ 4 ปีก่อน</h3>
+<div class="tl">
+  <div class="tl-item"><span class="tl-dot" style="background:var(--muted)"></span>
+    <span class="tl-year">2022</span> — <b>จุดเริ่ม AI-weather</b>: FourCastNet (NVIDIA, FNO) + Pangu-Weather (Huawei) + GraphCast (DeepMind, preprint) พิสูจน์ว่า NN พยากรณ์อากาศได้เร็วกว่า/แม่นพอ ๆ กับ NWP</div>
+  <div class="tl-item"><span class="tl-dot" style="background:var(--purple)"></span>
+    <span class="tl-year">2023</span> — GraphCast ลง <i>Science</i>, Pangu ลง <i>Nature</i> · <b>Differentiable Programming for Earth System</b> (GMD) วางรากฐาน "ฟิสิกส์ที่ diff ได้" · Conservation-law NN (atom balance)</div>
+  <div class="tl-item"><span class="tl-dot" style="background:var(--green)"></span>
+    <span class="tl-year">2024</span> — <b>NeuralGCM</b> (Nature) = hybrid ฟิสิกส์+ML ตัวแรกที่ทำ ensemble ได้ CRPS ดีกว่าฟิสิกส์ล้วน · <b>GenCast</b> (Nature) = diffusion ensemble</div>
+  <div class="tl-item"><span class="tl-dot" style="background:var(--blue)"></span>
+    <span class="tl-year">2025</span> — <b>Aurora</b> (Nature) foundation model ทำ <b>air pollution</b> ชนะ CAMS 74% · <b>Aardvark</b> (Nature) end-to-end DA · <b>FastCTM</b> (GMD) = CTM-emulator แบบ process-module (พิมพ์เขียวของเรา!) · forward+adjoint chemistry emulator</div>
+  <div class="tl-item"><span class="tl-dot" style="background:var(--cyan)"></span>
+    <span class="tl-year">2026 (ตอนนี้)</span> — <b>HazeNet (เรา)</b>: รวมแนวคิดเหล่านี้ → CTM-emulator ที่ diff ได้ + tagged-tracer attribution + source inversion + UQ เน้นหมอกควันข้ามแดน SEA ด้วย open data บนงบ A100 จำกัด</div>
+</div>
+
+<div class="why">
+<b>ข้อสังเกตสำคัญ:</b> งานยักษ์ (GraphCast/Aurora) ใช้ compute มหาศาล (หลายร้อย TPU/GPU) — <b>เราเลียนแบบทั้งหมดไม่ได้</b> ในงบ ~15 A100-hrs. แต่ละการ์ดด้านล่างจึงมีป้าย
+<span class="repro ok">ทำซ้ำได้ในงบเรา</span> <span class="repro partial">หยิบบางส่วนได้</span> <span class="repro no">เกินงบ—ใช้เป็นแรงบันดาลใจ/ตัวเทียบ</span> เพื่อให้รู้ว่าอะไร "ทำได้จริง" กับอะไร "ไว้อ้างอิง"
+</div>
+
+<!-- ============ TIER 1 ============ -->
+<h2 id="t1">Tier 1 ⭐⭐⭐ — DNA ของ HazeNet</h2>
+<p>3 งานนี้คือ "พ่อแม่" ของโปรเจกต์เรา — สถาปัตยกรรมหรือวิธีคิดตรงกับ HazeNet มากที่สุด ถ้าจะอ่านแค่ 3 งาน อ่าน 3 งานนี้</p>
+
+<div class="paper t1">
+  <div class="paper-head">
+    <span class="paper-title">1. FastCTM — Principle-Informed Neural Network สำหรับ Air Quality</span>
+    <span class="stars">★★★★★</span>
+  </div>
+  <div><span class="venue">Lyu et al., Geoscientific Model Development (GMD) 2025, vol.18, 6295</span> &nbsp;<span class="lab">CTM-emulator</span> <span class="repro ok">ทำซ้ำได้ในงบเรา</span></div>
+  <p><b>คืออะไร:</b> โครงข่ายประสาทที่ "เลียนแบบ" แบบจำลองเคมีบรรยากาศ (CMAQ) แต่เร็วระดับ GPU โดย<b>ไม่ใช่ black-box</b> — มันแยกเป็น <b>5 โมดูลตามสมการฟิสิกส์จริง</b> เป๊ะ ๆ. นี่คืองานที่ "หน้าตา" เหมือน HazeNet ที่สุดในโลกตอนนี้.</p>
+  <p><b>5 โมดูล (สะท้อนสมการ governing ของ CTM):</b></p>
+  <div class="flow">
+    <span class="chip hot">① Emissions (PBL)</span><span class="arrow">+</span>
+    <span class="chip hot">② Horizontal Transport (conv + upwind)</span><span class="arrow">+</span>
+    <span class="chip hot">③ Turbulent Diffusion (UNet++ → K)</span><span class="arrow">+</span>
+    <span class="chip hot">④ Chemistry (ผูกกับ T)</span><span class="arrow">+</span>
+    <span class="chip hot">⑤ Deposition</span>
+  </div>
+  <p><b>workflow:</b></p>
+  <div class="flow">
+    <span class="chip">C ชั่วโมง t + met</span><span class="arrow">→</span>
+    <span class="chip">5 โมดูลฟิสิกส์</span><span class="arrow">→</span>
+    <span class="chip">C ชั่วโมง t+1</span><span class="arrow">→</span>
+    <span class="chip">วนซ้ำ (recursive) จนครบ 24 ชม.</span>
+  </div>
+  <p><b>จุดเด่นทางฟิสิกส์:</b> โมดูล transport บังคับ <b>อนุรักษ์มวล (mass conservation)</b> ผ่าน finite-difference ของสมการ advection จริง — ไม่ใช่ปล่อยให้ NN เดาเอง. ทำนาย 10 ตัวแปร: องค์ประกอบ PM₂.₅ (sulfate, nitrate, ammonium, OM, EC, crustal), PM₁₀, SO₂, NO₂, CO, O₃. เทียบ CMAQ: PM₂.₅ R²=0.80 (RMSE 9.1).</p>
+  <div class="rel"><b>เกี่ยวกับเรายังไง:</b> นี่คือ <b>พิมพ์เขียว (blueprint) ของ HazeNet โดยตรง</b>. แนวคิด "แยกโมดูลตามฟิสิกส์ + อนุรักษ์มวลผ่าน finite-difference + recursive hourly" คือสิ่งที่เราออกแบบไว้ทุกบท (1.x conditionally-linear, 2.x superposition, 3.5 operator). ความต่างของเรา: เราเพิ่ม <b>tagged-tracer attribution + source inversion</b> ที่ FastCTM ยังไม่มี → จุดขายเราอยู่ตรงนี้.</div>
+  <div class="linkrow">🔗 <a href="https://gmd.copernicus.org/articles/18/6295/2025/">เปเปอร์เต็ม (GMD, open access)</a></div>
+</div>
+
+<div class="paper t1">
+  <div class="paper-head">
+    <span class="paper-title">2. NeuralGCM — Hybrid Differentiable Atmospheric Model</span>
+    <span class="stars">★★★★★</span>
+  </div>
+  <div><span class="venue">Kochkov, Yuval, Langmore et al., Nature 2024</span> &nbsp;<span class="lab">Google</span> <span class="repro no">เกินงบ — แรงบันดาลใจ</span></div>
+  <p><b>คืออะไร:</b> โมเดลภูมิอากาศที่ผสม <b>"แกนฟิสิกส์ที่หาอนุพันธ์ได้ (differentiable dynamical core)" + "โมดูลฟิสิกส์ที่เรียนรู้ (NN)"</b> เข้าด้วยกัน. เป็นหลักฐานชิ้นเอกว่าแนวทาง "hybrid ฟิสิกส์+ML แบบ end-to-end differentiable" ใช้ได้จริงและดีกว่าทั้งสองทางแยกกัน.</p>
+  <div class="flow">
+    <span class="chip">สมการ dynamics (เขียนใน JAX, diff ได้)</span><span class="arrow">+</span>
+    <span class="chip">NN parameterize ฟิสิกส์ย่อย (เมฆ/ฝน)</span><span class="arrow">→</span>
+    <span class="chip">train ทั้งระบบด้วย gradient</span>
+  </div>
+  <p><b>ทำไมสำคัญ:</b> เป็น ML model ตัวแรกที่ทำ <b>ensemble forecast ได้ CRPS ดีกว่าโมเดลฟิสิกส์ล้วน</b> และจำลอง climate ยาว ๆ ได้เสถียร — เพราะแกนฟิสิกส์ช่วยกันดริฟต์.</p>
+  <div class="rel"><b>เกี่ยวกับเรายังไง:</b> NeuralGCM คือ "ปรัชญา" ของเรา — ทั้งโปรแกรม diff ได้ → <code>.backward()</code> ให้ gradient/adjoint ฟรี (ตรงกับบท 3.7) และฟิสิกส์ช่วยเสถียรภาพ rollout ยาว. เราทำเวอร์ชัน "เล็ก เฉพาะ PM₂.₅/SEA" ของไอเดียนี้. <span class="muted">(งบเขาคนละโลก — เราเอาแนวคิด ไม่ใช่สเกล)</span></div>
+  <div class="linkrow">🔗 <a href="https://www.nature.com/articles/s41586-024-07744-y">Nature</a> <a href="https://arxiv.org/abs/2311.07222">arXiv 2311.07222</a></div>
+</div>
+
+<div class="paper t1">
+  <div class="paper-head">
+    <span class="paper-title">3. Aurora — Foundation Model ที่พยากรณ์มลพิษอากาศได้</span>
+    <span class="stars">★★★★★</span>
+  </div>
+  <div><span class="venue">Bodnar et al., Nature 2025</span> &nbsp;<span class="lab">Microsoft</span> <span class="repro partial">fine-tune ได้บางส่วน</span></div>
+  <p><b>คืออะไร:</b> foundation model ของบรรยากาศ 1.3 พันล้านพารามิเตอร์ (3D Swin Transformer + Perceiver encoder/decoder) ที่มีเวอร์ชันเฉพาะ <b>"air pollution"</b> — พิสูจน์ว่า AI พยากรณ์ PM/ก๊าซมลพิษได้จริงในระดับโลก.</p>
+  <div class="flow">
+    <span class="chip">Pretrain: >1M ชม. ข้อมูลอากาศ/ภูมิอากาศ</span><span class="arrow">→</span>
+    <span class="chip">Fine-tune (LoRA) บน CAMS</span><span class="arrow">→</span>
+    <span class="chip">พยากรณ์มลพิษ 0.4° ล่วงหน้า 5 วัน</span>
+  </div>
+  <p><b>ผล:</b> ชนะการจำลองเคมีบรรยากาศ (CAMS) ใน <b>74% ของเป้าหมาย</b> และเร็วกว่าวิธีดั้งเดิม <b>~5,000 เท่า</b>. จับได้ทั้งค่าสูงสุดในเขตปล่อยมลพิษหนาแน่นและค่าพื้นหลัง.</p>
+  <div class="rel"><b>เกี่ยวกับเรายังไง:</b> (1) <b>หลักฐานว่าโจทย์เราทำได้</b> — AI พยากรณ์มลพิษชนะแบบจำลองเคมีได้จริง. (2) <b>workflow "pretrain → fine-tune"</b> คือทางลัดในงบจำกัด: เราอาจ fine-tune encoder ที่ pretrain มาแล้ว (ดู Prithvi, Tier 6) แทนเทรนจากศูนย์. (3) เป็น <b>คู่เทียบ (baseline) ระดับโลก</b> ที่เราต้องอ้างถึง. ข้อจำกัด: Aurora ไม่ทำ source attribution/inversion — เราเติมเต็มตรงนั้น.</div>
+  <div class="linkrow">🔗 <a href="https://www.microsoft.com/en-us/research/blog/introducing-aurora-the-first-large-scale-foundation-model-of-the-atmosphere/">บล็อกอธิบาย</a> <a href="https://www.microsoft.com/en-us/research/publication/aurora-a-foundation-model-for-the-earth-system/">เปเปอร์ (Nature)</a> <a href="https://github.com/microsoft/aurora">โค้ด GitHub</a></div>
+</div>
+
+<!-- ============ TIER 2 ============ -->
+<h2 id="t2">Tier 2 ⭐⭐⭐ — Air-Quality Emulation & Forecasting</h2>
+<p>โดเมนตรงของเรา: เอา NN ไปแทน/เสริมแบบจำลองคุณภาพอากาศ — ทั้งแบบ emulator, แบบบังคับฟิสิกส์, และแบบกราฟสถานี</p>
+
+<div class="paper t2">
+  <div class="paper-head"><span class="paper-title">4. Deep-Learning Emulators ของ CMAQ / GEOS-Chem</span><span class="stars">★★★★</span></div>
+  <div><span class="venue">หลายงาน (Sci. Total Environ. 2025; Atmos. Environ. 2023) บน EQUATES/CONUS</span> <span class="repro ok">ทำซ้ำได้</span></div>
+  <p><b>คืออะไร:</b> NN (ResNet / 2D-CNN) ที่เรียนเลียนแบบผลลัพธ์ CTM (NO₂, O₃, PM₂.₅) ให้ออกมาเหมือนเดิมแต่เร็วขึ้น <b>หลายเท่าถึงหลายอันดับ</b>. เช่น 2D-CNN จำลอง NO₂/O₃/PM₂.₅ ทั่ว CONUS ที่ 12 กม. (Index of Agreement ~0.90/0.76/0.67).</p>
+  <div class="flow"><span class="chip">met + emissions</span><span class="arrow">→</span><span class="chip">CNN/ResNet</span><span class="arrow">→</span><span class="chip">ความเข้มข้นมลพิษ (เร็ว ×10–×1000)</span></div>
+  <div class="rel"><b>เกี่ยวกับเรา:</b> ยืนยันว่า "emulate CTM ด้วย NN" เป็นแนวทางมาตรฐานที่ได้ผล. งานเหล่านี้ส่วนใหญ่เป็น <b>post-processing / black-box</b> — HazeNet ต่างตรงที่เราใส่ฟิสิกส์ใน architecture (เหมือน FastCTM) + ทำ attribution/inversion.</div>
+  <div class="linkrow">🔗 <a href="https://www.sciencedirect.com/science/article/pii/S0048969725021072">Emulating CMAQ (EQUATES)</a> <a href="https://www.sciencedirect.com/science/article/abs/pii/S1352231023006180">CMAQ NO₂ emulator</a></div>
+</div>
+
+<div class="paper t2">
+  <div class="paper-head"><span class="paper-title">5. Conservation Laws ใน NN Architecture (atom/mass balance)</span><span class="stars">★★★★</span></div>
+  <div><span class="venue">GMD 2022, vol.15, 3417 (photochemical, Julia)</span> <span class="repro ok">ทำซ้ำได้</span></div>
+  <p><b>คืออะไร:</b> วิธีบังคับให้ NN <b>อนุรักษ์มวล/อะตอม ได้ถึงระดับ machine precision</b> โดยใส่ "hard constraint" ในสถาปัตยกรรม — ใช้ matrix operation เดียว "ดัน" ค่าที่ทำนายให้ไปอยู่บนคำตอบที่อนุรักษ์อะตอมพอดี (แทนการใส่แค่ penalty ใน loss).</p>
+  <p><b>2 แนวทางหลัก:</b> soft constraint (penalty ใน loss) vs <b>hard constraint</b> (projection ในสถาปัตยกรรม → อนุรักษ์เป๊ะเสมอ).</p>
+  <div class="rel"><b>เกี่ยวกับเรา:</b> ตรงกับหัวใจ HazeNet — "ฝุ่นห้ามหายไปเฉย ๆ". เทคนิค projection/hard-constraint นี้คือสิ่งที่ทำให้ tagged-tracer (3.6) รวมกันได้ 100% และ superposition ไม่พัง. เป็น "เครื่องมือ" ที่หยิบมาใช้ในสเตจ 3 ได้เลย.</div>
+  <div class="linkrow">🔗 <a href="https://gmd.copernicus.org/articles/15/3417/2022/">GMD — atom balance NN</a> <a href="https://arxiv.org/pdf/2410.17445">Projection-based conservation in PINN</a></div>
+</div>
+
+<div class="paper t2">
+  <div class="paper-head"><span class="paper-title">6. Regional Aerosol Forecast = Deep Learning + NWP</span><span class="stars">★★★</span></div>
+  <div><span class="venue">npj Climate and Atmospheric Science 2023</span> <span class="repro ok">ทำซ้ำได้</span></div>
+  <p><b>คืออะไร:</b> ใช้ผลพยากรณ์อากาศเชิงตัวเลข (NWP) เป็น input ให้ DL พยากรณ์ aerosol/ฝุ่นในระดับภูมิภาค — แทนการรันแบบจำลองเคมีเต็มรูปที่แพง.</p>
+  <div class="rel"><b>เกี่ยวกับเรา:</b> นี่คือ pattern ของเราเป๊ะ — <b>met (ERA5) เป็นตัวขับ → DL พยากรณ์ฝุ่น</b>. ยืนยันว่าใช้ NWP/reanalysis เป็น forcing แล้วให้ NN ทำเคมี-ขนส่ง เป็นสูตรที่เวิร์ก.</div>
+  <div class="linkrow">🔗 <a href="https://www.nature.com/articles/s41612-023-00397-0">npj Clim. Atmos. Sci.</a></div>
+</div>
+
+<div class="paper t2">
+  <div class="paper-head"><span class="paper-title">7. Graph Neural Networks สำหรับ PM₂.₅ เชิงพื้นที่-เวลา</span><span class="stars">★★★</span></div>
+  <div><span class="venue">VMD–GAT–BiLSTM (Sci. Reports 2024); 72-hr hybrid graph DNN (Environ. Int. 2023)</span> <span class="repro ok">ทำซ้ำได้</span></div>
+  <p><b>คืออะไร:</b> มองสถานีวัดอากาศเป็น "กราฟ" (node = สถานี, edge = ความสัมพันธ์เชิงพื้นที่) แล้วใช้ GNN + LSTM จับการแพร่ของฝุ่นระหว่างสถานี. ทำ real-time 72 ชม. ได้.</p>
+  <div class="flow"><span class="chip">สถานี = nodes</span><span class="arrow">→</span><span class="chip">GCN/GAT (พื้นที่)</span><span class="arrow">→</span><span class="chip">LSTM (เวลา)</span><span class="arrow">→</span><span class="chip">PM₂.₅ ล่วงหน้า</span></div>
+  <div class="rel"><b>เกี่ยวกับเรา:</b> เป็น <b>baseline สำคัญที่ต้องเทียบ</b> (Module 5). จุดอ่อนของ GNN-สถานี: ทำนายแต่ค่าที่สถานี ไม่เข้าใจฟิสิกส์/ไม่ทำ attribution. HazeNet ทำนายเป็น <b>field เต็มแผนที่</b> + อธิบายแหล่งได้ → เหนือกว่าเชิงวิทยาศาสตร์.</div>
+  <div class="linkrow">🔗 <a href="https://www.nature.com/articles/s41598-024-68874-x">VMD–GAT–BiLSTM</a> <a href="https://www.sciencedirect.com/science/article/pii/S0160412023002441">72-hr graph DNN</a></div>
+</div>
+
+<!-- ============ TIER 3 ============ -->
+<h2 id="t3">Tier 3 ⭐⭐ — ฟิสิกส์ + คณิตศาสตร์ ผสานกับ AI</h2>
+<p>"วิธีการ" ที่ทำให้ HazeNet เป็น GeoAI จริง ไม่ใช่แค่ regression — รากฐานคณิตศาสตร์ของทั้งโปรเจกต์</p>
+
+<div class="paper t3">
+  <div class="paper-head"><span class="paper-title">8. Differentiable Programming for Earth System Modeling</span><span class="stars">★★★★</span></div>
+  <div><span class="venue">Gelbrecht, White et al., GMD 2023, vol.16, 3123</span> <span class="repro ok">แนวคิดหลัก</span></div>
+  <p><b>คืออะไร:</b> "แถลงการณ์" ของวงการ — เสนอว่าถ้าเขียนแบบจำลองโลกให้ <b>หาอนุพันธ์ได้ทั้งโปรแกรม</b> (ทุกบรรทัด diff ได้) เราจะ optimize/ปรับ/กลับทิศ (inverse) ได้ด้วย gradient. แนะนำ <b>Universal Differential Equations (UDEs)</b> = สมการฟิสิกส์ + NN เติมส่วนที่ไม่รู้.</p>
+  <div class="rel"><b>เกี่ยวกับเรา:</b> นี่คือทฤษฎีเบื้องหลังบท 3.7 ทั้งบท. ประโยคทองของเรา — "<b>adjoint = .backward()</b>" — มาจากแนวคิดนี้: เมื่อโปรแกรม diff ได้ การหา sensitivity/ทำ source inversion ก็ "ฟรี" ผ่าน autodiff (ไม่ต้องเขียน adjoint code เองเป็นปี ๆ แบบ WRF-Chem).</div>
+  <div class="linkrow">🔗 <a href="https://gmd.copernicus.org/articles/16/3123/2023/">GMD (open access)</a> <a href="https://arxiv.org/abs/2208.13825">arXiv 2208.13825</a></div>
+</div>
+
+<div class="paper t3">
+  <div class="paper-head"><span class="paper-title">9. Physics-Informed Neural Networks (PINNs)</span><span class="stars">★★★</span></div>
+  <div><span class="venue">Raissi, Perdikaris, Karniadakis (J. Comput. Phys. 2019) + งานต่อยอด</span> <span class="repro ok">แนวคิดหลัก</span></div>
+  <p><b>คืออะไร:</b> ฝัง PDE ลงใน loss ของ NN โดยตรง — ให้ NN เคารพสมการฟิสิกส์ (เช่น advection-diffusion) ผ่าน autodiff ของ output เทียบกับ input. งานต่อยอดเพิ่ม <b>hard constraint / projection</b> เพื่อรับประกันอนุรักษ์มวล.</p>
+  <div class="flow"><span class="chip">loss = data error</span><span class="arrow">+</span><span class="chip">PDE residual (soft)</span><span class="arrow">หรือ</span><span class="chip">projection (hard)</span></div>
+  <div class="rel"><b>เกี่ยวกับเรา:</b> ให้ "เมนูตัวเลือก" ว่าจะใส่ฟิสิกส์เข้า NN อย่างไร — HazeNet เลือกแนวผสม: บางอย่าง hard-constraint (มวล), บางอย่าง soft (penalty). รู้ trade-off soft vs hard เป็นสิ่งจำเป็นตอนออกแบบ loss.</div>
+  <div class="linkrow">🔗 <a href="https://arxiv.org/html/2506.22413v1">PINN: conservative vs non-conservative (review)</a> <a href="https://proceedings.mlr.press/v202/hansen23b/hansen23b.pdf">Learning models that respect conservation laws</a></div>
+</div>
+
+<div class="paper t3">
+  <div class="paper-head"><span class="paper-title">10. Neural Operators — FNO & DeepONet</span><span class="stars">★★★</span></div>
+  <div><span class="venue">Li et al. (FNO, ICLR 2021); Lu et al. (DeepONet, Nat. Mach. Intell. 2021)</span> <span class="repro partial">หยิบบางส่วน</span></div>
+  <p><b>คืออะไร:</b> NN ที่เรียน "<b>operator</b>" (ฟังก์ชัน→ฟังก์ชัน) แทนที่จะเรียนแค่ตัวเลข → เรียนตัว "ตัวแก้ PDE" เลย. FNO ทำ convolution ใน Fourier space เพื่อจับ dynamics ทั่วโดเมนอย่างมีประสิทธิภาพ.</p>
+  <div class="rel"><b>เกี่ยวกับเรา:</b> เป็น "กล่องเครื่องมือสถาปัตยกรรม" สำหรับสเตจ 3. โอเปอเรเตอร์ขนส่ง-แพร่ของ HazeNet มองเป็น neural operator ได้ และ FNO เป็นตัวเลือกหนึ่งของ backbone (FourCastNet ใช้). DeepONet ช่วยเรื่อง operator ที่ขึ้นกับเงื่อนไข (เชื่อมกับ "conditionally-linear operator" บท 3.5).</p></div>
+  <div class="linkrow">🔗 <a href="https://arxiv.org/abs/2010.08895">FNO (arXiv 2010.08895)</a> <a href="https://arxiv.org/abs/1910.03193">DeepONet (arXiv 1910.03193)</a></div>
+</div>
+
+<div class="paper t3">
+  <div class="paper-head"><span class="paper-title">11. การปฏิวัติ AI-Weather: FourCastNet · Pangu · GraphCast</span><span class="stars">★★★</span></div>
+  <div><span class="venue">Pathak (NVIDIA 2022) · Bi (Huawei, Nature 2023) · Lam (DeepMind, Science 2023)</span> <span class="repro no">เกินงบ — สถาปัตยกรรมอ้างอิง</span></div>
+  <p><b>คืออะไร:</b> 3 โมเดลที่จุดชนวนวงการ — พิสูจน์ว่า NN พยากรณ์อากาศโลกได้เร็วกว่า NWP มากและแม่นพอ ๆ กัน. ต่างกันที่ backbone:</p>
+  <table>
+    <tr><th>โมเดล</th><th>สถาปัตยกรรม</th><th>จุดเด่น</th></tr>
+    <tr><td>FourCastNet</td><td>Adaptive Fourier Neural Operator + ViT</td><td>เร็ว, ละเอียดสูง</td></tr>
+    <tr><td>Pangu-Weather</td><td>3D Earth-Specific Transformer</td><td>ใส่มิติความสูง, ลด error สะสม</td></tr>
+    <tr><td>GraphCast</td><td>Graph Neural Network</td><td>0.25° 10 วันใน <1 นาที, ชนะ IFS 90% ของเป้า</td></tr>
+  </table>
+  <div class="rel"><b>เกี่ยวกับเรา:</b> เป็น "เมนูสถาปัตยกรรม backbone" ให้เลือก (FNO vs Transformer vs GNN) สำหรับ encoder/core ของเรา. <b>แต่</b> ทั้งหมดเป็น emulator อากาศล้วน — ไม่มีเคมี ไม่มีมวลอนุรักษ์ ไม่มี attribution. เป็นแรงบันดาลใจ + ตัวเทียบเชิงสถาปัตยกรรม ไม่ใช่คู่แข่งตรง.</div>
+  <div class="linkrow">🔗 <a href="https://arxiv.org/abs/2202.11214">FourCastNet</a> <a href="https://www.nature.com/articles/s41586-023-06185-3">Pangu (Nature)</a> <a href="https://deepmind.google/blog/graphcast-ai-model-for-faster-and-more-accurate-global-weather-forecasting/">GraphCast (DeepMind)</a></div>
+</div>
+
+<!-- ============ TIER 4 ============ -->
+<h2 id="t4">Tier 4 ⭐⭐ — Source Attribution & Inverse Problem</h2>
+<p>จุดขายเฉพาะของ HazeNet (บท 3.6–3.7): บอกว่า "ฝุ่นมาจากไหน" และ "กลับทิศหาแหล่งจากค่าที่วัดได้"</p>
+
+<div class="paper t4">
+  <div class="paper-head"><span class="paper-title">12. Deep-Learning Emulator แบบ Forward + Adjoint ของเคมีบรรยากาศ</span><span class="stars">★★★★</span></div>
+  <div><span class="venue">Atmosphere (MDPI) 2025, vol.16(9):1109</span> <span class="repro ok">ทำซ้ำได้</span></div>
+  <p><b>คืออะไร:</b> NN ที่เลียนแบบกระบวนการเคมีก๊าซ และให้ได้ <b>ทั้ง forward (จำลองไปข้างหน้า) และ adjoint (หาความไว/กลับทิศ)</b> ในตัวเดียว — เพราะ NN หาอนุพันธ์ได้ จึงได้ adjoint "ฟรี" ผ่าน automatic differentiation.</p>
+  <div class="flow"><span class="chip">forward: emissions → C</span><span class="arrow">⇄</span><span class="chip">adjoint (.backward): ∂C/∂emissions</span></div>
+  <div class="rel"><b>เกี่ยวกับเรา:</b> <b>หลักฐานตรงเป๊ะ</b>ของบท 3.7 — ว่า "adjoint mode = autodiff ของ NN" ใช้ทำ sensitivity analysis และ source inversion ได้จริงในงานเคมีบรรยากาศ. ใช้อ้างอิงยืนยันวิธี source inversion ของเราได้เลย.</div>
+  <div class="linkrow">🔗 <a href="https://doi.org/10.3390/atmos16091109">Atmosphere (MDPI) — DOI 10.3390/atmos16091109</a></div>
+</div>
+
+<div class="paper t4">
+  <div class="paper-head"><span class="paper-title">13. ML-based 4D-Var Data Assimilation (adjoint ผ่าน emulator)</span><span class="stars">★★★</span></div>
+  <div><span class="venue">GMD 2022, vol.15, 3433 (ML reduced-order 4D-Var); Adjoint-matching surrogates (arXiv 2111.08626)</span> <span class="repro partial">หยิบบางส่วน</span></div>
+  <p><b>คืออะไร:</b> งานวิทยาศาสตร์บรรยากาศคลาสสิกใช้ <b>4D-Var</b> (กลืนข้อมูลสังเกตเข้าแบบจำลอง) ซึ่งต้องมี "adjoint code" ที่เขียนยากมาก. งานกลุ่มนี้แสดงว่า: ถ้าใช้ <b>emulator ที่ diff ได้</b> → autodiff แทน adjoint code ได้เลย ไม่มี discretization error และเร็วกว่า.</p>
+  <div class="rel"><b>เกี่ยวกับเรา:</b> ยืนยันคำกล่าวบท 3.7 ว่า "WRF-Chem adjoint ใช้เวลาพัฒนาหลายปี แต่ HazeNet ได้ฟรี". วาง source inversion ของเราในกรอบ 4D-Var/inverse-problem ที่นักวิทย์บรรยากาศยอมรับ → เพิ่มความน่าเชื่อถือเชิงวิชาการ.</div>
+  <div class="linkrow">🔗 <a href="https://gmd.copernicus.org/articles/15/3433/2022/">ML-ROM 4D-Var (GMD)</a> <a href="https://arxiv.org/abs/2111.08626">Adjoint-matching surrogates</a></div>
+</div>
+
+<div class="paper t4">
+  <div class="paper-head"><span class="paper-title">14. Machine-Learning Source Apportionment ของ PM</span><span class="stars">★★★</span></div>
+  <div><span class="venue">Environ. Sci. Technol. (EST) 2025</span> <span class="repro ok">ทำซ้ำได้</span></div>
+  <p><b>คืออะไร:</b> ใช้ ML กับข้อมูลองค์ประกอบ aerosol หลายสเกล เพื่อ <b>ติดตามและแยกแหล่ง PM₂.₅ แบบ near-real-time</b> — ต่อยอดจากวิธีคลาสสิก PMF (Positive Matrix Factorization).</p>
+  <div class="rel"><b>เกี่ยวกับเรา:</b> เป็น "สำนักคิดคู่แข่ง" ของ attribution — receptor-model/ML แยกแหล่งจากองค์ประกอบเคมี ณ จุดวัด. ต่างจาก HazeNet: เราใช้ <b>tagged-tracer ในแบบจำลองฟิสิกส์</b> (3.6) → ได้ attribution ทั้ง field + อิงการขนส่งจริง ไม่ใช่แค่จุดวัด. ควรอ้างเพื่อเทียบสองสำนัก.</div>
+  <div class="linkrow">🔗 <a href="https://pubs.acs.org/doi/10.1021/acs.est.5c14501">EST 2025</a></div>
+</div>
+
+<div class="paper t4">
+  <div class="paper-head"><span class="paper-title">15. Transboundary Haze Attribution ใน SEA (WRF-Chem / CMAQ)</span><span class="stars">★★★★</span></div>
+  <div><span class="venue">WRF-Chem N. Thailand (PMC 2024); CMAQ Myanmar/Laos→Thai (Atmos. Environ. 2024)</span> <span class="repro ok">โดเมนเรา</span></div>
+  <p><b>คืออะไร:</b> แบบจำลองเคมี-ขนส่ง (WRF-Chem/CMAQ) ประเมิน <b>หมอกควันข้ามแดน</b> — เผาในเมียนมา/ลาว/กัมพูชา ส่งผลต่อ PM₂.₅ ในภาคเหนือ/กรุงเทพฯ มากแค่ไหน (เมษายน เชียงใหม่ ~70% มาจาก biomass burning).</p>
+  <div class="rel"><b>เกี่ยวกับเรา:</b> นี่คือ <b>"ground truth" เชิงวิทยาศาสตร์ของโจทย์เรา</b> และเป็น baseline ฟิสิกส์ที่ HazeNet ต้องเทียบ/เลียนแบบ. กำหนด <b>8 โซนแหล่ง SEA</b> ในบท 3.6 ก็อิงงานพวกนี้. ข้อจำกัดของเขา: รันช้า ทำ inversion ยาก — HazeNet เร็วกว่ามากและ inversion ได้ฟรี.</div>
+  <div class="linkrow">🔗 <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11280843/">WRF-Chem N. Thailand</a> <a href="https://www.sciencedirect.com/science/article/abs/pii/S1352231024001663">SEA biomass burning → S. China</a></div>
+</div>
+
+<!-- ============ TIER 5 ============ -->
+<h2 id="t5">Tier 5 ⭐ — Uncertainty & Generative (Diffusion)</h2>
+<p>ส่วน UQ (บท 3.8–3.9): ทำไมเราเลือก Quantile/Ensemble แทน diffusion + งานที่ diffusion ใช้ได้จริง</p>
+
+<div class="paper t5">
+  <div class="paper-head"><span class="paper-title">16. GenCast — Diffusion Ensemble Weather</span><span class="stars">★★★</span></div>
+  <div><span class="venue">Price et al., Nature 2024</span> <span class="lab">DeepMind</span> <span class="repro no">เกินงบ — ตัวเทียบ</span></div>
+  <p><b>คืออะไร:</b> โมเดล <b>diffusion</b> (conditional diffusion transformer) ที่สร้าง ensemble พยากรณ์อากาศ — เก่งและเร็วกว่า ENS ของ ECMWF ในหลายเป้าหมาย, วัดด้วย CRPS.</p>
+  <div class="rel"><b>เกี่ยวกับเรา:</b> เป็น "คู่เทียบ" ของบท 3.8 — เหตุผลที่ HazeNet <b>ไม่</b>ใช้ diffusion เป็นแกนหลัก: ช้า (หลายสิบ-ร้อย denoising steps × rollout), superposition พัง, adjoint ผ่าน stochastic steps ยาก, ไม่ deterministic. GenCast แสดงว่า diffusion <b>เก่งเรื่อง ensemble</b> — เราจึงยอมรับว่ามันดีสำหรับ "spread" แต่เลือก Quantile Regression ที่ผ่าน 1 ครั้ง + diff ได้ + คุมมวลได้.</div>
+  <div class="linkrow">🔗 <a href="https://www.nature.com/articles/s41586-024-08252-9">Nature — GenCast</a></div>
+</div>
+
+<div class="paper t5">
+  <div class="paper-head"><span class="paper-title">17. CorrDiff — Diffusion Downscaling ระดับกิโลเมตร (ไต้หวัน)</span><span class="stars">★★★</span></div>
+  <div><span class="venue">NVIDIA, Communications Earth & Environment 2025; arXiv 2309.15214</span> <span class="repro partial">หยิบไอเดียได้</span></div>
+  <p><b>คืออะไร:</b> diffusion 2 ขั้น (UNet ทำนายค่าเฉลี่ย + diffusion เติม residual) เพื่อ <b>downscale</b> อากาศหยาบ 25 กม. → ละเอียด 2 กม. เหนือไต้หวัน. คมขึ้น เห็นแนวฝน/พายุชัด.</p>
+  <div class="rel"><b>เกี่ยวกับเรา:</b> ตัวอย่าง "ที่ diffusion <b>ใช้ถูกงาน</b>" (บท 3.8) — downscaling ไม่ใช่ rollout, ไม่ต้อง attribution. ถ้า HazeNet อยากเพิ่มความละเอียดเชิงพื้นที่ (super-resolution แผนที่ฝุ่น) เป็นจุดที่อาจหยิบ diffusion มา <b>เสริมเฉพาะส่วน</b> ได้ (ไม่ใช่แกนหลัก). โดเมนไต้หวัน = ใกล้บ้านเรา.</div>
+  <div class="linkrow">🔗 <a href="https://www.nature.com/articles/s43247-025-02042-5">Comms Earth & Env</a> <a href="https://arxiv.org/abs/2309.15214">arXiv 2309.15214</a></div>
+</div>
+
+<div class="paper t5">
+  <div class="paper-head"><span class="paper-title">18. ความเสถียรของ Autoregressive Rollout (error สะสม)</span><span class="stars">★★★</span></div>
+  <div><span class="venue">PDE-Refiner (NeurIPS 2023); Thermalizer (arXiv 2503.18731); SFNO Huge Ensembles (2024)</span> <span class="repro partial">เทคนิคจำเป็น</span></div>
+  <p><b>คืออะไร:</b> ปัญหาใหญ่ของโมเดลที่วน rollout: error เล็ก ๆ ต่อ step ถูกขยายจน "spectral blow-up"/ดริฟต์หลุดจากคำตอบจริง. งานกลุ่มนี้เสนอวิธีคุม เช่น PDE-Refiner (เติม noise แล้ว refine), Thermalizer (ใช้ diffusion คุม trajectory), Jacobian regularization.</p>
+  <div class="rel"><b>เกี่ยวกับเรา:</b> HazeNet ต้อง rollout หลายสิบชั่วโมง → เจอปัญหานี้แน่. เทคนิคเหล่านี้ + การคุมมวล (Tier 2) + gradient checkpointing (บท 3.7) คือ "ชุดเครื่องมือเสถียรภาพ" ที่เราต้องเตรียม. เป็น caveat สำคัญที่ต้องพูดถึงอย่างซื่อสัตย์.</div>
+  <div class="linkrow">🔗 <a href="https://papers.neurips.cc/paper_files/paper/2023/file/d529b943af3dba734f8a7d49efcb6d09-Paper-Conference.pdf">PDE-Refiner</a> <a href="https://arxiv.org/abs/2503.18731">Thermalizer</a></div>
+</div>
+
+<!-- ============ TIER 6 ============ -->
+<h2 id="t6">Tier 6 ⭐ — Data Sources & Foundation Models</h2>
+<p>วัตถุดิบของ pipeline (Module 4): จากดาวเทียม/ไฟ/อากาศ → tensor พร้อมเทรน</p>
+
+<div class="paper t6">
+  <div class="paper-head"><span class="paper-title">19. ERA5 Reanalysis — เชื้อเพลิงอุตุนิยมวิทยา</span><span class="stars">★★★</span></div>
+  <div><span class="venue">Hersbach et al., QJRMS 2020 (ECMWF)</span> <span class="repro ok">ใช้ตรง</span></div>
+  <p><b>คืออะไร:</b> ข้อมูล reanalysis อากาศย้อนหลังทั่วโลก รายชั่วโมง ~31 กม. (ลม, อุณหภูมิ, ความชื้น, PBL height ฯลฯ) — มาตรฐานทองที่ AI-weather ทุกตัวใช้เทรน.</p>
+  <div class="rel"><b>เกี่ยวกับเรา:</b> เป็น <b>met forcing หลักของสเตจ 1–3</b> — ตัวขับการขนส่ง/แพร่ของฝุ่นใน HazeNet. open data, ดึงผ่าน CDS API.</div>
+  <div class="linkrow">🔗 <a href="https://www.ecmwf.int/en/forecasts/dataset/ecmwf-reanalysis-v5">ERA5 (ECMWF)</a> <a href="https://cds.climate.copernicus.eu/">Copernicus CDS</a></div>
+</div>
+
+<div class="paper t6">
+  <div class="paper-head"><span class="paper-title">20. Himawari-8/9 AOD → Surface PM₂.₅ ด้วย Deep Learning</span><span class="stars">★★★</span></div>
+  <div><span class="venue">Atmos. Pollution Research 2025 (two-stage); Int. J. Appl. Earth Obs. 2024</span> <span class="repro ok">ใช้ตรง</span></div>
+  <p><b>คืออะไร:</b> ดาวเทียมค้างฟ้า Himawari ให้ AOD (ความขุ่นมัวของอากาศ) ราย <b>ชั่วโมง</b> → DL แปลงเป็น PM₂.₅ ผิวพื้น (ความสัมพันธ์ AOD–PM₂.₅ ไม่เชิงเส้น ต้องใช้ ML). เติมช่องว่างเมฆด้วย MERRA-2.</p>
+  <div class="flow"><span class="chip">Himawari AOD + met + DEM + land-use</span><span class="arrow">→</span><span class="chip">DNN</span><span class="arrow">→</span><span class="chip">PM₂.₅ รายชั่วโมง 1 กม.</span></div>
+  <div class="rel"><b>เกี่ยวกับเรา:</b> Himawari ครอบคลุม SEA เต็ม ๆ และราย<b>ชั่วโมง</b> = input เชิงพื้นที่ที่ทรงพลังของเรา (เติมจุดที่ไม่มีสถานี). งานพวกนี้บอกสูตรผสม input (AOD+met+DEM+land-use) ที่เราใช้ได้เลยในสเตจ 1.</div>
+  <div class="linkrow">🔗 <a href="https://www.sciencedirect.com/science/article/abs/pii/S1309104225001217">Himawari two-stage PM₂.₅</a> <a href="https://www.sciencedirect.com/science/article/pii/S1569843224004990">multiscale ST deep learning</a></div>
+</div>
+
+<div class="paper t6">
+  <div class="paper-head"><span class="paper-title">21. FINNv2.5 — Near-Real-Time Biomass-Burning Emission ภาคเหนือไทย</span><span class="stars">★★★★</span></div>
+  <div><span class="venue">PMC 2025 (FINNv2.5, ≤1 กม., Northern Thailand)</span> <span class="repro ok">ใช้ตรง — โดเมนเรา</span></div>
+  <p><b>คืออะไร:</b> ระบบประเมิน <b>การปล่อย PM₂.₅ จากการเผา</b> แบบ near-real-time ความละเอียด ≤1 กม. สำหรับภาคเหนือไทย โดยใช้ Fire INventory from NCAR (FINNv2.5) จากจุดความร้อนดาวเทียม (FIRMS).</p>
+  <div class="flow"><span class="chip">FIRMS hotspots</span><span class="arrow">→</span><span class="chip">FINNv2.5 (emission factor × พื้นที่เผา)</span><span class="arrow">→</span><span class="chip">emission PM₂.₅ ≤1 กม.</span></div>
+  <div class="rel"><b>เกี่ยวกับเรา:</b> นี่คือ <b>"ตัวขับแหล่ง (Q)" ของ HazeNet โดยตรง</b> — input การปล่อยจากไฟ ที่ใช้ทั้ง forward (สเตจ 1) และเป็น prior ใน source inversion (3.7). เป็นงานในพื้นที่/โจทย์เดียวกับเราเป๊ะ → อ้างอิงสำคัญมาก.</div>
+  <div class="linkrow">🔗 <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12846012/">FINNv2.5 Northern Thailand</a> <a href="https://firms.modaps.eosdis.nasa.gov/">NASA FIRMS</a></div>
+</div>
+
+<div class="paper t6">
+  <div class="paper-head"><span class="paper-title">22. Geospatial Foundation Models — Prithvi (NASA × IBM)</span><span class="stars">★★★</span></div>
+  <div><span class="venue">Prithvi-EO-2.0 (arXiv 2412.02732, 600M params); Prithvi-WxC (weather/climate)</span> <span class="repro partial">fine-tune ได้</span></div>
+  <p><b>คืออะไร:</b> foundation model สำหรับข้อมูลสำรวจระยะไกล — pretrain บนภาพ HLS (Landsat+Sentinel-2) 30 ม. ทั่วโลก แล้ว fine-tune งานปลายทาง (น้ำท่วม, รอยไฟไหม้) ด้วยข้อมูลน้อย. มีเวอร์ชัน Prithvi-WxC สำหรับอากาศ/ภูมิอากาศ (MERRA-2).</p>
+  <div class="rel"><b>เกี่ยวกับเรา:</b> <b>ทางลัดในงบจำกัด</b> — แทนเทรน encoder จากศูนย์ (เปลือง A100-hrs) เราอาจ fine-tune encoder ที่ pretrain มาแล้ว → ประหยัด compute มาก (สอดคล้องข้อจำกัด ~15 A100-hrs). เป็น pattern เดียวกับ Aurora (Tier 1).</div>
+  <div class="linkrow">🔗 <a href="https://arxiv.org/abs/2412.02732">Prithvi-EO-2.0</a> <a href="https://huggingface.co/ibm-nasa-geospatial">โมเดลบน HuggingFace</a></div>
+</div>
+
+<div class="card">
+<b>โบนัส — งานในไทย/อาเซียนที่ควรอ้าง (โดเมนตรง):</b>
+<ul>
+<li>Deep learning + decomposition พยากรณ์ PM₂.₅ เชิงพื้นที่ <b>หาดใหญ่</b> (J. Big Data 2025) — <a href="https://link.springer.com/article/10.1186/s40537-025-01079-9">ลิงก์</a></li>
+<li>ผลกระทบสุขภาพ/เศรษฐกิจจาก PM₂.₅ การเผาใน <b>SEA แผ่นดินใหญ่</b> (Sci. Total Environ. 2022) — <a href="https://www.sciencedirect.com/science/article/abs/pii/S1309104222001040">ลิงก์</a></li>
+<li>NASA Earth Observatory: <b>Smoke Shrouds Northern Thailand</b> (ภาพถ่ายดาวเทียม) — <a href="https://science.nasa.gov/earth/earth-observatory/smoke-shrouds-northern-thailand/">ลิงก์ (มีรูปสวย ๆ)</a></li>
+</ul>
+</div>
+
+<!-- ============ SYNTHESIS ============ -->
+<h2 id="synth">7. สังเคราะห์ — HazeNet = ผลรวมของอะไร?</h2>
+<p>ถ้ามองภาพรวม HazeNet คือ "การประกอบร่าง" ของไอเดียที่ดีที่สุดจากแต่ละสำนัก เข้าเป็นระบบเดียวที่เน้นหมอกควัน SEA:</p>
+
+<div class="synth">
+  <div class="sbox"><div class="h">โครงสร้างหลัก</div>FastCTM (process-module + mass conservation) <span class="muted">[Tier 1·2·5]</span></div>
+  <div class="plus">+</div>
+  <div class="sbox"><div class="h">ปรัชญา diff ได้</div>NeuralGCM + Differentiable Programming <span class="muted">[Tier 1·3]</span></div>
+  <div class="plus">+</div>
+  <div class="sbox"><div class="h">Attribution + Inversion</div>tagged-tracer + adjoint=autodiff <span class="muted">[Tier 4]</span></div>
+</div>
+<div class="synth">
+  <div class="sbox"><div class="h">Uncertainty</div>Quantile/Ensemble/CRPS (ไม่ใช่ diffusion เป็นแกน) <span class="muted">[Tier 5]</span></div>
+  <div class="plus">+</div>
+  <div class="sbox"><div class="h">ข้อมูล open SEA</div>ERA5 + Himawari + FINN/FIRMS + Air4Thai <span class="muted">[Tier 6]</span></div>
+  <div class="plus">+</div>
+  <div class="sbox"><div class="h">ทางลัด compute</div>fine-tune foundation encoder (Aurora/Prithvi pattern) <span class="muted">[Tier 1·6]</span></div>
+</div>
+
+<h3>7.1 ตารางจับคู่: แต่ละสเตจ ↔ งานวิจัยที่รองรับ</h3>
+<table>
+<tr><th>สเตจ HazeNet</th><th>งานวิจัยที่หยิบมาใช้</th><th>ทำซ้ำในงบเรา?</th></tr>
+<tr><td>1. Data pipeline</td><td>ERA5, Himawari→PM₂.₅, FINNv2.5/FIRMS, Air4Thai</td><td>✅ ได้</td></tr>
+<tr><td>2. Encoder</td><td>Prithvi/Aurora (fine-tune), FNO/ViT/GNN backbone</td><td>🟡 fine-tune ได้</td></tr>
+<tr><td>3. Differentiable core ⭐</td><td>FastCTM (process modules) + NeuralGCM (hybrid) + conservation-NN + neural operators</td><td>✅ ได้ (แก่นงานเรา)</td></tr>
+<tr><td>4. Attribution + Inversion ⭐</td><td>forward+adjoint emulator, ML-4DVar, tagged-tracer/CMAQ-WRF SEA</td><td>✅ ได้ (จุดขาย)</td></tr>
+<tr><td>5. Uncertainty</td><td>Quantile/CRPS; GenCast/CorrDiff (ตัวเทียบ); rollout-stability</td><td>✅ ได้</td></tr>
+<tr><td>6. Baselines เทียบ</td><td>Aurora, GraphCast, GNN-AQ, WRF-Chem/CMAQ</td><td>🟡 เทียบกับผลที่เขารายงาน</td></tr>
+</table>
+
+<!-- ============ GAP ============ -->
+<h2 id="gap">8. ช่องว่างงานวิจัย = จุดขายของ HazeNet</h2>
+<p>ประเด็นสำคัญที่สุดสำหรับ proposal/วิทยานิพนธ์ — "<b>ทำไมต้องมี HazeNet ในเมื่อมีงานพวกนี้แล้ว?</b>" คำตอบคือ <b>ยังไม่มีงานไหนรวมทุกอย่างนี้ในระบบเดียว</b>:</p>
+
+<table>
+<tr><th>ความสามารถ</th><th>FastCTM</th><th>Aurora</th><th>GraphCast</th><th>GNN-AQ</th><th>WRF-Chem</th><th class="muted">HazeNet</th></tr>
+<tr><td>พยากรณ์ PM₂.₅ เป็น field</td><td>✅</td><td>✅</td><td>❌(อากาศ)</td><td>❌(จุด)</td><td>✅</td><td><b>✅</b></td></tr>
+<tr><td>ฝังฟิสิกส์/อนุรักษ์มวล</td><td>✅</td><td>❌</td><td>❌</td><td>❌</td><td>✅</td><td><b>✅</b></td></tr>
+<tr><td>เร็วระดับวินาที</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>❌(ชม.-วัน)</td><td><b>✅</b></td></tr>
+<tr><td>Source attribution (มาจากไหน)</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>🟡(แพง)</td><td><b>✅ tagged-tracer</b></td></tr>
+<tr><td>Source inversion (กลับทิศ)</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td>🟡(adjoint ยากมาก)</td><td><b>✅ autodiff ฟรี</b></td></tr>
+<tr><td>Uncertainty ที่ calibrate</td><td>❌</td><td>🟡</td><td>❌</td><td>🟡</td><td>❌</td><td><b>✅ QR+CRPS</b></td></tr>
+<tr><td>โฟกัสหมอกควันข้ามแดน SEA</td><td>❌(จีน)</td><td>❌(โลก)</td><td>❌</td><td>🟡</td><td>✅</td><td><b>✅</b></td></tr>
+<tr><td>ทำได้ด้วย open data + งบเล็ก</td><td>✅</td><td>❌</td><td>❌</td><td>✅</td><td>🟡</td><td><b>✅ ~15 A100-hr</b></td></tr>
+</table>
+
+<div class="green-box">
+<b>ประโยคจุดขาย (พูดกับกรรมการได้):</b><br>
+"งานที่มีอยู่ ถ้า<b>เร็วและแม่น ก็เป็น black-box ที่บอกไม่ได้ว่าฝุ่นมาจากไหน</b> (Aurora, GNN-AQ); ถ้า<b>อธิบายแหล่งได้ ก็ช้าและทำ inversion แทบไม่ได้</b> (WRF-Chem). <b>HazeNet เป็นตัวแรกที่รวม</b> ความเร็วของ AI-emulator + ฟิสิกส์อนุรักษ์มวลแบบ FastCTM + attribution ด้วย tagged-tracer + source inversion ที่ได้ฟรีจาก differentiable programming + uncertainty ที่ calibrate ได้ — เฉพาะปัญหาหมอกควันข้ามแดนอาเซียน ด้วยข้อมูลเปิดบนงบประมาณจำกัด"
+</div>
+
+<div class="warn">
+<b>ข้อควรระวัง (ซื่อสัตย์):</b> ตาราง "✅" ของ HazeNet คือ <b>เป้าหมายออกแบบ</b> ไม่ใช่ผลที่พิสูจน์แล้ว. ความท้าทายจริงที่ต้องยอมรับ: (1) rollout เสถียรภาพ (Tier 5 #18), (2) ข้อมูลสังเกตเบาบาง → inversion ill-posed (3.7), (3) งบ ~15 A100-hr จำกัดสเกลโมเดล → ต้องพึ่ง fine-tuning + โดเมนแคบ. งานเหล่านี้ใน Tier ต่าง ๆ คือ "เครื่องมือรับมือ" ที่เราเตรียมไว้แล้ว.
+</div>
+
+<!-- ============ REFS ============ -->
+<h2 id="refs">9. รายการลิงก์ทั้งหมด (Master Reference List)</h2>
+<p class="sub">เรียงตาม Tier — คลิกตามไปอ่านต้นฉบับได้เลย</p>
+
+<table>
+<tr><th>#</th><th>งาน</th><th>ปี/ที่ตีพิมพ์</th><th>ลิงก์</th></tr>
+<tr><td>1</td><td>FastCTM (principle-informed NN)</td><td>GMD 2025</td><td><a href="https://gmd.copernicus.org/articles/18/6295/2025/">gmd.copernicus.org</a></td></tr>
+<tr><td>2</td><td>NeuralGCM</td><td>Nature 2024</td><td><a href="https://www.nature.com/articles/s41586-024-07744-y">nature.com</a> · <a href="https://arxiv.org/abs/2311.07222">arXiv</a></td></tr>
+<tr><td>3</td><td>Aurora foundation model</td><td>Nature 2025</td><td><a href="https://www.microsoft.com/en-us/research/publication/aurora-a-foundation-model-for-the-earth-system/">microsoft</a> · <a href="https://github.com/microsoft/aurora">GitHub</a></td></tr>
+<tr><td>4</td><td>CMAQ deep-learning emulators</td><td>STOTEN 2025</td><td><a href="https://www.sciencedirect.com/science/article/pii/S0048969725021072">sciencedirect</a></td></tr>
+<tr><td>5</td><td>Conservation laws in NN (atom balance)</td><td>GMD 2022</td><td><a href="https://gmd.copernicus.org/articles/15/3417/2022/">gmd.copernicus.org</a></td></tr>
+<tr><td>6</td><td>Regional aerosol DL + NWP</td><td>npj CAS 2023</td><td><a href="https://www.nature.com/articles/s41612-023-00397-0">nature.com</a></td></tr>
+<tr><td>7</td><td>GNN PM₂.₅ (VMD-GAT-BiLSTM / 72-hr)</td><td>2023–24</td><td><a href="https://www.nature.com/articles/s41598-024-68874-x">SciRep</a> · <a href="https://www.sciencedirect.com/science/article/pii/S0160412023002441">EnvInt</a></td></tr>
+<tr><td>8</td><td>Differentiable Programming for ESM</td><td>GMD 2023</td><td><a href="https://gmd.copernicus.org/articles/16/3123/2023/">gmd</a> · <a href="https://arxiv.org/abs/2208.13825">arXiv</a></td></tr>
+<tr><td>9</td><td>PINNs + conservation</td><td>2019–25</td><td><a href="https://arxiv.org/html/2506.22413v1">review</a> · <a href="https://arxiv.org/pdf/2410.17445">projection</a></td></tr>
+<tr><td>10</td><td>Neural Operators (FNO / DeepONet)</td><td>2021</td><td><a href="https://arxiv.org/abs/2010.08895">FNO</a> · <a href="https://arxiv.org/abs/1910.03193">DeepONet</a></td></tr>
+<tr><td>11</td><td>FourCastNet / Pangu / GraphCast</td><td>2022–23</td><td><a href="https://arxiv.org/abs/2202.11214">FCN</a> · <a href="https://www.nature.com/articles/s41586-023-06185-3">Pangu</a> · <a href="https://deepmind.google/blog/graphcast-ai-model-for-faster-and-more-accurate-global-weather-forecasting/">GraphCast</a></td></tr>
+<tr><td>12</td><td>Forward+Adjoint chemistry emulator</td><td>Atmosphere 2025</td><td><a href="https://doi.org/10.3390/atmos16091109">doi.org</a></td></tr>
+<tr><td>13</td><td>ML 4D-Var / adjoint-matching</td><td>2021–22</td><td><a href="https://gmd.copernicus.org/articles/15/3433/2022/">GMD</a> · <a href="https://arxiv.org/abs/2111.08626">arXiv</a></td></tr>
+<tr><td>14</td><td>ML source apportionment</td><td>EST 2025</td><td><a href="https://pubs.acs.org/doi/10.1021/acs.est.5c14501">pubs.acs.org</a></td></tr>
+<tr><td>15</td><td>SEA transboundary haze (WRF-Chem/CMAQ)</td><td>2024</td><td><a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC11280843/">WRF-Chem</a> · <a href="https://www.sciencedirect.com/science/article/abs/pii/S1352231024001663">CMAQ</a></td></tr>
+<tr><td>16</td><td>GenCast (diffusion ensemble)</td><td>Nature 2024</td><td><a href="https://www.nature.com/articles/s41586-024-08252-9">nature.com</a></td></tr>
+<tr><td>17</td><td>CorrDiff (diffusion downscaling)</td><td>Comms E&E 2025</td><td><a href="https://www.nature.com/articles/s43247-025-02042-5">nature.com</a> · <a href="https://arxiv.org/abs/2309.15214">arXiv</a></td></tr>
+<tr><td>18</td><td>Rollout stability (PDE-Refiner / Thermalizer)</td><td>2023–25</td><td><a href="https://papers.neurips.cc/paper_files/paper/2023/file/d529b943af3dba734f8a7d49efcb6d09-Paper-Conference.pdf">PDE-Refiner</a> · <a href="https://arxiv.org/abs/2503.18731">Thermalizer</a></td></tr>
+<tr><td>19</td><td>ERA5 reanalysis</td><td>QJRMS 2020</td><td><a href="https://www.ecmwf.int/en/forecasts/dataset/ecmwf-reanalysis-v5">ecmwf</a> · <a href="https://cds.climate.copernicus.eu/">CDS</a></td></tr>
+<tr><td>20</td><td>Himawari AOD → PM₂.₅ (DL)</td><td>2024–25</td><td><a href="https://www.sciencedirect.com/science/article/abs/pii/S1309104225001217">two-stage</a> · <a href="https://www.sciencedirect.com/science/article/pii/S1569843224004990">multiscale</a></td></tr>
+<tr><td>21</td><td>FINNv2.5 N. Thailand emission</td><td>2025</td><td><a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC12846012/">PMC</a> · <a href="https://firms.modaps.eosdis.nasa.gov/">FIRMS</a></td></tr>
+<tr><td>22</td><td>Prithvi geospatial foundation</td><td>2024</td><td><a href="https://arxiv.org/abs/2412.02732">arXiv</a> · <a href="https://huggingface.co/ibm-nasa-geospatial">HuggingFace</a></td></tr>
+</table>
+
+<hr>
+<p class="muted center">รวบรวมจากการค้นคว้าออนไลน์ มิถุนายน 2026 · ความเกี่ยวข้อง (★) เป็นการประเมินเทียบกับ HazeNet · ตัวเลขผลลัพธ์ทั้งหมดอ้างอิงต้นฉบับในลิงก์<br>
+ถัดไปแนะนำ: เปิดอ่าน Tier 1 (FastCTM + NeuralGCM + Aurora) ก่อน แล้วค่อยลงลึก Tier 4 (attribution/inversion) ซึ่งเป็นจุดขายของเรา</p>
+
+</div>
+</body>
+</html>

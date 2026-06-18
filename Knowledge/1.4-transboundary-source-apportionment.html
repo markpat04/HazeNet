@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.4 — ควันข้ามพรมแดน & Source Apportionment (สอนละเอียด)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>1.4 — ควันข้ามพรมแดน &amp; Source Apportionment</h1>
+<p class="tagline">"ฝุ่นนี้มาจากไหน?" — คำถามที่ทั้งโปรเจกต์ของเราตั้งใจจะตอบ</p>
+<p class="sub">ต่อจาก 1.3 (ลมพาควันข้ามแดน) · บทนี้คือ "หัวใจของ pain point" และ "จุดขายหลัก" (C2 attribution) · ผูกกับ HazeNet ตลอด</p>
+
+<div class="lead">
+<b>ทำไมบทนี้สำคัญมาก:</b> สามบทก่อนสอนว่าฝุ่นคืออะไร (1.1), ฟิสิกส์การเคลื่อนของควัน (1.2), และอากาศที่ขับมัน (1.3) · บทนี้รวมทุกอย่างเข้าเป็น<b>คำถามเชิงนโยบายจริง</b>: "PM2.5 ที่เชียงใหม่วันนี้ <u>กี่เปอร์เซ็นต์</u> มาจากในประเทศ vs ข้ามพรมแดน?" · ถ้าตอบไม่ได้ → แก้ปัญหาผิดที่ · <b class="k">Source Apportionment</b> = ศาสตร์ของการตอบคำถามนี้ และ HazeNet ตั้งใจตอบมันด้วยวิธีใหม่
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. ควันข้ามพรมแดนคืออะไร</a><br>
+<a href="#p2">2. ทำไมมันเป็น pain point จริง ★</a><br>
+<a href="#p3">3. Source Apportionment คืออะไร</a><br>
+<a href="#p4">4. วิธีที่มีอยู่ #1: Receptor model (PMF)</a><br>
+<a href="#p5">5. วิธีที่มีอยู่ #2: Tagged tracer (WRF-Chem/CMAQ)</a><br>
+<a href="#p6">6. ตัวเลขจริงของไทย (ground truth)</a><br>
+<a href="#p7">7. HazeNet ทำต่างยังไง (C2) ★★</a><br>
+<a href="#p8">8. ทำไม superposition ทำให้แยกแหล่งได้</a><br>
+<a href="#p9">9. caveat &amp; การ validate</a><br>
+<a href="#cheat">10. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. ควันข้ามพรมแดน (Transboundary Smoke) คืออะไร</h2>
+<p>ทุกฤดูแล้ง (กุมภาพันธ์–เมษายน) เกษตรกรในภูมิภาคลุ่มน้ำโขง — <b>เมียนมา, ลาว, ไทยตอนบน, กัมพูชา</b> — เผาเศษวัสดุการเกษตร (ข้าวโพดเลี้ยงสัตว์, ข้าวไร่) และมีไฟป่าจำนวนมาก · ควันที่เกิดขึ้น <b>ไม่หยุดที่เส้นพรมแดน</b> — ลมตะวันตก/ตะวันตกเฉียงใต้ (จาก 1.3) หอบมันข้ามภูเขาเข้าสู่ภาคเหนือของไทย</p>
+
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 230" width="96%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="w" markerWidth="11" markerHeight="11" refX="8" refY="3.5" orient="auto"><path d="M0,0 L9,3.5 L0,7 Z" fill="#ff9b54"/></marker></defs>
+  <!-- countries -->
+  <rect x="20" y="40" width="150" height="150" rx="8" fill="#1c2330" stroke="#f85149"/><text x="95" y="62" fill="#f85149" font-size="13" text-anchor="middle" font-weight="bold">เมียนมา / ลาว</text><text x="95" y="80" fill="#9aa7b4" font-size="10.5" text-anchor="middle">เผาไร่ + ไฟป่า</text>
+  <!-- fires -->
+  <g fill="#ff9b54"><circle cx="55" cy="110" r="5"/><circle cx="90" cy="135" r="5"/><circle cx="130" cy="105" r="5"/><circle cx="70" cy="160" r="5"/><circle cx="140" cy="155" r="5"/></g>
+  <text x="95" y="205" fill="#ff9b54" font-size="10" text-anchor="middle">🔥 จุดความร้อน (FRP — จาก 1.1)</text>
+  <!-- wind arrows carrying smoke -->
+  <line x1="175" y1="100" x2="370" y2="110" stroke="#ff9b54" stroke-width="3" marker-end="url(#w)"/>
+  <line x1="175" y1="140" x2="370" y2="130" stroke="#ff9b54" stroke-width="3" marker-end="url(#w)"/>
+  <text x="270" y="95" fill="#58a6ff" font-size="11.5" text-anchor="middle">ลม ตต./ตต.ฉ.ต. หอบควัน</text>
+  <!-- Thailand -->
+  <rect x="385" y="55" width="150" height="120" rx="8" fill="#0f1f17" stroke="#3fb950" stroke-width="2"/><text x="460" y="80" fill="#3fb950" font-size="13" text-anchor="middle" font-weight="bold">ภาคเหนือไทย</text><text x="460" y="98" fill="#9aa7b4" font-size="10.5" text-anchor="middle">เชียงใหม่ / เชียงราย</text>
+  <g fill="#9aa7b4" opacity="0.85"><circle cx="420" cy="125" r="3.5"/><circle cx="450" cy="140" r="3.5"/><circle cx="480" cy="120" r="3.5"/><circle cx="505" cy="145" r="3.5"/><circle cx="435" cy="155" r="3.5"/></g>
+  <text x="460" y="172" fill="#f85149" font-size="10.5" text-anchor="middle">PM2.5 พุ่ง (ผู้รับเคราะห์)</text>
+</svg>
+</div>
+
+<p>คำว่า "<b>receptor</b>" (ผู้รับ) คือจุดที่เราวัดฝุ่น เช่น เชียงใหม่ · คำว่า "<b>source</b>" (แหล่ง) คือจุดที่ควันเกิด เช่น ไร่ในเมียนมา · ปัญหาคือ ที่ receptor เราเห็นแค่ <b>"ฝุ่นรวม"</b> — มองไม่ออกว่าก้อนไหนมาจากแหล่งไหน</p>
+
+<div class="why"><b>เชื่อม 3 บทก่อน:</b> ไฟ (FRP จาก 1.1) = แหล่ง · ลม (จาก 1.3) = ตัวพา · PBL ต่ำ (จาก 1.3) = ตัวกักให้พุ่ง · ทั้งหมดอธิบายได้ด้วย advection ในสมการ ADR (จาก 1.2) · บทนี้แค่ตั้งคำถามว่า "แล้วเราจะ <u>ย้อนกลับ</u> ไปบอกสัดส่วนแหล่งได้ยังไง"</div>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. ทำไมมันเป็น pain point จริง <span class="pin">★</span></h2>
+<p>นี่ไม่ใช่ปัญหาวิชาการลอย ๆ — มันคือ<b>ทางตันเชิงนโยบาย</b>:</p>
+<ul>
+<li><b>ถ้าฝุ่นส่วนใหญ่มาจากในประเทศ</b> → มาตรการที่ถูกคือ ห้ามเผา/จัดการเชื้อเพลิงในไทย</li>
+<li><b>ถ้าส่วนใหญ่ข้ามพรมแดนมา</b> → ห้ามเผาในไทยอย่างเดียว<u>ไม่พอ</u> ต้องเจรจาระหว่างประเทศ (เช่น ASEAN Haze Agreement)</li>
+</ul>
+<p>การเลือกผิด = เสียทรัพยากร + โทษผิดคน + ฝุ่นไม่ลด · และที่แย่กว่านั้น: <b>สัดส่วนเปลี่ยนไปทุกวัน</b> ตามทิศลม — บางวันลมพัดจากเมียนมา บางวันนิ่งและฝุ่นเป็นของในพื้นที่เอง</p>
+
+<div class="danger"><b>ช่องว่างที่แท้จริง:</b> เครื่องมือที่ให้คำตอบ "วันนี้กี่ %" แบบ<u>เร็วพอจะใช้ตัดสินใจ</u> แทบไม่มี · งานวิจัยที่ตอบได้ (WRF-Chem tagged-tracer) ใช้เวลารันหลายชั่วโมง–วันต่อเหตุการณ์ และต้องผู้เชี่ยวชาญ · ผลจึงออกมาเป็นรายงาน "ย้อนหลังรายฤดู" ไม่ใช่ "พยากรณ์รายวัน" · <b>HazeNet ตั้งใจอุดช่องนี้</b></div>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. Source Apportionment คืออะไร (แบ่งสัดส่วนแหล่งที่มา)</h2>
+<p><b>Source Apportionment (SA)</b> = การแยกว่า "ฝุ่นรวม" ที่จุดวัด ประกอบด้วยสัดส่วนจากแต่ละแหล่งเท่าไร · เป้าหมายคือสมการง่าย ๆ:</p>
+<div class="card center" style="font-family:'Cambria Math',serif;font-size:18px">
+C<sub>รวม</sub> = C<sup>(เมียนมา)</sup> + C<sup>(ลาว)</sup> + C<sup>(ในประเทศ)</sup> + C<sup>(อื่น ๆ)</sup>
+</div>
+<p>ถ้าวัด C<sub>รวม</sub> = 120 µg/m³ แล้วแยกได้ว่า 54 มาจากเมียนมา (45%), 36 ในประเทศ (30%)… นั่นคือ source apportionment ที่สมบูรณ์</p>
+<p>มีสองตระกูลวิธีใหญ่ — เข้าใจทั้งสองจะเห็นว่า HazeNet ยืนตรงไหน:</p>
+<table>
+<tr><th>ตระกูล</th><th>แนวคิด</th><th>ทิศทาง</th></tr>
+<tr><td><b style="color:#bc8cff">Receptor model</b><br>(เช่น PMF)</td><td>เริ่มจาก "ฝุ่นที่วัดได้" แล้วใช้สถิติแยกว่ามีกี่ "ลายเซ็นเคมี"</td><td>ปลายทาง → ต้นทาง</td></tr>
+<tr><td><b style="color:#56d4dd">Source-oriented model</b><br>(เช่น WRF-Chem tagged tracer)</td><td>เริ่มจาก "ไฟแต่ละจุด" แล้วจำลองฟิสิกส์ว่าควันไปถึงไหน</td><td>ต้นทาง → ปลายทาง</td></tr>
+</table>
+<div class="why"><b>HazeNet อยู่ตระกูลไหน:</b> ตระกูล <b>source-oriented</b> (เหมือน WRF-Chem) — เราเริ่มจากไฟ ติดป้ายควัน แล้วจำลองการเคลื่อน · แต่เราทำด้วย<b>นิวรอลที่เร็วและหาอนุพันธ์ได้</b> ซึ่งเปลี่ยนเกม (ดูข้อ 7)</div>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. วิธีที่มีอยู่ #1 — Receptor Model / PMF</h2>
+<p><b>PMF (Positive Matrix Factorization)</b> = วิธีสถิติยอดนิยม · เก็บตัวอย่างฝุ่นจริงมาวิเคราะห์<b>องค์ประกอบเคมี</b> (เช่น โพแทสเซียม = ตัวบ่งชี้การเผาชีวมวล, วาเนเดียม = น้ำมันเตา) แล้วใช้คณิตศาสตร์แยกว่ามีกี่ "แหล่ง" ที่มีลายเซ็นเคมีต่างกัน</p>
+<div class="ex"><b>อุปมา:</b> เหมือนชิมแกงแล้วบอกว่า "มีกะทิ มีพริก มีปลาร้า" จากรสชาติ — โดยไม่ต้องเห็นตอนทำ · PMF "ชิม" องค์ประกอบเคมีของฝุ่นแล้วเดาแหล่ง</div>
+<h4>ข้อดี / ข้อจำกัด</h4>
+<ul>
+<li>✅ อิงข้อมูลวัดจริง น่าเชื่อถือเชิงเคมี</li>
+<li>❌ บอกได้แค่ "<b>ประเภท</b>แหล่ง" (เช่น "การเผาชีวมวล") <u>ไม่บอกพิกัดประเทศ</u> — เผาในไทยกับเผาในเมียนมามีลายเซ็นเคมีเหมือนกัน!</li>
+<li>❌ ต้องเก็บตัวอย่าง+วิเคราะห์ในแล็บ → ช้า รายเดือน/รายฤดู ไม่ใช่รายวัน</li>
+</ul>
+<div class="warn"><b>จุดอ่อนสำคัญต่อปัญหาเรา:</b> PMF แยก "ชีวมวล vs น้ำมัน" ได้ แต่<b>แยก "ชีวมวลเมียนมา vs ชีวมวลไทย" ไม่ได้</b> เพราะเคมีเหมือนกัน · ส่วน "ข้ามพรมแดนกี่ %" เป็นเรื่อง<b>ภูมิศาสตร์+ลม</b> ซึ่งต้องใช้โมเดลฟิสิกส์ (ข้อ 5) → นี่คือเหตุผลที่เราเลือกตระกูล source-oriented</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. วิธีที่มีอยู่ #2 — Tagged Tracer (WRF-Chem / CMAQ-ISAM)</h2>
+<p>นี่คือ "มาตรฐานทอง" ของการแยกแหล่งเชิงภูมิศาสตร์ · แนวคิดคือ <b>"ติดป้ายสีให้ควัน"</b>:</p>
+<ol>
+<li>แบ่งพื้นที่ต้นทางเป็นโซน (เช่น เมียนมา=แดง, ลาว=น้ำเงิน, ไทย=เขียว)</li>
+<li>ปล่อยควันออกจากไฟ พร้อม "ติดป้ายสี" ตามโซนต้นทาง</li>
+<li>รันโมเดลฟิสิกส์ (advection+diffusion) ให้ควันแต่ละสีเคลื่อนไปพร้อมกัน</li>
+<li>ที่เชียงใหม่ นับว่ามีควันสีไหนกี่ % → นั่นคือ source apportionment</li>
+</ol>
+<div class="center card">
+<svg class="svg" viewBox="0 0 540 180" width="94%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="t" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#9aa7b4"/></marker></defs>
+  <circle cx="55" cy="50" r="11" fill="#f85149"/><text x="55" y="80" fill="#f85149" font-size="10.5" text-anchor="middle">ควันแดง (พม่า)</text>
+  <circle cx="55" cy="120" r="11" fill="#58a6ff"/><text x="55" y="150" fill="#58a6ff" font-size="10.5" text-anchor="middle">ควันน้ำเงิน (ลาว)</text>
+  <line x1="80" y1="55" x2="360" y2="80" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#t)"/>
+  <line x1="80" y1="118" x2="360" y2="95" stroke="#9aa7b4" stroke-width="1.6" marker-end="url(#t)"/>
+  <text x="220" y="60" fill="#9aa7b4" font-size="10.5" text-anchor="middle">เคลื่อนไปพร้อมกัน (ฟิสิกส์เดียวกัน)</text>
+  <!-- receptor pie -->
+  <circle cx="430" cy="88" r="42" fill="none" stroke="#30363d" stroke-width="1"/>
+  <path d="M430,88 L430,46 A42,42 0 0,1 466,108 Z" fill="#f85149" opacity="0.8"/>
+  <path d="M430,88 L466,108 A42,42 0 1,1 430,46 Z" fill="#58a6ff" opacity="0.55"/>
+  <text x="430" y="150" fill="#3fb950" font-size="11" text-anchor="middle" font-weight="bold">เชียงใหม่: แดง 60% / น้ำเงิน 40%</text>
+</svg>
+</div>
+<h4>ข้อดี / ข้อจำกัด</h4>
+<ul>
+<li>✅ แยก<b>เชิงภูมิศาสตร์</b>ได้จริง (ตอบ "กี่ % จากเมียนมา" ได้)</li>
+<li>✅ อิงฟิสิกส์ → น่าเชื่อถือ เป็น ground truth ให้เรา validate (จาก research plan: WRF-Chem ให้เชียงราย 45%)</li>
+<li>❌ <b>ช้ามาก</b> — รันหนึ่งเหตุการณ์ใช้ชั่วโมง–วัน บนคลัสเตอร์ใหญ่</li>
+<li>❌ ต้องเพิ่ม "ป้ายสี" ทุกโซนที่อยากแยก → ยิ่งหลายแหล่งยิ่งช้าทวีคูณ</li>
+<li>❌ <b>หาอนุพันธ์ไม่ได้ง่าย</b> → ตอบ "ถ้าลดไฟเมียนมา 50% ฝุ่นจะลดเท่าไร" (counterfactual) ต้องรันใหม่ทั้งดุ้น</li>
+</ul>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. ตัวเลขจริงของไทย (ground truth ที่เราจะใช้ validate)</h2>
+<p>ข่าวดี: มีงานวิจัยไทยที่ให้ตัวเลขแยกแหล่งไว้แล้ว — เราจะใช้เป็น "เฉลย" ตรวจ attribution ของ HazeNet (จาก research plan, ตรวจสอบจริงแล้ว):</p>
+<table>
+<tr><th>งาน</th><th>วิธี</th><th>ผลสำคัญ</th></tr>
+<tr><td>WRF-Chem transboundary (PMC11280843)</td><td>Tagged tracer</td><td>เชียงราย ~<b>45%</b> ข้ามพรมแดน · เฉลี่ย 9 จังหวัด ~<b>30%</b></td></tr>
+<tr><td>PMF เชียงใหม่ (S1352231024...)</td><td>Receptor / PMF</td><td>การเผาชีวมวล ~<b>59 µg/m³</b> (~51% ของ PM2.5)</td></tr>
+<tr><td>WRF-CMAQ + ISAM</td><td>Tagged (ISAM)</td><td>ยืนยันสัดส่วนข้ามแดนสูงในช่วงวิกฤต</td></tr>
+</table>
+<div class="why"><b>บทบาทใน HazeNet (C2 validation):</b> เราจะรัน attribution ของเราในช่วงเดียวกัน แล้วเทียบว่าได้สัดส่วนใกล้ ~45%/~30% ไหม · ถ้าใกล้ = พิสูจน์ว่า attribution ของเรา<b>ไม่ใช่แค่เลขที่โมเดลมั่ว</b> แต่ตรงกับฟิสิกส์มาตรฐานทอง · นี่คือสิ่งที่ทำให้ contribution C2 "มีของจริง" ไม่ใช่ข้ออ้างลอย ๆ</div>
+<div class="warn"><b>ซื่อสัตย์:</b> ตัวเลขเหล่านี้เป็น<b>รายฤดู/เฉลี่ย</b> ไม่ใช่รายวัน และความละเอียดต่างจากเรา (20 กม. vs 0.1°) และคนละปี · ดังนั้นใช้ validate "ระดับสัดส่วนโดยรวม" ได้ แต่ "รายวันเป๊ะ ๆ" ยังต้องระวัง (รายละเอียดข้อ 9)</div>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. HazeNet ทำต่างยังไง — Contribution C2 <span class="pin">★★ จุดขายหลัก</span></h2>
+<p>HazeNet เลือกตระกูล source-oriented (เหมือน tagged tracer) แต่แก้จุดอ่อน 3 ข้อของ WRF-Chem พร้อมกัน:</p>
+<table>
+<tr><th>มิติ</th><th>WRF-Chem tagged</th><th>HazeNet (เรา)</th></tr>
+<tr><td>ความเร็ว</td><td>ชั่วโมง–วัน/เหตุการณ์</td><td><b style="color:#3fb950">วินาที</b> (นิวรอลรันบน GPU)</td></tr>
+<tr><td>แยกแหล่ง</td><td>ต้องเพิ่มป้ายสี รันใหม่</td><td><b style="color:#3fb950">ติดป้ายในตัว (tagged tracer) ออกมาในการรันเดียว</b></td></tr>
+<tr><td>Counterfactual / inversion</td><td>รันใหม่ทั้งดุ้น</td><td><b style="color:#3fb950">หาอนุพันธ์ได้ → "adjoint ฟรี"</b> (จาก 0.2)</td></tr>
+<tr><td>พยากรณ์ + แยกแหล่ง</td><td>คนละระบบ</td><td><b style="color:#3fb950">โมเดลเดียวทำทั้งคู่</b></td></tr>
+</table>
+<p>หัวใจคือ: เราเอา "การติดป้ายสี" ของ tagged tracer มาใส่ใน<b>นิวรอลที่ออกแบบให้เป็นเชิงเส้นใน C</b> (conditionally-linear operator) · เพราะมันเชิงเส้น → ควันแต่ละสีบวกกันได้ (superposition) → แยกแหล่งได้<b>เป๊ะตามนิยาม ไม่ใช่ประมาณ</b></p>
+
+<div class="ex"><b>ชื่อเล่นที่เราใช้:</b> "<b>Smoke Fingerprint</b>" — ลายนิ้วมือควัน · โมเดลบอกได้ว่าฝุ่นที่เชียงใหม่ตอนนี้ "ลายนิ้วมือ" ชี้ไปแหล่งไหนกี่ % แบบเรียลไทม์</div>
+
+<div class="why"><b>เชื่อม 0.2 (autograd):</b> จำ "adjoint ฟรี" ได้ไหม? เพราะ HazeNet หาอนุพันธ์ได้ → <code>∂(ฝุ่นเชียงใหม่)/∂(ไฟเมียนมา)</code> คำนวณได้ทันทีด้วย <code>.backward()</code> · นี่คือสิ่งที่ WRF-Chem ทำไม่ได้ และเป็นเหตุผลที่ counterfactual ("ลดไฟ 50% → ฝุ่นลดเท่าไร") กับ source inversion ทำได้ในโมเดลเดียว</div>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. ทำไม "superposition" ทำให้แยกแหล่งได้ (สะพานสู่ heart 2/3)</h2>
+<p>นี่คือเหตุผลคณิตศาสตร์ที่ทุกอย่างทำงาน — และเป็นหัวข้อ 2.5 (หัวใจที่ 2) ที่จะสอนลึกต่อไป · ปูพื้นไว้ตรงนี้:</p>
+<p>จาก 1.2 เราเห็นว่า 4 พจน์แรกของ ADR (advection, diffusion, emission, loss) <b>เป็นเชิงเส้นใน C</b> · คุณสมบัติเชิงเส้นแปลว่า:</p>
+<div class="card center" style="font-family:'Cambria Math',serif;font-size:17px">
+ถ้า E = E<sup>(พม่า)</sup> + E<sup>(ลาว)</sup> &nbsp;แล้ว&nbsp; C = C<sup>(พม่า)</sup> + C<sup>(ลาว)</sup>
+<div style="font-family:'Segoe UI';font-size:12.5px;color:var(--muted);margin-top:8px">รันควันแต่ละแหล่งแยกกัน แล้วผลรวม = รันรวมทีเดียว — เป๊ะ ไม่ใช่ประมาณ</div>
+</div>
+<p>= เราปล่อยควัน "สีพม่า" กับ "สีลาว" พร้อมกันในการรันเดียว แล้วผลลัพธ์ของแต่ละสี<b>บวกกันได้พอดี</b>เป็นฝุ่นรวม · ดังนั้นที่ปลายทางเราแค่ดูว่าแต่ละสีมีเท่าไร = source apportionment ฟรีในตัว</p>
+<div class="danger"><b>นี่คือเหตุผลที่เราปฏิเสธ diffusion downscaling:</b> ฟังก์ชัน diffusion <u>ไม่เชิงเส้น</u> → <code>Diffusion(C<sup>พม่า</sup>+C<sup>ลาว</sup>) ≠ Diffusion(C<sup>พม่า</sup>)+Diffusion(C<sup>ลาว</sup>)</code> → ทำลาย superposition → แยกแหล่งไม่ได้ · การรักษาความเชิงเส้นคือสิ่งศักดิ์สิทธิ์ของโปรเจกต์นี้</div>
+
+<!-- ============ 9 ============ -->
+<h2 id="p9">9. caveat &amp; การ validate (ความซื่อสัตย์เชิงวิทยาศาสตร์)</h2>
+<ul>
+<li><b>PM2.5 ไม่อนุรักษ์ 100%</b> — มี R<sub>chem</sub> (จาก 1.2) ทำให้เกิดฝุ่นทุติยภูมิ ที่ superposition ไม่ครอบคลุม → เราโฟกัส "ควันปฐมภูมิ (primary smoke)" และระบุข้อจำกัดนี้ชัดเจนในเปเปอร์</li>
+<li><b>Ground truth เป็นรายฤดู</b> — เทียบสัดส่วนรวมได้ แต่ counterfactual รายเหตุการณ์ต้องหา "natural experiment" (เช่น ช่วงฝนตกดับไฟ → ดูฝุ่นลดจริงไหม, เชื่อม 1.3) 2–3 เคสมายืนยัน</li>
+<li><b>โซนแหล่งหยาบ</b> — เราแบ่งเป็นประเทศ/ภูมิภาค ไม่ใช่รายแปลง → ตอบ "เมียนมากี่ %" ได้ แต่ "อำเภอไหนในเมียนมา" ไม่ได้</li>
+</ul>
+<div class="why"><b>ทำไม caveat คือจุดแข็ง ไม่ใช่จุดอ่อน:</b> งานระดับ A* ต่างจากงานทั่วไปตรงที่<b>รู้ขอบเขตตัวเอง</b> · การบอกชัดว่า "เราแยก primary smoke เชิงภูมิศาสตร์ได้เป๊ะ แต่ secondary ยังเป็นข้อจำกัด" ทำให้ reviewer เชื่อถือมากกว่าการอ้างเกินจริง</div>
+
+<!-- ============ cheat ============ -->
+<h2 id="cheat">10. Cheat sheet + แบบฝึกหัด</h2>
+<div class="card">
+<b>สรุปจำ:</b>
+<ul>
+<li><b>Transboundary smoke</b> = ควันข้ามพรมแดน (พม่า/ลาว → เหนือไทย) พาด้วยลม</li>
+<li><b>pain point</b> = "กี่ % ข้ามแดน vs ในประเทศ?" ตอบไม่ได้ → แก้ผิดที่ + เปลี่ยนทุกวันตามลม</li>
+<li><b>Source Apportionment</b> = แยก C<sub>รวม</sub> = ΣC<sup>(แหล่ง)</sup></li>
+<li><b>PMF (receptor):</b> ชิมเคมี → บอกประเภท · แต่<u>แยกเชิงภูมิศาสตร์ไม่ได้</u></li>
+<li><b>Tagged tracer (WRF-Chem):</b> ติดป้ายสี → แยกเชิงภูมิศาสตร์ได้ · แต่<u>ช้า + หาอนุพันธ์ไม่ได้</u></li>
+<li><b>HazeNet (C2):</b> tagged tracer แบบนิวรอล → เร็ว + แยกในตัว + adjoint ฟรี</li>
+<li><b>กุญแจคณิต:</b> เชิงเส้นใน C → superposition → แยกแหล่งเป๊ะ (= heart 2.5)</li>
+<li><b>ground truth ไทย:</b> เชียงราย ~45% ข้ามแดน, เฉลี่ย ~30% (ใช้ validate C2)</li>
+</ul>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 1 — PMF บอกว่า "ฝุ่นเชียงใหม่ 51% มาจากการเผาชีวมวล" · ข้อมูลนี้ตอบคำถามนโยบาย "ควรห้ามเผาในไทย หรือต้องเจรจาเมียนมา" ได้ไหม? เพราะอะไร?</p>
+<details><summary>เฉลย</summary>
+<p><b>ตอบไม่ได้</b> · PMF บอกแค่ "ประเภทแหล่ง" = การเผาชีวมวล แต่<b>แยกไม่ออกว่าเผาในไทยหรือในเมียนมา</b> เพราะลายเซ็นเคมีเหมือนกัน · คำถามนโยบายต้องการการแยก<b>เชิงภูมิศาสตร์</b> ซึ่งต้องใช้โมเดลฟิสิกส์ (tagged tracer / HazeNet) ไม่ใช่ receptor model</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 2 — ทำไม HazeNet ต้อง "เชิงเส้นใน C" ถึงจะแยกแหล่งได้เป๊ะ? (ตอบด้วยคำว่า superposition)</p>
+<details><summary>เฉลย</summary>
+<p>เพราะเชิงเส้น → <b>superposition</b>: ถ้าปล่อยควันจากหลายแหล่งพร้อมกัน ผลรวม = ผลของแต่ละแหล่งบวกกัน<u>พอดี</u> · ดังนั้นเราติดป้ายควันแต่ละแหล่ง รันครั้งเดียว แล้วผลของแต่ละสีคือสัดส่วนแหล่งนั้นเป๊ะตามนิยาม (ไม่ใช่ประมาณ) · ถ้าโมเดลไม่เชิงเส้น (เช่นใส่ diffusion) → ผลรวมเพี้ยน → แยกไม่ได้</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด 3 — WRF-Chem แยกแหล่งได้แม่นเหมือนกัน แล้วทำไมเรายังต้องสร้าง HazeNet?</p>
+<details><summary>เฉลย</summary>
+<p>3 เหตุผล: (1) <b>เร็ว</b> — WRF-Chem ใช้ชั่วโมง–วัน/เหตุการณ์ ใช้พยากรณ์รายวันไม่ทัน; HazeNet วินาที · (2) <b>หาอนุพันธ์ได้</b> — counterfactual ("ลดไฟ 50%→?") และ source inversion ทำได้ด้วย <code>.backward()</code> โดยไม่รันใหม่ · (3) <b>โมเดลเดียว</b>ทำทั้งพยากรณ์+แยกแหล่ง+counterfactual · WRF-Chem เป็น ground truth ที่ดี แต่ใช้จริงรายวันไม่ได้</p>
+</details>
+</div>
+
+<div class="lead">
+<b>จบ 1.4 แล้วคุณควร:</b> เข้าใจว่า "ควันข้ามพรมแดน" คือ pain point จริง, รู้สองตระกูลวิธีแยกแหล่ง (PMF receptor vs tagged tracer source-oriented), เห็นว่า HazeNet = tagged tracer แบบนิวรอลที่เร็ว+แยกในตัว+adjoint ฟรี, และเข้าใจว่า "ความเชิงเส้น → superposition" คือกุญแจที่ทำให้แยกแหล่งได้เป๊ะ
+<br><br>
+<b>ขั้นต่อไปแนะนำ:</b> <b>1.5</b> (WRF-Chem / CMAQ / PMF เจาะลึก — รู้จัก "มาตรฐานทอง" ที่เราจะแข่งและใช้ validate ให้ชัด) เพื่อปิด Module 1 · หรือกระโดดไป <b>2.5 Superposition</b> (หัวใจที่ 2/3) ที่บทนี้เพิ่งปูสะพานให้ — ถ้าอยากเข้าแกนคณิตเลย
+</div>
+
+</div>
+</body>
+</html>

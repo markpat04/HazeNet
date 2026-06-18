@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HazeNet — Final Pipeline Decision (การตัดสินใจขั้นสุดท้าย ฉบับลงลึก)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.8;font-size:16.5px;}
+  .wrap{max-width:1040px;margin:0 auto;padding:32px 20px 110px}
+  h1{font-size:31px;line-height:1.22;margin:0 0 6px}
+  .tagline{color:var(--cyan);font-size:16.5px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:14.5px;margin:0 0 8px}
+  h2{font-size:24px;margin:54px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:16px 22px;border-radius:8px;margin:20px 0;font-size:17px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .why::before{content:"💡 เหตุผลของการตัดสินใจ";display:block;color:var(--cyan);font-weight:bold;font-size:13px;margin-bottom:4px}
+  .deep{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .deep b{color:var(--purple)}
+  .deep::before{content:"📐 ลงลึกทฤษฎี/คณิต";display:block;color:var(--purple);font-weight:bold;font-size:13px;margin-bottom:4px}
+  .ana{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ana b{color:var(--amber)}
+  .ana::before{content:"🔍 อุปมาให้เห็นภาพ";display:block;color:var(--amber);font-weight:bold;font-size:13px;margin-bottom:4px}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .green-box b{color:var(--green)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{border:1px solid var(--border);padding:9px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:13.5px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13px;line-height:1.65;margin:14px 0}
+  pre code{color:var(--text)}
+  .eq{background:#11161d;border:1px solid var(--border);border-left:3px solid var(--blue);border-radius:8px;padding:13px 17px;margin:12px 0;font-size:16px;overflow-x:auto;font-family:"Cambria Math","Segoe UI",serif;line-height:2}
+  .eq .lbl{display:block;color:var(--muted);font-size:12.5px;font-family:"Segoe UI",sans-serif;margin-top:6px}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:6px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 24px;margin:22px 0;font-size:14.8px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:2}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 10px;border-radius:20px;border:1px solid var(--green);color:var(--green);margin-left:6px}
+  .dec{border:1px solid var(--green);border-radius:12px;margin:18px 0;overflow:hidden;background:var(--panel)}
+  .dec-h{display:flex;align-items:center;gap:12px;padding:11px 18px;background:linear-gradient(90deg,rgba(63,185,80,.16),transparent);border-bottom:1px solid var(--border)}
+  .dec-n{background:var(--green);color:#06210f;border-radius:9px;padding:3px 12px;font-weight:bold;font-size:14px;flex-shrink:0}
+  .dec-t{font-size:17px;font-weight:bold}
+  .dec-verdict{margin-left:auto;font-size:12.5px;color:var(--amber);font-weight:bold;border:1px solid var(--amber);border-radius:20px;padding:2px 12px}
+  .dec-b{padding:10px 20px 16px}
+  .keep{color:var(--green);font-weight:bold}.drop{color:var(--red);font-weight:bold}.defer{color:var(--amber);font-weight:bold}
+  .stage{display:flex;gap:14px;align-items:flex-start;border:1px solid var(--border);border-radius:11px;margin:12px 0;padding:13px 18px;background:var(--panel)}
+  .stage-n{background:var(--blue);color:#06210f;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:15px;flex-shrink:0}
+  .stage-t{font-size:16.5px;font-weight:bold;color:var(--text);margin:0 0 2px}
+  .badge{font-size:11px;padding:1px 9px;border-radius:11px;margin-left:6px;vertical-align:middle}
+  .b-done{background:rgba(63,185,80,.15);border:1px solid var(--green);color:var(--green)}
+  .b-new{background:rgba(188,140,255,.15);border:1px solid var(--purple);color:var(--purple)}
+  .b-mod{background:rgba(227,179,65,.13);border:1px solid var(--amber);color:var(--amber)}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>HazeNet — การตัดสินใจ Pipeline สุดท้าย <span class="pin">🎯 ฉบับลงมือ</span></h1>
+<p class="tagline">เราจะทำอะไร · ทำอย่างไร · เพราะอะไร — ตัดสินจาก "ผลทดลองจริง" ไม่ใช่จากแผนบนกระดาษ</p>
+<p class="sub">สังเคราะห์จาก: Phase 0 + M2 + M2 round 2 (ผลจริง) · devil's advocate ทั้ง 2 ภาค · master-execution-plan · big-picture · best-version-plan · โครงสร้าง <code>src/</code> ที่รันได้แล้ว · อัปเดต 2026-06-18</p>
+
+<div class="lead">
+<b>การตัดสินใจใน 3 ประโยค:</b> เรา <b class="k">คง CLNO (conditionally-linear neural operator) เป็นแกนถาวร</b> เพราะมันคือสิ่งเดียวที่ให้ attribution + inversion ฟรี และผลทดลองพิสูจน์แล้วว่า "ขนาด/ความซับซ้อนของเน็ตไม่ใช่คอขวด" · เราจะ <b class="k">ทุ่มแรงทั้งหมดไปที่คอขวดจริงที่ M2 round 2 ค้นพบ — emission representation + ความไม่นิ่งข้ามปี (non-stationarity) + ฟิสิกส์การระบายอากาศ (ventilation/BLH)</b> ไม่ใช่ไปไล่เพิ่มพารามิเตอร์ · และเรา <b class="k">ส่งมอบเป็นระบบที่ทำงานครบวงจร + พิสูจน์ได้ + ซื่อสัตย์เรื่องขอบเขต</b> ภายใน ~8 สัปดาห์ ไม่ใช่ไปแข่ง RMSE กับ foundation model ยักษ์</p>
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#status">1. เราอยู่ตรงไหนจริง ๆ (สถานะ + ตัวเลขจริง)</a><br>
+<a href="#lesson">2. บทเรียนชี้ขาด — ทำไมแผนต้องเปลี่ยนทิศ</a><br>
+<a href="#decisions">3. การตัดสินใจหลัก — เก็บ/ทิ้ง/เลื่อน อะไร เพราะอะไร</a><br>
+<a href="#pipeline">4. The Final Pipeline — ภาพรวม end-to-end</a><br>
+<a href="#core">5. แก้ที่แกนจริง — emission + non-stationarity + ventilation</a><br>
+<a href="#model">6. โมเดลสุดท้าย — CLNO v3 (สเปกเต็ม)</a><br>
+<a href="#proof">7. โปรโตคอลการพิสูจน์ — baseline + error budget + CV</a><br>
+<a href="#critique">8. ตอบ devil's advocate — แต่ละกระสุนจัดการยังไง</a><br>
+<a href="#timeline">9. Timeline 8 สัปดาห์ + gate ตัดสิน</a><br>
+<a href="#scope">10. ขอบเขตที่เคลม vs ไม่เคลม (ความซื่อสัตย์)</a><br>
+<a href="#deliver">11. ส่งมอบอะไร + ต่อยอดสู่เวอร์ชันฝัน</a><br>
+</div>
+
+<!-- ============ 1 STATUS ============ -->
+<h2 id="status">1. เราอยู่ตรงไหนจริง ๆ — สถานะ + ตัวเลขจริง</h2>
+<p>ทุกการตัดสินใจด้านล่างตั้งอยู่บน "สิ่งที่รันแล้วและวัดผลแล้ว" ไม่ใช่สมมุติฐาน · นี่คือของจริงในเครื่อง:</p>
+
+<table>
+<tr><th>เฟส</th><th>โดเมน / ข้อมูล</th><th>โมเดลที่ดีที่สุด</th><th>ผล test (MAE / RMSE)</th><th>สถานะ</th></tr>
+<tr><td><b>Phase 0</b></td><td>กล่องเชียงใหม่ 16×21 · 13 วัน มี.ค.2023 · 12 สถานี</td><td>CLNO (standard)</td><td><b>28.1 / 36.7</b> µg/m³ (ชนะ XGBoost 32/57, MLP 36/47, mean 60/98)</td><td><span class="badge b-done">เสร็จ ✓</span></td></tr>
+<tr><td><b>M2</b></td><td>SEA 111×101 (ไทย+พม่า+ลาว) · ~449 วัน 2019–23 · G=11,211 cells</td><td>CLNOLowRank (rank-32)</td><td><b>55.0 / 81.5</b> (train 2022 / test 2023)</td><td><span class="badge b-done">เสร็จ ✓</span></td></tr>
+<tr><td><b>M2 round 2</b></td><td>เพิ่ม 6 met channels · 3-way split · LOYO CV</td><td>lowrank r16 wd1e-3 dp0.3</td><td>test2023 mean <b>73.9</b> · <b>median per-station 45.4</b></td><td><span class="badge b-done">เสร็จ ✓</span></td></tr>
+</table>
+
+<div class="why">ตัวเลข M2 (55) กับ round 2 (73.9) ดู "แย่ลง" แต่จริง ๆ <b>วัดคนละอย่าง</b>: round 2 ใช้ split ที่เข้มกว่า (train ปีต่ำ 2019–21 / test ปีสูง) และรายงาน mean ที่ถูกลากด้วยไม่กี่สถานีที่พังหนัก · ตัวเลขที่สะท้อนความจริงคือ <b>median per-station MAE = 45</b> — โมเดลทำได้โอเคกับสถานีส่วนใหญ่ แต่มี outlier ไม่กี่จุดที่พัง · นี่คือเบาะแสแรกของคอขวดจริง</div>
+
+<p><b>Pipeline ที่รันได้แล้ว (src/):</b></p>
+<pre><code>download_*_m2.py  →  build_grid_m2.py  →  build_datacube_m2.py
+  (DEM/ERA5/FIRMS/PM2.5/Open-Meteo)   (grid_m2.nc)      (datacube_m2.zarr 7ch + target.csv)
+      →  train_operator_m2.py  →  eval_operator_m2.py  →  attribution + inversion + comparison
+                +  sweep_m2.py (3-way split) · loyo_m2.py (leave-one-year-out) · diagnose_m2.py</code></pre>
+<p>datacube ปัจจุบัน <b>7 channels</b>: <code>[u10, v10, dem, precip, rh, temp, emission]</code> (met = 6 ช่องแรก, emission = ช่องสุดท้าย) · model encoder <code>in_ch=6</code> · GPU = RTX 4050 6GB (เครื่องจริง) → A100 Colab สำหรับ main run</p>
+
+<h3>1.1 ★ ช่องว่างที่ต้องซื่อสัตย์ — "ที่สร้างจริง" ยังไม่ตรงกับ "vision เดิม"</h3>
+<div class="danger"><b>เรื่องที่รอบแรกผมประเมินผิด (จากการอ่านโค้ด <code>model_operator.py</code> + <code>build_datacube_m2.py</code>):</b> CLNO ที่รันจริงคือ
+<div class="eq" style="margin:10px 0">PM2.5<sub>s</sub>(t) = Σ<sub>g</sub> K<sub>sg</sub>(met<sub>t</sub>) · E<sub>g</sub>(t) + b<sub>s</sub>(met<sub>t</sub>)<span class="lbl">map "วันเดียวกัน": met+ไฟ ของวัน t → PM2.5 ของวัน t · target = PM2.5 รายสถานี <b>รายวัน</b> · แต่ละวันเป็นตัวอย่างอิสระ</span></div>
+แปลว่ามันคือ <b>เครื่องประเมินแบบ same-day source-receptor / nowcast + attribution</b> — <u>ยังไม่มี</u> 3 อย่างที่ vision เดิม (focused-plan / overview / research-contribution) เคลม:</div>
+<table>
+<tr><th>vision เดิมเคลม</th><th>โค้ดจริงมีไหม</th><th>ผลต่อการเคลม</th></tr>
+<tr><td>Semi-Lagrangian advection (𝒜) แยกชัด</td><td><b>ไม่มี</b> — transport ฝังหมดใน learned kernel K</td><td>ไม่มี physics hard-constraint การพัดพา</td></tr>
+<tr><td>Autoregressive rollout t→t+1→…→t+48</td><td><b>ไม่มี</b> — single-step วันเดียว</td><td><b>ยังพยากรณ์ล่วงหน้า 24–48h ไม่ได้จริง</b></td></tr>
+<tr><td>Operator-splitting C<sub>t+1</sub>=𝒜+ℱθ</td><td><b>ไม่มี</b> — ไม่รับ C<sub>t</sub> เป็น input</td><td>ไม่ใช่ temporal model</td></tr>
+<tr><td>Attribution + inversion เชิงเส้นต่อ E</td><td><b>มี ✓</b></td><td>นี่คือแกนที่แข็งจริง</td></tr>
+</table>
+<div class="why">ค้นพบนี้เปลี่ยนกรอบการส่งมอบ: <b>สิ่งที่แข็งและพิสูจน์ได้จริงตอนนี้คือ "attribution-native source apportionment" (ไม่ต้องพึ่งการพยากรณ์ล่วงหน้าก็ทำงานได้)</b> ส่วน "forecast 24–48h" เป็นแกนคนละแกนที่ต้องตัดสินใจแยก (ดู D10–D11) — ไม่ใช่สิ่งที่ "เกือบเสร็จ" อย่างที่รอบแรกผมเขียน</div>
+
+<!-- ============ 2 LESSON ============ -->
+<h2 id="lesson">2. บทเรียนชี้ขาด — ทำไม "แผนเดิม" ต้องเปลี่ยนทิศ</h2>
+<p>แผนเก่า (master-execution-plan, best-version) สมมุติว่า <b>คอขวด = expressivity ของโมเดล</b> → จึงเน้น architecture (AFNO, FNO, ablation E2–E5) · แต่ M2 round 2 รันจริงแล้วพบ <b>3 ข้อค้นพบที่หักล้างสมมุติฐานนั้น</b>:</p>
+
+<div class="card">
+<h4>ค้นพบ 1 — overfitting / ขนาดโมเดล "ไม่ใช่" ปัญหาหลัก</h4>
+<p>ลดพารามิเตอร์ <b>24M → 0.4M</b> (LowRank → GlobalV) ผล test MAE แทบไม่ขยับ (78 → 72) · เพิ่ม regularization/dropout ก็ขยับน้อย</p>
+<div class="why">ถ้าเพิ่ม/ลดความจุของเน็ตแล้วผลไม่เปลี่ยน แปลว่า error ที่เหลือ <b>ไม่ได้มาจากเน็ตเรียนไม่พอ</b> — มันมาจาก "ข้อมูลเข้า/โครงปัญหา" · การไปไล่ทำ AFNO ใหญ่ ๆ หรือ backbone หรู ๆ จะเสียเวลาฟรี</div>
+</div>
+
+<div class="card">
+<h4>ค้นพบ 2 — 2023 (ปีวิกฤต) ไม่ใช่ตัวที่ generalize แย่ที่สุด</h4>
+<p>LOYO CV: ทดสอบ 2023 bias แค่ <b>−2</b> (เพราะ train เห็นปีฝุ่นหนักช่วยดึง baseline) · ตัวที่พังจริงคือ <b>ปีต่ำ (2021, 2022) โมเดล over-predict +45~50 µg/m³</b></p>
+<div class="ana">เหมือนนักเรียนที่ติว "ปีฝุ่นหนัก" มาเยอะ → เจอปีฝุ่นเบากลับ "ทายสูงเกิน" ทุกครั้ง เพราะมันคิดว่าไฟเท่านี้ต้องได้ฝุ่นเยอะแบบที่เคยเห็น · ปัญหาไม่ใช่ "ปีสุดโต่ง" แต่คือ "ความสัมพันธ์ไฟ→ฝุ่นเลื่อนไปมาในแต่ละปี"</div>
+</div>
+
+<div class="card">
+<h4>ค้นพบ 3 (แกนกลาง) — FRP→PM2.5 เป็น non-stationary ข้ามปี</h4>
+<p>โมเดล linear-in-emission จับ "ระดับฝุ่นรวมต่อปี" ไม่ได้ · ปีเดียวกัน FRP เท่ากันแต่ PM2.5 ต่างกันมาก เพราะ <b>การระบายอากาศ (ventilation), ความสูงชั้นผสม, ฝน, ชนิดเชื้อเพลิง, ความชื้นดิน</b> เปลี่ยนทุกปี</p>
+</div>
+
+<div class="danger"><b>ข้อสรุปที่เปลี่ยนทุกอย่าง:</b> คอขวดของ HazeNet <b>ไม่ใช่</b> "เน็ตไม่ฉลาดพอ" แต่คือ <b>(ก) emission proxy (FRP ดิบ) แปลงเป็นการปล่อยจริงได้แย่</b> และ <b>(ข) ฟิสิกส์การสะสม/ระบายที่ทำให้ไฟเท่ากันได้ฝุ่นไม่เท่ากัน ยังขาด</b> · ดังนั้น <b>งานหลักของ pipeline สุดท้ายต้องอยู่ที่ "ฝั่งซ้ายของสมการ" (อินพุต+ฟิสิกส์) ไม่ใช่ "กล่องเน็ตตรงกลาง"</b></div>
+
+<!-- ============ 3 DECISIONS ============ -->
+<h2 id="decisions">3. การตัดสินใจหลัก — เก็บ / ทิ้ง / เลื่อน</h2>
+<p>ทุกตัวเลือกที่เคยคุยกันมา ตัดสินตรงนี้ พร้อมเหตุผลอิงผลทดลอง:</p>
+
+<div class="dec"><div class="dec-h"><span class="dec-n">D1</span><div class="dec-t">แกนสถาปัตยกรรม = CLNO (conditionally-linear)</div><div class="dec-verdict">เก็บ — ล็อก</div></div>
+<div class="dec-b">
+<span class="keep">เก็บถาวร.</span> CLNO คือสิ่งเดียวที่ให้ <b>3 พลังจากโมเดลเดียว</b>: forward = พยากรณ์, อ่านแต่ละสาขา = attribution, ย้อน gradient = inversion · และค้นพบ 1 พิสูจน์แล้วว่าเราไม่ได้เสีย accuracy จากการบังคับ linear-in-E (เพราะคอขวดอยู่ที่อื่น)
+<div class="why">ถ้าทิ้ง CLNO ไปใช้ black-box (AFNO/GNN ล้วน) เราจะ <b>เสียทั้ง attribution+inversion (= ตัวตนของงาน) โดยที่ accuracy ไม่ได้ดีขึ้น</b> เพราะคอขวดไม่ใช่เน็ต · เป็นการแลกที่ขาดทุนสองต่อ</div>
+</div></div>
+
+<div class="dec"><div class="dec-h"><span class="dec-n">D2</span><div class="dec-t">เป้าหมายงานหลัก = แก้ emission + non-stationarity</div><div class="dec-verdict">เก็บ — เป็นแกน</div></div>
+<div class="dec-b">
+<span class="keep">นี่คืองาน 60% ของ pipeline สุดท้าย.</span> ย้ายแรงจาก "architecture search" (แผนเดิม E2–E5) ไปที่ <b>emission curve + per-year/regime scaling + ventilation physics (BLH)</b> · รายละเอียดเต็มใน §5
+<div class="why">อิงค้นพบ 3 โดยตรง · เป็นที่เดียวที่ลงแรงแล้วจะขยับ test MAE ได้จริง</div>
+</div></div>
+
+<div class="dec"><div class="dec-h"><span class="dec-n">D3</span><div class="dec-t">Uncertainty = quantile heads (P10/P50/P90)</div><div class="dec-verdict">เก็บ — แทน ensemble</div></div>
+<div class="dec-b">
+<span class="keep">เก็บ แต่เลือกแบบประหยัด.</span> หัว output คาย 3 quantile พร้อมกัน · <span class="drop">ทิ้ง</span> diffusion ensemble 50-member (v2 critique #4: ช้า 50× + ขัด superposition + ทั้ง 50 เส้นอาจ under-predict พร้อมกัน)
+<div class="why">ได้แถบความไม่แน่นอนที่เตือนภัยได้ โดยไม่ทุบงบ A100 และไม่ทำลายคุณสมบัติเชิงเส้นที่ใช้ทำ attribution</div>
+</div></div>
+
+<div class="dec"><div class="dec-h"><span class="dec-n">D4</span><div class="dec-t">AOD ดาวเทียม (Himawari/MAIAC) เป็นอินพุตหลัก</div><div class="dec-verdict">เลื่อน → ใช้เป็น "oracle/ตัวปรับ"</div></div>
+<div class="dec-b">
+<span class="defer">เลื่อนออกจาก critical path.</span> ทั้ง 2 บทวิจารณ์ชี้ว่า AOD "ตาบอด" วันวิกฤต (เมฆ/ควันหนา) · แทนที่จะพึ่งมันเป็นอินพุตหลัก เราใช้ AOD เป็น <b>(ก) ตัว constrain emission</b> (E_oracle ใน error budget) และ <b>(ข) target เสริมแบบ masked</b> เฉพาะวันที่มีค่า
+<div class="why">หลีกเลี่ยง garbage-in วันวิกฤต · ได้ประโยชน์จาก AOD โดยไม่ผูกชะตาโมเดลกับมัน</div>
+</div></div>
+
+<div class="dec"><div class="dec-h"><span class="dec-n">D5</span><div class="dec-t">เคลม attribution = "first-order primary transport influence"</div><div class="dec-verdict">เก็บ — ปรับถ้อยคำ</div></div>
+<div class="dec-b">
+<span class="keep">เก็บความสามารถ แต่ลด overclaim.</span> ตามทั้ง 2 บทวิจารณ์ — ไม่เคลม "ระบุแหล่งเคมีสมบูรณ์" (secondary aerosol 30–40% เป็น nonlinear) · เคลมเป็น <b>อิทธิพลการพัดพาฝุ่นปฐมภูมิจากการเผา</b> ซึ่งพอดีกับโจทย์รัฐบาล (เป้าคือจัดการ "การเผาชีวมวล")
+</div></div>
+
+<div class="dec"><div class="dec-h"><span class="dec-n">D6</span><div class="dec-t">CTM digital-twin (CMAQ/WRF-Chem) สำหรับ validate attribution</div><div class="dec-verdict">เลื่อน → เวอร์ชันฝัน</div></div>
+<div class="dec-b">
+<span class="defer">ไม่อยู่ใน 8 สัปดาห์.</span> รัน CMAQ/WRF-Chem เองคือโปรเจกต์แยกหลายเดือน + ต้องมี emission inventory · เวอร์ชัน 2 เดือนใช้ <b>synthetic recovery (leave-source-out) + เคสจริงเชิงคุณภาพ (ทิศลม ERA5)</b> แทน · twin เป็นเฟส 2 ของ best-version-plan
+</div></div>
+
+<div class="dec"><div class="dec-h"><span class="dec-n">D7</span><div class="dec-t">Operational GFS eval (train/serve skew)</div><div class="dec-verdict">เลื่อน → ระบุเป็น limitation</div></div>
+<div class="dec-b">
+<span class="defer">ไม่รันใน 8 สัปดาห์ แต่ "พูดถึงตรง ๆ".</span> ดึง GFS archive 10 ปีคือฝันร้าย data-eng (หลาย TB) · เวอร์ชันนี้ train+eval บน reanalysis (ERA5/Open-Meteo) แล้ว <b>เขียน limitation ชัดว่ายังไม่ทดสอบ operational</b> + วาง noise-injection ablation เล็ก ๆ เป็น proxy ถ้าเวลาพอ
+</div></div>
+
+<div class="dec"><div class="dec-h"><span class="dec-n">D8</span><div class="dec-t">Inversion (emission ย้อนรอย)</div><div class="dec-verdict">เก็บแบบ PoC — stretch</div></div>
+<div class="dec-b">
+<span class="defer">เก็บเป็น proof-of-concept.</span> ผล M2 inversion r≈−0.04 (ill-posed: สถานีน้อย, G ใหญ่) · เวอร์ชันนี้โชว์ inversion บน <b>เคสไฟจุดเดียว/สังเคราะห์ที่รู้คำตอบ</b> + regularization · ไม่เคลม inversion ทั้งโดเมน (อันนั้นเวอร์ชันฝัน WS5)
+</div></div>
+
+<div class="dec"><div class="dec-h"><span class="dec-n">D9</span><div class="dec-t">โดเมน/สเกล = คง M2 (SEA 111×101)</div><div class="dec-verdict">เก็บ — เป็น canonical</div></div>
+<div class="dec-b">
+<span class="keep">คง M2 เป็นสเกลมาตรฐาน.</span> ครอบ ไทย+พม่า+ลาว ซึ่งจำเป็นต่อ transboundary attribution · Phase 0 (กล่องเชียงใหม่) เก็บไว้เป็น "unit test เร็ว" สำหรับ debug · <span class="drop">ไม่ขยาย</span> ไปทั้ง SEA 5–25°N ในเวอร์ชันนี้ (นั่นคือ benchmark dataset ของเวอร์ชันฝัน)
+</div></div>
+
+<!-- ============ 4 PIPELINE ============ -->
+<h2 id="pipeline">4. The Final Pipeline — ภาพรวม end-to-end</h2>
+<p>นี่คือท่อทั้งเส้นที่ตัดสินแล้ว · สีบอกสถานะ: <span class="badge b-done">เสร็จแล้ว</span> <span class="badge b-mod">ปรับ/ขยาย</span> <span class="badge b-new">เพิ่มใหม่</span></p>
+
+<div class="center card">
+<svg viewBox="0 0 980 430" width="100%" xmlns="http://www.w3.org/2000/svg" class="svg">
+  <defs><marker id="ar" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#888"/></marker></defs>
+  <text x="490" y="22" fill="#e6edf3" font-size="14" font-weight="bold" text-anchor="middle">HazeNet Final Pipeline — A. Data → B. Datacube → C. CLNO v3 → D. Outputs → E. Proof</text>
+
+  <!-- A: data sources -->
+  <text x="95" y="52" fill="#56d4dd" font-size="12.5" font-weight="bold" text-anchor="middle">A · แหล่งข้อมูล (open)</text>
+  <g font-size="10.5" text-anchor="middle">
+    <rect x="20" y="62" width="150" height="26" rx="6" fill="rgba(63,185,80,.12)" stroke="#3fb950"/><text x="95" y="79" fill="#e6edf3">ERA5/Open-Meteo · ลม u,v</text>
+    <rect x="20" y="94" width="150" height="26" rx="6" fill="rgba(227,179,65,.12)" stroke="#e3b341"/><text x="95" y="111" fill="#e6edf3">+ precip · rh · temp</text>
+    <rect x="20" y="126" width="150" height="26" rx="6" fill="rgba(188,140,255,.13)" stroke="#bc8cff"/><text x="95" y="143" fill="#e6edf3">+ BLH (ชั้นผสม) ★ใหม่</text>
+    <rect x="20" y="158" width="150" height="26" rx="6" fill="rgba(63,185,80,.12)" stroke="#3fb950"/><text x="95" y="175" fill="#e6edf3">Copernicus DEM</text>
+    <rect x="20" y="190" width="150" height="26" rx="6" fill="rgba(255,155,84,.13)" stroke="#ff9b54"/><text x="95" y="207" fill="#e6edf3">FIRMS · FRP (ไฟ)</text>
+    <rect x="20" y="222" width="150" height="26" rx="6" fill="rgba(63,185,80,.12)" stroke="#3fb950"/><text x="95" y="239" fill="#e6edf3">OpenAQ/Air4Thai · PM2.5</text>
+    <rect x="20" y="254" width="150" height="26" rx="6" fill="rgba(248,81,73,.11)" stroke="#f85149"/><text x="95" y="271" fill="#e6edf3">AOD (Himawari) ◐เสริม</text>
+  </g>
+
+  <!-- B: datacube + emission transform -->
+  <text x="320" y="52" fill="#56d4dd" font-size="12.5" font-weight="bold" text-anchor="middle">B · Datacube + แปลง emission</text>
+  <rect x="230" y="66" width="180" height="120" rx="9" fill="rgba(88,166,255,.1)" stroke="#58a6ff"/>
+  <text x="320" y="88" fill="#58a6ff" font-size="11.5" text-anchor="middle" font-weight="bold">build_grid + datacube</text>
+  <text x="320" y="106" fill="#9aa7b4" font-size="10" text-anchor="middle">regrid → 0.1° · Zarr</text>
+  <text x="320" y="124" fill="#9aa7b4" font-size="10" text-anchor="middle">align เวลา/พิกัด</text>
+  <text x="320" y="146" fill="#bc8cff" font-size="10.5" text-anchor="middle" font-weight="bold">★ FRP→E curve (log/sat)</text>
+  <text x="320" y="164" fill="#bc8cff" font-size="10.5" text-anchor="middle" font-weight="bold">★ per-year scaling</text>
+
+  <rect x="230" y="200" width="180" height="78" rx="9" fill="rgba(188,140,255,.1)" stroke="#bc8cff"/>
+  <text x="320" y="222" fill="#bc8cff" font-size="11" text-anchor="middle" font-weight="bold">split + CV</text>
+  <text x="320" y="240" fill="#9aa7b4" font-size="9.8" text-anchor="middle">train 2019–21 / val 2022 / test 2023</text>
+  <text x="320" y="256" fill="#9aa7b4" font-size="9.8" text-anchor="middle">+ LOYO · leave-station-out</text>
+  <text x="320" y="271" fill="#9aa7b4" font-size="9.8" text-anchor="middle">embargo กันรั่ว</text>
+
+  <!-- C: model -->
+  <text x="560" y="52" fill="#56d4dd" font-size="12.5" font-weight="bold" text-anchor="middle">C · CLNO v3</text>
+  <rect x="470" y="66" width="180" height="212" rx="10" fill="rgba(63,185,80,.1)" stroke="#3fb950" stroke-width="2"/>
+  <text x="560" y="88" fill="#3fb950" font-size="12" text-anchor="middle" font-weight="bold">Conditionally-Linear</text>
+  <text x="560" y="104" fill="#3fb950" font-size="12" text-anchor="middle" font-weight="bold">Neural Operator</text>
+  <line x1="485" y1="114" x2="635" y2="114" stroke="#30363d"/>
+  <text x="560" y="132" fill="#9aa7b4" font-size="10" text-anchor="middle">met encoder (CNN, in=7)</text>
+  <text x="560" y="150" fill="#9aa7b4" font-size="10" text-anchor="middle">→ kernel K = softmax(UVᵀ)</text>
+  <text x="560" y="168" fill="#9aa7b4" font-size="10" text-anchor="middle">→ background b (softplus)</text>
+  <text x="560" y="190" fill="#e6edf3" font-size="10.5" text-anchor="middle" font-weight="bold">ŷ = K·E + b</text>
+  <text x="560" y="208" fill="#bc8cff" font-size="9.8" text-anchor="middle">★ ventilation gate (BLH)</text>
+  <text x="560" y="224" fill="#bc8cff" font-size="9.8" text-anchor="middle">★ quantile head P10/50/90</text>
+  <text x="560" y="246" fill="#9aa7b4" font-size="9.8" text-anchor="middle">เชิงเส้นใน E → superposition</text>
+  <text x="560" y="262" fill="#9aa7b4" font-size="9.8" text-anchor="middle">differentiable → inversion</text>
+
+  <!-- D: outputs -->
+  <text x="800" y="52" fill="#56d4dd" font-size="12.5" font-weight="bold" text-anchor="middle">D · Outputs</text>
+  <g font-size="10.5" text-anchor="middle">
+    <rect x="710" y="66" width="180" height="30" rx="6" fill="rgba(63,185,80,.16)" stroke="#3fb950"/><text x="800" y="85" fill="#fff">พยากรณ์ PM2.5 + P10/90</text>
+    <rect x="710" y="104" width="180" height="30" rx="6" fill="rgba(255,155,84,.16)" stroke="#ff9b54"/><text x="800" y="123" fill="#fff">attribution (พม่า/ลาว/local %)</text>
+    <rect x="710" y="142" width="180" height="30" rx="6" fill="rgba(188,140,255,.16)" stroke="#bc8cff"/><text x="800" y="161" fill="#fff">inversion PoC (ดับไฟไหน)</text>
+    <rect x="710" y="180" width="180" height="30" rx="6" fill="rgba(86,212,221,.14)" stroke="#56d4dd"/><text x="800" y="199" fill="#fff">เดโม what-if</text>
+  </g>
+  <!-- E proof -->
+  <rect x="710" y="224" width="180" height="54" rx="8" fill="rgba(227,179,65,.1)" stroke="#e3b341"/>
+  <text x="800" y="244" fill="#e3b341" font-size="11" text-anchor="middle" font-weight="bold">E · Proof harness</text>
+  <text x="800" y="261" fill="#9aa7b4" font-size="9.5" text-anchor="middle">baseline ladder · error budget</text>
+  <text x="800" y="274" fill="#9aa7b4" font-size="9.5" text-anchor="middle">oracle subst. · bootstrap CI</text>
+
+  <!-- arrows -->
+  <g stroke="#888" stroke-width="1.5" fill="none" marker-end="url(#ar)">
+    <path d="M170 170 L226 150"/>
+    <path d="M410 150 L466 150"/>
+    <path d="M650 110 L708 90"/><path d="M650 150 L708 125"/><path d="M650 190 L708 165"/><path d="M650 220 L708 200"/>
+  </g>
+  <text x="490" y="312" fill="#3fb950" font-size="11" text-anchor="middle">งานหลัก 60% อยู่ที่ B (emission/non-stationarity) + C-ventilation — ไม่ใช่ที่ตัวเน็ต</text>
+
+  <!-- legend -->
+  <g font-size="10" transform="translate(230,340)">
+    <rect x="0" y="0" width="14" height="12" rx="3" fill="rgba(63,185,80,.12)" stroke="#3fb950"/><text x="20" y="10" fill="#9aa7b4">เสร็จแล้ว (มีโค้ดรันได้)</text>
+    <rect x="210" y="0" width="14" height="12" rx="3" fill="rgba(227,179,65,.12)" stroke="#e3b341"/><text x="230" y="10" fill="#9aa7b4">ปรับ/ขยายของเดิม</text>
+    <rect x="390" y="0" width="14" height="12" rx="3" fill="rgba(188,140,255,.13)" stroke="#bc8cff"/><text x="410" y="10" fill="#9aa7b4">เพิ่มใหม่ (★ งานหลัก)</text>
+  </g>
+</svg>
+</div>
+
+<h3>4.1 ห้าด่าน (stage) ของท่อ พร้อมไฟล์จริง</h3>
+
+<div class="stage"><div class="stage-n">A</div><div><p class="stage-t">Data ingestion <span class="badge b-done">เสร็จ</span><span class="badge b-new">+BLH</span></p>
+<code>download_*_m2.py</code> · เพิ่ม <b>BLH (boundary layer height)</b> จาก ERA5/Open-Meteo — driver การสะสมที่แรงสุด · AOD (Himawari) เป็น optional fetch</div></div>
+
+<div class="stage"><div class="stage-n">B</div><div><p class="stage-t">Datacube + emission transform <span class="badge b-mod">ปรับแกน</span></p>
+<code>build_grid_m2.py</code> → <code>build_datacube_m2.py</code> · <b>เพิ่มขั้น FRP→emission curve + per-year scaling</b> (§5) ก่อน stack เป็น channel สุดท้าย · split/CV ฝังใน <code>sweep_m2.py</code>/<code>loyo_m2.py</code> ที่มีแล้ว</div></div>
+
+<div class="stage"><div class="stage-n">C</div><div><p class="stage-t">CLNO v3 <span class="badge b-mod">ขยาย</span></p>
+<code>model_operator.py</code> + <code>train_operator_m2.py</code> · เพิ่ม <b>ventilation gate (BLH)</b> + <b>quantile head</b> บนฐาน CLNOLowRank/GlobalV ที่รันแล้ว (§6)</div></div>
+
+<div class="stage"><div class="stage-n">D</div><div><p class="stage-t">Outputs <span class="badge b-done">เสร็จบางส่วน</span></p>
+<code>eval_operator_m2.py</code> ให้ attribution map + inversion + comparison แล้ว · เพิ่ม quantile band + เดโม what-if (notebook)</div></div>
+
+<div class="stage"><div class="stage-n">E</div><div><p class="stage-t">Proof harness <span class="badge b-new">เพิ่ม</span></p>
+baseline ladder (persistence/climatology/XGB/ConvLSTM) + error budget (oracle substitution) + bootstrap CI + stratified error · ขยายจาก <code>make_comparison.py</code> + <code>diagnose_m2.py</code></div></div>
+
+<!-- ============ 5 CORE ============ -->
+<h2 id="core">5. แก้ที่แกนจริง — emission + non-stationarity + ventilation</h2>
+<p>นี่คือหัวใจของ pipeline สุดท้าย (งาน 60%) · ทั้ง 3 ข้อโจมตี "ค้นพบ 3" จากคนละมุม:</p>
+
+<h3>5.1 FRP → emission curve (ไม่ใช้ FRP ดิบ)</h3>
+<p>FRP (Fire Radiative Power) เป็น proxy ที่ noisy: ดาวเทียมผ่านวันละไม่กี่ครั้ง, เมฆบัง, และความสัมพันธ์ FRP→มวล PM ที่ปล่อยจริง <b>ไม่เป็นเชิงเส้นและอิ่มตัว</b></p>
+<div class="deep"><b>ทำไม log/saturating:</b> ฟลักซ์การปล่อย PM ต่อ FRP มีลักษณะ saturate (ไฟใหญ่มากปล่อยต่อหน่วย FRP น้อยลง, plume สูงขึ้นพ้นชั้นผสม) · เราแทน <code>E = emission_factor · FRP</code> ดิบ ด้วย<br>
+<span class="eq">E = α · log(1 + FRP/FRP₀) &nbsp;หรือ&nbsp; E = α · FRP / (1 + FRP/F_sat)<span class="lbl">α, FRP₀, F_sat = พารามิเตอร์เรียนได้ (fit ร่วมกับโมเดล) · ลดอิทธิพลของ FRP spike สุดโต่งที่ทำให้ over-predict</span></span></div>
+<div class="why">ค้นพบ 2 บอกว่าโมเดล over-predict ตอนไฟเยอะ · curve ที่อิ่มตัวจะ "เบรก" การแปลง FRP→ฝุ่นในช่วงไฟหนัก → ลด over-prediction โดยตรง</div>
+
+<h3>5.2 จัดการ non-stationarity ระดับปี (แกนที่ยากสุด)</h3>
+<p>ปัญหา: ไฟ FRP เท่ากัน ปีต่างกัน ได้ PM2.5 ไม่เท่ากัน · มี 3 ทางเลือก เรียงตามความ "ซื่อสัตย์ทางวิทยาศาสตร์":</p>
+<table>
+<tr><th>ทางเลือก</th><th>ทำยังไง</th><th>ข้อดี / ข้อเสีย</th><th>ตัดสิน</th></tr>
+<tr><td><b>(ก) per-year scalar</b></td><td>เรียน background/scale ต่อปี <code>b_year</code></td><td>ดูดซับ year-bias ตรง ๆ · <span class="muted">แต่ "โกง": ปีใหม่ที่ไม่เคยเห็นก็ไม่มี scalar</span></td><td><span class="defer">ใช้เป็น diagnostic เท่านั้น</span></td></tr>
+<tr><td class="keep">(ข) explain ด้วย met</td><td>ให้ ventilation/BLH/ฝน "อธิบาย" ความต่างรายปี ผ่าน kernel conditioning</td><td><b>generalize ได้จริง</b> · ปีใหม่ใช้ met ของปีนั้น · ตรงเป้า "physics-structured"</td><td><span class="keep">★ ทางหลัก</span></td></tr>
+<tr><td>(ค) per-year emission factor</td><td>เรียน emission factor ต่อปี/ภูมิภาค (ชนิดเชื้อเพลิงต่างกัน)</td><td>มีฐานฟิสิกส์ (เชื้อเพลิงต่างปล่อยต่างกัน) · เสี่ยง overfit ปี</td><td><span class="defer">ทดลองเป็น ablation</span></td></tr>
+</table>
+<div class="green-box"><b>การตัดสิน:</b> ทางหลักคือ <b>(ข) — บังคับให้ met (โดยเฉพาะ BLH + ฝน) เป็นตัวอธิบายความต่างรายปี</b> เพราะมันคือฟิสิกส์จริง (ปีที่ชั้นผสมต่ำ/ลมนิ่ง → ฝุ่นสะสม แม้ไฟเท่าเดิม) และ generalize ไปปีใหม่ได้ · ใช้ (ก) เป็น "เพดานบน" (ถ้า per-year scalar ลด error เยอะกว่า met มาก = met ยังขาด driver) และ (ค) เป็น ablation</div>
+
+<h3>5.3 เพิ่ม ventilation physics: BLH = boundary layer height</h3>
+<div class="ana"><b>ฝาชีครอบเมือง:</b> ชั้นผสม (boundary layer) คือ "ความสูงของฝาชี" ที่ควันถูกขังอยู่ข้างใน · ฝาต่ำ (กลางคืน/อากาศนิ่ง) = ควันกระจุกตัว ค่าพุ่ง · ฝาสูง (บ่ายแดดจัด) = ควันเจือจาง · ไฟเท่ากันแต่ "ความสูงฝาชี" ต่างกัน → ฝุ่นต่างกันมาก · นี่คือ driver ที่ทำให้ FRP→PM2.5 ไม่นิ่ง</div>
+<div class="deep"><b>เข้าโมเดลยังไง:</b> ใส่ BLH เป็น met channel ที่ 7 · ในสมการ ADR ความเข้มข้นใกล้ผิว ~ emission / (BLH · ventilation) · เราให้ kernel/background เป็นฟังก์ชันของ BLH:
+<span class="eq">b, K ∝ f<sub>θ</sub>(u, v, BLH, precip, rh, temp, dem)<span class="lbl">เมื่อ BLH ต่ำ → background/kernel gain สูง (ฝุ่นสะสม) · เป็น "ventilation gate" ที่ปรับ scale ตามการระบายอากาศ — ยังคง linear-in-E</span></span></div>
+
+<h3>5.4 เพิ่ม stations พม่า/ลาว (ลด outlier ที่ลาก mean)</h3>
+<p>ค้นพบ: mean ถูกลากด้วยไม่กี่สถานีที่พังหนัก (median 45 vs mean 74) · ตอนนี้มีสถานีต้นทาง (พม่า/ลาว) แค่ ~4 · หาเพิ่มจาก OpenAQ + แหล่งภูมิภาค → ทั้งช่วย train และทำให้ attribution ฝั่งต้นทางมี ground-truth ทาบ</p>
+
+<div class="warn"><b>ลำดับความสำคัญใน §5 (จากผลที่คาด):</b> 5.3 BLH (ขยับ year-bias ได้เยอะสุด, ลงแรงน้อย) → 5.1 emission curve (แก้ over-predict ตอนไฟหนัก) → 5.2(ข) met-explains-year (ตรวจว่าพอไหม) → 5.4 stations → 5.2(ค) ablation</div>
+
+<!-- ============ 6 MODEL ============ -->
+<h2 id="model">6. โมเดลสุดท้าย — CLNO v3 (สเปกเต็ม)</h2>
+<p>ต่อยอดจาก CLNOLowRank/GlobalV ที่รันแล้ว · เปลี่ยนเฉพาะที่จำเป็น:</p>
+
+<div class="eq">
+ŷ<sub>q</sub> = K(met) · E(FRP) + b(met) &nbsp;&nbsp;|&nbsp;&nbsp; K = softmax(U Vᵀ), &nbsp; q ∈ {P10, P50, P90}
+<span class="lbl">K:(B,S,G) kernel เชิงเส้นต่อ emission · E = emission หลังแปลง curve (§5.1) · b = background ที่ปรับด้วย BLH (§5.3) · 3 quantile จาก 3 หัว output</span>
+</div>
+
+<table>
+<tr><th>ส่วน</th><th>สเปก</th><th>เปลี่ยนจาก M2 ยังไง · ทำไม</th></tr>
+<tr><td>met encoder</td><td>CNN, <b>in_ch=7</b> (u,v,dem,precip,rh,temp,<b>BLH</b>), hidden 64</td><td>เพิ่ม BLH (§5.3) — driver การสะสม</td></tr>
+<tr><td>kernel K</td><td>low-rank <code>softmax(U Vᵀ)</code>, rank 16–32</td><td>คงเดิม · ค้นพบ 1 บอก rank เล็กพอ (params ไม่ใช่คอขวด)</td></tr>
+<tr><td>emission E</td><td><b>log/saturating curve</b> + per-year scaling diagnostic</td><td>แทน FRP ดิบ (§5.1) — แก้ over-predict</td></tr>
+<tr><td>background b</td><td>softplus, <b>ฟังก์ชันของ BLH/precip</b></td><td>ventilation gate (§5.3)</td></tr>
+<tr><td>output head</td><td><b>3 quantile (P10/P50/P90)</b>, pinball loss</td><td>uncertainty ราคาถูก (D3)</td></tr>
+<tr><td>loss</td><td>pinball(quantile) + mass-aware reg + non-neg (softplus)</td><td>คง superposition + ไม่ติดลบ</td></tr>
+<tr><td>train</td><td>3-way split, early stop, mini-batch DataLoader, mixed precision</td><td>มีใน <code>sweep_m2.py</code> แล้ว</td></tr>
+</table>
+
+<div class="why">เหตุผลรวมของ v3: <b>ไม่แตะ backbone (เพราะค้นพบ 1)</b> · ของใหม่ทุกชิ้นโจมตี non-stationarity (BLH, emission curve) หรือเพิ่มความสามารถที่ขายได้ (quantile) · ทุกอย่าง <b>คง linear-in-E</b> → attribution/inversion ไม่พัง</div>
+
+<div class="deep"><b>attribution & inversion ยังได้ฟรี:</b> เพราะ <code>ŷ = K·E + b</code> ยังเชิงเส้นใน E · attribution = แยก <code>K·E⁽ˢ⁾</code> ต่อแหล่ง s (พม่า/ลาว/local จาก geographic mask) · inversion = <code>∂ŷ/∂E</code> ผ่าน autodiff หรือ dual-form lstsq (มีใน <code>model_operator.py</code> แล้ว, อัปเกรดเป็น S×S solve เมื่อ G≫S)</div>
+
+<!-- ============ 7 PROOF ============ -->
+<h2 id="proof">7. โปรโตคอลการพิสูจน์ — ความน่าเชื่อถือคือผลงาน</h2>
+<p>ยึดปรัชญาจาก master-execution-plan: "ทุกเคลม = การทดลองควบคุม 1 ชุด" · ไม่มีตัวเลขไหนยืนเดี่ยว</p>
+
+<h3>7.1 Baseline ladder (พิสูจน์ว่าเรียนรู้อะไรจริง)</h3>
+<table>
+<tr><th>ระดับ</th><th>baseline</th><th>มีแล้ว?</th><th>พิสูจน์ถ้าชนะ</th></tr>
+<tr><td>0 floor</td><td>persistence, climatology, mean</td><td>mean ✓</td><td>โมเดลเรียนรู้จริง</td></tr>
+<tr><td>1 ตื้น</td><td>XGBoost, MLP</td><td>✓ (Phase 0)</td><td>ต้องใช้ spatial/physics</td></tr>
+<tr><td>2 spatiotemporal</td><td>ConvLSTM / CNN</td><td>เพิ่ม</td><td>โครงสร้าง CLNO เพิ่มค่า</td></tr>
+<tr><td>3 AQ เฉพาะทาง</td><td>PM2.5-GNN / AirPhyNet (ถ้าเวลาพอ)</td><td>stretch</td><td>ดีกว่างาน AQ เดิม</td></tr>
+</table>
+
+<h3>7.2 Error budget — แยก error รวมว่ามาจากไหน (★ จุดเข้มงวด)</h3>
+<p>หัวใจที่ทำให้งานนี้ต่างจาก "รายงาน RMSE ลอย ๆ" · ใช้ <b>oracle substitution</b>: แทนอินพุตด้วยค่าอุดมคติทีละตัว → error ที่ลดลง = contribution ของ error นั้น</p>
+<div class="eq">ε<sub>total</sub> ≈ ε<sub>wind</sub> + ε<sub>emission</sub> + ε<sub>ventilation</sub> + ε<sub>structure</sub> + ε<sub>learning</sub> + ε<sub>rollout</sub><span class="lbl">ตอนนี้เรา "เดา" ว่า ε_emission + ε_ventilation ใหญ่สุด (จากค้นพบ 3) · error budget จะ "พิสูจน์" ว่าใช่ไหม — ถ้าใช่ ยืนยันว่าทุ่ม §5 ถูกทาง</span></div>
+<table>
+<tr><th>ε</th><th>oracle ที่ใส่แทน</th><th>คาดว่าใหญ่ไหม</th></tr>
+<tr><td>ε_emission</td><td>emission ที่ constrain ด้วย AOD แทน FRP ดิบ</td><td><b>คาดใหญ่</b> (ค้นพบ 3)</td></tr>
+<tr><td>ε_ventilation</td><td>BLH/met จริงความละเอียดสูง</td><td><b>คาดใหญ่</b></td></tr>
+<tr><td>ε_wind</td><td>ลม downscale/HRES แทน Open-Meteo 1°</td><td>กลาง</td></tr>
+<tr><td>ε_learning</td><td>train error vs test error</td><td>เล็ก (ค้นพบ 1)</td></tr>
+</table>
+
+<h3>7.3 Cross-validation + significance</h3>
+<ul>
+<li><b>Temporal:</b> train 2019–21 / val 2022 / test 2023 + <b>LOYO</b> (มีใน <code>loyo_m2.py</code>) — รายงาน per-year bias ตรง ๆ</li>
+<li><b>Spatial:</b> leave-station-out (กันบางสถานีไว้ test เชิงพื้นที่ล้วน)</li>
+<li><b>Significance:</b> block-bootstrap 95% CI + paired test ข้ามวัน-สถานี · รายงาน <b>median per-station</b> ควบคู่ mean เสมอ (ค้นพบ: mean ถูก outlier ลาก)</li>
+</ul>
+
+<h3>7.4 Attribution validation (ไม่มี ground-truth จริง → ใช้ทางอ้อม)</h3>
+<div class="card"><b>วิธีพิสูจน์ในเวอร์ชัน 2 เดือน:</b>
+<ol>
+<li><b>Synthetic recovery:</b> สร้างสถานการณ์ที่เรา "ตั้งคำตอบเอง" (เปิดไฟเฉพาะแหล่ง A) → วัดว่าโมเดลกู้สัดส่วนกลับได้ไหม</li>
+<li><b>Physical plausibility:</b> ทาบ attribution map กับทิศลม ERA5 ในเคสจริง (วันที่ลมพัดจากพม่าชัด → attribution ต้องชี้พม่า)</li>
+<li><b>Leave-source-out consistency:</b> ปิดแหล่ง → PM ปลายทางต้องลดตามสัดส่วนที่ attribution บอก</li>
+</ol>
+CTM digital-twin (CMAQ) = เวอร์ชันฝัน (D6)</div>
+
+<!-- ============ 8 CRITIQUE ============ -->
+<h2 id="critique">8. ตอบ devil's advocate — แต่ละกระสุนจัดการยังไง</h2>
+<table>
+<tr><th>ข้อโจมตี</th><th>การจัดการใน pipeline สุดท้าย</th></tr>
+<tr><td><b>ภาพลวงเชิงเส้น</b> (secondary aerosol 30–40% nonlinear)</td><td>เคลมเป็น "first-order primary transport influence" (D5) · ไม่เคลมเคมีทุติยภูมิ · background term b ดูดซับ secondary แบบรวม (ไม่ attribute)</td></tr>
+<tr><td><b>AOD ตาบอดวันวิกฤต</b></td><td>AOD ออกจาก critical path → เป็น oracle/target เสริม (D4) · โมเดลพึ่ง FRP+met เป็นหลัก</td></tr>
+<tr><td><b>Train/serve skew (ERA5→GFS)</b></td><td>ระบุเป็น limitation ชัด (D7) · noise-injection ablation เป็น proxy ถ้าเวลาพอ · ไม่ overclaim operational</td></tr>
+<tr><td><b>Extrapolation (ปีสุดโต่ง under-predict)</b></td><td>quantile P90 จับ tail · emission curve + BLH ลด year-bias · รายงาน per-year bias ตรง ๆ ไม่ซ่อน</td></tr>
+<tr><td><b>Non-stationarity FRP→PM2.5</b> (ค้นพบเราเอง)</td><td>= งานหลัก §5 ทั้งหมด · นี่คือกระสุนที่เรายิงตัวเองเจอก่อน reviewer</td></tr>
+<tr><td><b>Compute ของ ensemble</b></td><td>quantile head แทน 50-member (D3) — คงเคลม "เร็วระดับวินาที"</td></tr>
+<tr><td><b>CAMS underestimate</b> (อุดช่องว่าง)</td><td>ไม่พึ่ง CAMS prior เป็นหลัก · ถ้าใช้ ต้อง bias-correct ด้วยสถานีไทยก่อน</td></tr>
+</table>
+
+<!-- ============ 9 TIMELINE ============ -->
+<h2 id="timeline">9. Timeline 8 สัปดาห์ + gate ตัดสิน</h2>
+<p>เริ่มจาก "เรามี M2 รันได้แล้ว" → 8 สัปดาห์นี้คือ <b>ยกระดับ ไม่ใช่เริ่มศูนย์</b></p>
+<table>
+<tr><th>สัปดาห์</th><th>งาน</th><th>Gate (ผ่านถึงไปต่อ)</th></tr>
+<tr><td><b>W1</b></td><td>เพิ่ม BLH channel + FRP→emission curve เข้า datacube · baseline ladder ระดับ 0–1 ครบ</td><td>datacube 8-ch พร้อม · baseline เทียบได้</td></tr>
+<tr><td><b>W2</b></td><td>CLNO v3 (ventilation gate) + เทรน + LOYO ใหม่</td><td><b class="k">⭐ year-bias ปีต่ำ ลดจาก +45 → ≤ +25</b> — ถ้าไม่ขยับ ทบทวน §5.2</td></tr>
+<tr><td><b>W3</b></td><td>quantile head + calibration · เพิ่ม stations พม่า/ลาว</td><td>median per-station MAE ≤ 40 · P10/90 calibrate</td></tr>
+<tr><td><b>W4</b></td><td>★ Error budget (oracle substitution) + stratified error</td><td><b>error budget ออกเป็นตัวเลข</b> — ยืนยัน emission/ventilation ใหญ่สุด</td></tr>
+<tr><td><b>W5</b></td><td>Attribution validation (synthetic + ทิศลม + leave-source-out)</td><td>synthetic recovery error ยอมรับได้</td></tr>
+<tr><td><b>W6</b></td><td>Ablation เต็ม (BLH on/off, curve on/off, linear↔nonlinear) + significance (bootstrap CI)</td><td>ทุกเคลมมี CI</td></tr>
+<tr><td><b>W7</b></td><td>Inversion PoC (เคสไฟจุดเดียว) + เดโม what-if (notebook)</td><td>เดโมรันได้ end-to-end</td></tr>
+<tr><td><b>W8</b></td><td>เขียน report/preprint + repo cleanup + model card + limitations</td><td>ส่งงาน + draft</td></tr>
+</table>
+<div class="danger"><b>กฎเหล็ก (จาก master-plan):</b> Gate W2 คือจุดตัดสิน — ถ้า <b>year-bias ไม่ลดด้วย BLH+curve</b> แปลว่า §5 ผิดสมมุติฐาน → หยุด, กลับไปดู error budget ก่อน แล้วค่อยตัดสินทิศใหม่ · <b>ห้ามไปต่อ attribution/inversion ถ้าแกนพยากรณ์ยังพัง</b></div>
+
+<!-- ============ 10 SCOPE ============ -->
+<h2 id="scope">10. ขอบเขต — เคลมอะไร / ไม่เคลมอะไร</h2>
+<div class="green-box"><b>เคลม (defendable):</b>
+<ul>
+<li>พยากรณ์ PM2.5 รายวัน SEA แม่นกว่า baseline (persistence/XGB/ConvLSTM) อย่างมีนัยสำคัญ พร้อม P10/P50/P90</li>
+<li><b>Attribution-native</b>: อ่านสัดส่วน "อิทธิพลการพัดพาฝุ่นปฐมภูมิจากการเผา" (พม่า/ลาว/local) จาก forward model โดยตรง</li>
+<li>Inversion <b>proof-of-concept</b> บนเคสที่รู้คำตอบ</li>
+<li><b>Error budget</b> ที่บอกได้ว่า error มาจากส่วนไหน — ยกระดับความเข้มงวดเหนือ ML-weather ทั่วไป</li>
+<li>เร็วระดับวินาที/นาที เทียบ CTM ที่ใช้เวลาเป็นชั่วโมง-วัน</li>
+</ul></div>
+<div class="danger"><b>ไม่เคลม (ความซื่อสัตย์):</b>
+<ul>
+<li>ไม่เคลมระบุแหล่ง <b>เคมีทุติยภูมิ</b> (secondary aerosol nonlinear)</li>
+<li>ไม่เคลม <b>operational skill บนลม GFS</b> (ทดสอบบน reanalysis เท่านั้น)</li>
+<li>ไม่เคลม <b>inversion ทั้งโดเมน</b> (ill-posed, สถานี sparse)</li>
+<li>ไม่เคลมชนะ <b>foundation model (Aurora)</b> บน raw RMSE — เราขายความสามารถใหม่ ไม่ใช่เลขต่ำสุด</li>
+<li>ไม่มี ground-truth attribution จริง → validate ทางอ้อม (เพดานเชิงโครงสร้าง ไม่ใช่ compute)</li>
+</ul></div>
+
+<!-- ============ 11 DELIVER ============ -->
+<h2 id="deliver">11. ส่งมอบ + ต่อยอดสู่เวอร์ชันฝัน</h2>
+<h4>ส่งมอบเมื่อจบ 8 สัปดาห์</h4>
+<ul>
+<li>โมเดล CLNO v3 + โค้ด reproducible (pipeline A–E)</li>
+<li>ตาราง benchmark vs baselines (มี bootstrap CI, mean + median per-station)</li>
+<li><b>Error budget + stratified error</b> (จุดขายความเข้มงวด)</li>
+<li>Attribution map + validation (synthetic + ทิศลม) · inversion PoC</li>
+<li>เดโม what-if (notebook: ใส่วันที่ → พยากรณ์ + แผนที่กลุ่มควัน + แถบความไม่แน่นอน)</li>
+<li>arXiv preprint draft + model card + limitations ซื่อสัตย์</li>
+</ul>
+
+<div class="card"><b>เมล็ดพันธุ์สู่เวอร์ชันฝัน (best-version-plan):</b> ทุกชิ้นที่ทำต่อยอดตรง — CLNO v3 → core model (WS2) · error budget → eval harness (WS7) · attribution validation ทางอ้อม → CTM twin (WS4/WS8) · datacube M2 → SEA-HazeBench (WS1) · quantile → generative ensemble (WS3) · inversion PoC → differentiable inversion (WS5) · <b>เวอร์ชัน 2 เดือนคือเฟส 0–2 ของโปรแกรมวิจัยระยะยาว ไม่ใช่งานทิ้ง</b></div>
+
+<hr>
+<div class="lead center">
+<b>บรรทัดสุดท้าย:</b> Pipeline สุดท้าย = <b class="k">คง CLNO (attribution-native) เป็นแกน</b> · <b class="k">ทุ่มแรงไปที่คอขวดจริงที่ข้อมูลชี้ (emission curve + non-stationarity + ventilation/BLH) ไม่ใช่ที่ตัวเน็ต</b> · <b class="k">พิสูจน์ด้วย baseline + error budget + CV ที่หักล้างได้</b> · และ <b class="k">ซื่อสัตย์เรื่องขอบเขต</b> — ทำของจริงให้เสร็จและเชื่อถือได้ใน 8 สัปดาห์ แล้วมันโตเป็นเวอร์ชันฝันระดับโลกได้
+</div>
+<p class="center muted" style="margin-top:26px">HazeNet · Final Pipeline Decision · ตัดสินจากผลทดลองจริง (Phase 0 + M2 + M2 round 2) · 2026-06-18</p>
+
+</div>
+</body>
+</html>

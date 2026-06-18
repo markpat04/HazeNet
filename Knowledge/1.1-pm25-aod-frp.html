@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1.1 — PM2.5 / AOD / FRP คืออะไร (สอนละเอียด)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:30px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  .svg text{font-family:"Segoe UI",Tahoma,sans-serif}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+  .big{font-size:30px;font-weight:bold;line-height:1}
+  .stat{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+  .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  @media(max-width:680px){.three{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>1.1 — PM2.5 / AOD / FRP คืออะไร</h1>
+<p class="tagline">3 คำที่เป็นวัตถุดิบและเป้าหมายของทั้งโปรเจกต์ — เริ่มโมดูล 1 (โดเมนปัญหา)</p>
+<p class="sub">สอนจากศูนย์สำหรับคนไม่มีพื้นภูมิศาสตร์ · เน้นว่าแต่ละตัวต่างกันยังไง + เป็น input/output ตรงไหน · ผูกกับ HazeNet ตลอด</p>
+
+<div class="lead">
+<b>ภาพเดียวที่ต้องจำ — นี่คือ "ห่วงโซ่สาเหตุ":</b><br>
+<b style="color:var(--orange)">ไฟ (วัด FRP)</b> → ปล่อยควัน → ลมพัดพา → เรา "เห็น" ควันได้ 2 แบบ: <b style="color:var(--blue)">จากอวกาศ (AOD)</b> และ <b style="color:var(--green)">ที่เราหายใจตรงพื้น (PM2.5)</b><br>
+ในโปรเจกต์เรา: <b>FRP = อินพุตต้นทาง (สาเหตุ)</b> · <b>AOD = อินพุตสังเกตการณ์ (ควันที่เห็นจากบน)</b> · <b>PM2.5 = เป้าหมายที่เราพยากรณ์ (สิ่งที่คนแคร์)</b>
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. PM2.5 — สิ่งที่เราพยากรณ์ ★</a><br>
+<a href="#p2">2. FRP — ไฟต้นทาง</a><br>
+<a href="#p3">3. AOD — ควันจากอวกาศ ★</a><br>
+<a href="#p4">4. ความต่าง: AOD vs PM2.5 (สำคัญ)</a><br>
+<a href="#p5">5. ตารางเทียบ 3 ตัว</a><br>
+<a href="#p6">6. เชื่อมกับ HazeNet (data flow)</a><br>
+<a href="#p7">7. ตัวเลขสถานการณ์ไทย</a><br>
+<a href="#cheat">8. Cheat sheet + แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. PM2.5 — สิ่งที่เราพยากรณ์ (เป้าหมาย) <span class="pin">★</span></h2>
+<p><b>PM2.5</b> = Particulate Matter ที่มีเส้นผ่านศูนย์กลาง <b>≤ 2.5 ไมโครเมตร</b> (ฝุ่นละอองจิ๋ว) · เล็กแค่ไหน? เทียบกับเส้นผมคน:</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 130" width="92%" xmlns="http://www.w3.org/2000/svg">
+  <text x="280" y="18" fill="#e6edf3" font-size="12" text-anchor="middle">เทียบขนาด (ไมโครเมตร)</text>
+  <!-- hair -->
+  <circle cx="120" cy="70" r="45" fill="none" stroke="#9aa7b4" stroke-width="2"/>
+  <text x="120" y="74" fill="#9aa7b4" font-size="12" text-anchor="middle">เส้นผม</text>
+  <text x="120" y="128" fill="#9aa7b4" font-size="11" text-anchor="middle">~50–70 µm</text>
+  <!-- sand PM10 -->
+  <circle cx="280" cy="70" r="20" fill="none" stroke="#e3b341" stroke-width="2"/>
+  <text x="280" y="74" fill="#e3b341" font-size="11" text-anchor="middle">PM10</text>
+  <text x="280" y="128" fill="#9aa7b4" font-size="11" text-anchor="middle">≤10 µm</text>
+  <!-- PM2.5 -->
+  <circle cx="400" cy="70" r="5" fill="#f85149"/>
+  <text x="400" y="100" fill="#f85149" font-size="11" text-anchor="middle">PM2.5</text>
+  <text x="400" y="128" fill="#9aa7b4" font-size="11" text-anchor="middle">≤2.5 µm</text>
+  <text x="500" y="74" fill="#9aa7b4" font-size="11" text-anchor="middle">เล็กกว่าผม ~30 เท่า</text>
+</svg>
+</div>
+<p>เพราะเล็กมาก มันจึง <b>เข้าลึกถึงถุงลมปอดและซึมเข้ากระแสเลือดได้</b> → อันตรายต่อสุขภาพมากกว่าฝุ่นใหญ่ (ก่อโรคหัวใจ/ปอด/มะเร็ง)</p>
+
+<h4>หน่วยและเกณฑ์</h4>
+<table>
+<tr><th>เรื่อง</th><th>ค่า</th></tr>
+<tr><td>หน่วยวัด</td><td><code>µg/m³</code> (ไมโครกรัมต่อลูกบาศก์เมตร) = มวลฝุ่นในอากาศ 1 ลบ.ม.</td></tr>
+<tr><td>เกณฑ์ WHO (เฉลี่ย 24 ชม.)</td><td>15 µg/m³ (ปลอดภัย)</td></tr>
+<tr><td>เกณฑ์ WHO (เฉลี่ยทั้งปี)</td><td>5 µg/m³</td></tr>
+<tr><td>วันวิกฤตภาคเหนือ</td><td>มักเกิน 150 · พีคแตะ ~223 µg/m³ (≈ 15 เท่าของเกณฑ์!)</td></tr>
+</table>
+<h4>มาจากไหน + วัดยังไง</h4>
+<ul>
+<li><b>แหล่ง:</b> การเผาไหม้ — <u>การเผาชีวมวล (ไฟป่า/เผาไร่)</u> ซึ่งเป็นโฟกัสเรา, จราจร, อุตสาหกรรม</li>
+<li><b>วัด:</b> <b>สถานีภาคพื้น</b> (Air4Thai ของกรมควบคุมมลพิษ / OpenAQ) — แม่นยำแต่เป็น <u>จุด ๆ กระจายห่าง</u> (ไม่ครอบคลุมทุกพื้นที่)</li>
+</ul>
+<div class="why"><b>บทบาทใน HazeNet:</b> PM2.5 คือ <b class="k">เป้าหมาย (target / label)</b> — สิ่งที่โมเดลเราพยากรณ์ และใช้เทียบว่าแม่นไหม · แต่เพราะสถานี "เป็นจุดห่าง ๆ" เราจึงต้องการสัญญาณอื่นมาเติมช่องว่างเชิงพื้นที่ (นั่นคือที่ AOD เข้ามา)</div>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. FRP — ไฟต้นทาง (อินพุตสาเหตุ)</h2>
+<p><b>FRP</b> = Fire Radiative Power = <b>พลังความร้อนที่ไฟแผ่ออกมา</b> วัดเป็น <b>เมกะวัตต์ (MW)</b> · ไฟใหญ่/ร้อนกว่า = FRP สูงกว่า = ปล่อยควันมากกว่า</p>
+<ul>
+<li><b>วัด:</b> ดาวเทียมตรวจจับ "จุดความร้อนผิดปกติ" (hotspot) — สินค้าหลักคือ <b>NASA FIRMS</b> (เซนเซอร์ VIIRS ละเอียด 375 ม., MODIS)</li>
+<li><b>ใช้ทำอะไร:</b> เป็น <b>ตัวแทนของ "อัตราการปล่อยควัน" (emission)</b> — มี FRP มาก ≈ ปล่อยฝุ่นมาก · แปลง FRP → emission ด้วยสูตร (เช่น FINN/FEER)</li>
+</ul>
+<div class="danger"><b>ข้อจำกัดที่ต้องรู้ (สำคัญต่อ error analysis ของเรา):</b>
+<ul style="margin:6px 0">
+<li><b>ดาวเทียมผ่านเป็นช่วง ๆ</b> — เห็นไฟแค่ตอนบินผ่าน (ไม่กี่ครั้ง/วัน) → ไฟที่เกิด-ดับระหว่างนั้นพลาด</li>
+<li><b>เมฆบังตรวจไม่เห็น</b> → ไฟใต้เมฆหายไปจากข้อมูล</li>
+<li><b>ไฟเล็ก/ไฟคุ (smoldering)</b> ตรวจจับยาก</li>
+</ul>
+นี่คือที่มาของ <code>ε_emission</code> ในการแยก error (หัวข้อ 5.5) — ความผิดของอินพุตไฟส่วนหนึ่งมาจากตรงนี้ · และเป็นเหตุผลที่ไอเดีย <b>source inversion</b> (เดาไฟที่พลาดจากควันปลายทาง) มีค่า</div>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. AOD — ควันที่เห็นจากอวกาศ (อินพุตสังเกตการณ์) <span class="pin">★</span></h2>
+<p><b>AOD</b> = Aerosol Optical Depth = <b>ปริมาณที่ละอองลอย (รวมควัน) บัง/กระเจิงแสง</b> ตลอด <u>ทั้งคอลัมน์อากาศจากพื้นถึงอวกาศ</u> · เป็น <b>ตัวเลขไร้หน่วย</b> (0 = ฟ้าใส, &gt;1 = ขมุกขมัวมาก)</p>
+<ul>
+<li><b>วัด:</b> ดาวเทียมมองลงมา — <b>Himawari (P-Tree ของ JAXA)</b> ให้ <u>รายชั่วโมง</u>, MODIS · ครอบคลุมพื้นที่กว้างเป็นแผนที่ต่อเนื่อง</li>
+<li><b>ทำไมมีค่า:</b> <b>เติมช่องว่างที่สถานี PM2.5 ไปไม่ถึง</b> — สถานีเป็นจุด แต่ AOD เป็นแผนที่เต็ม → เห็น "ลิ้นควัน" ลอยข้ามแดนได้จากบน</li>
+</ul>
+<div class="why"><b>บทบาทใน HazeNet:</b> AOD เป็น <b class="k">อินพุตสังเกตการณ์</b> ที่บอก "ตอนนี้ควันหนาตรงไหนบ้าง" แบบเต็มพื้นที่ · ช่วยให้โมเดลเห็นภาพควันที่สถานีจุด ๆ มองไม่เห็น</div>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. ★ ความต่างสำคัญ: AOD ≠ PM2.5 (อย่าสับสน)</h2>
+<p>มือใหม่มักคิดว่า AOD กับ PM2.5 เป็นสิ่งเดียวกัน — <b>ไม่ใช่</b> และความต่างนี้สำคัญมากต่อ design เรา</p>
+<div class="center card">
+<svg class="svg" viewBox="0 0 560 250" width="92%" xmlns="http://www.w3.org/2000/svg">
+  <!-- satellite -->
+  <text x="470" y="30" fill="#58a6ff" font-size="22" text-anchor="middle">🛰️</text>
+  <text x="470" y="50" fill="#58a6ff" font-size="10" text-anchor="middle">ดาวเทียม</text>
+  <!-- air column -->
+  <rect x="120" y="40" width="180" height="170" fill="rgba(88,166,255,0.06)" stroke="#30363d"/>
+  <text x="210" y="30" fill="#9aa7b4" font-size="11" text-anchor="middle">คอลัมน์อากาศ (พื้น→อวกาศ)</text>
+  <!-- aerosol dots distributed in column -->
+  <g fill="#bc8cff">
+    <circle cx="150" cy="70" r="3"/><circle cx="200" cy="60" r="3"/><circle cx="250" cy="80" r="3"/>
+    <circle cx="170" cy="110" r="3"/><circle cx="230" cy="120" r="3"/><circle cx="190" cy="100" r="3"/>
+    <circle cx="160" cy="160" r="4"/><circle cx="210" cy="170" r="4"/><circle cx="260" cy="155" r="4"/><circle cx="180" cy="190" r="4"/><circle cx="240" cy="195" r="4"/>
+  </g>
+  <!-- AOD measures whole column -->
+  <line x1="450" y1="55" x2="300" y2="120" stroke="#58a6ff" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="340" y="95" fill="#58a6ff" font-size="11">AOD = นับ<tspan font-weight="bold">ทั้งคอลัมน์</tspan></text>
+  <!-- ground level -->
+  <line x1="120" y1="210" x2="300" y2="210" stroke="#3fb950" stroke-width="2"/>
+  <text x="60" y="205" fill="#3fb950" font-size="20">🏠</text>
+  <text x="210" y="232" fill="#3fb950" font-size="11" text-anchor="middle">PM2.5 = นับ<tspan font-weight="bold">เฉพาะตรงพื้น</tspan> (ที่เราหายใจ)</text>
+</svg>
+</div>
+<table>
+<tr><th></th><th>AOD</th><th>PM2.5</th></tr>
+<tr><td>วัดที่ไหน</td><td><b>ทั้งคอลัมน์</b>อากาศ (รวมควันบนสูง)</td><td><b>เฉพาะผิวพื้น</b> (ที่เราหายใจ)</td></tr>
+<tr><td>หน่วย</td><td>ไร้หน่วย</td><td>µg/m³</td></tr>
+<tr><td>มุมมอง</td><td>จากบน (ดาวเทียม) เต็มพื้นที่</td><td>จุดสถานี ภาคพื้น</td></tr>
+</table>
+<div class="danger"><b>ทำไมแปลง AOD → PM2.5 ตรง ๆ ไม่ได้:</b> ควันอาจลอยอยู่<u>บนสูง</u> (AOD สูง แต่พื้นอากาศดี) หรือกระจุก<u>ตรงพื้น</u> (AOD กับ PM2.5 สูงทั้งคู่) · ความสัมพันธ์ขึ้นกับ <b>ความสูงชั้นผสม (PBL), ความชื้น, ชนิดละออง</b> → ไม่ใช่ 1:1 · <b>ดังนั้น AOD เป็นแค่ "สัญญาณช่วย" ไม่ใช่คำตอบ</b> เรายังต้องใช้ PM2.5 สถานีเป็น ground-truth จริง · นี่คือเหตุผลที่ในแผน validation เรา validate AOD แยกจาก PM2.5</div>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. ตารางเทียบ 3 ตัว (สรุป)</h2>
+<table>
+<tr><th></th><th style="color:var(--orange)">FRP</th><th style="color:var(--blue)">AOD</th><th style="color:var(--green)">PM2.5</th></tr>
+<tr><td>คืออะไร</td><td>พลังความร้อนของไฟ</td><td>ควันบังแสงทั้งคอลัมน์</td><td>มวลฝุ่นจิ๋วตรงพื้น</td></tr>
+<tr><td>ในห่วงโซ่</td><td>สาเหตุ (ต้นทาง)</td><td>ผล (เห็นจากบน)</td><td>ผล (ที่เราหายใจ)</td></tr>
+<tr><td>หน่วย</td><td>MW</td><td>ไร้หน่วย</td><td>µg/m³</td></tr>
+<tr><td>วัดโดย</td><td>FIRMS (VIIRS/MODIS)</td><td>Himawari/MODIS</td><td>Air4Thai/OpenAQ</td></tr>
+<tr><td>ความครอบคลุม</td><td>จุด hotspot</td><td>แผนที่เต็ม รายชั่วโมง</td><td>จุดสถานีห่าง ๆ</td></tr>
+<tr><td><b>บทบาทในเรา</b></td><td><b>อินพุต: emission</b></td><td><b>อินพุต: สังเกตควัน</b></td><td><b>เป้าหมาย: พยากรณ์/วัดผล</b></td></tr>
+</table>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. เชื่อมกับ HazeNet — ทั้ง 3 ตัวอยู่ในสมการเรายังไง</h2>
+<div class="center card">
+<svg class="svg" viewBox="0 0 720 180" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a1" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#58a6ff"/></marker></defs>
+  <rect x="20" y="60" width="120" height="56" rx="9" fill="#1c2330" stroke="#ff9b54"/><text x="80" y="84" fill="#ff9b54" font-size="13" text-anchor="middle" font-weight="bold">FRP (ไฟ)</text><text x="80" y="103" fill="#9aa7b4" font-size="10.5" text-anchor="middle">→ emission E</text>
+
+  <rect x="200" y="60" width="150" height="56" rx="9" fill="#0f141b" stroke="#3fb950" stroke-width="2"/><text x="275" y="82" fill="#3fb950" font-size="12.5" text-anchor="middle" font-weight="bold">HazeNet</text><text x="275" y="101" fill="#9aa7b4" font-size="10" text-anchor="middle">advect + เรียนรู้</text>
+
+  <rect x="200" y="10" width="150" height="34" rx="8" fill="#1c2330" stroke="#58a6ff"/><text x="275" y="32" fill="#58a6ff" font-size="11.5" text-anchor="middle">ลม ERA5 (พัดพา)</text>
+
+  <rect x="410" y="60" width="140" height="56" rx="9" fill="#0f1f17" stroke="#3fb950"/><text x="480" y="84" fill="#3fb950" font-size="12.5" text-anchor="middle" font-weight="bold">PM2.5 พยากรณ์</text><text x="480" y="103" fill="#9aa7b4" font-size="10" text-anchor="middle">(เป้าหมาย)</text>
+
+  <rect x="410" y="135" width="300" height="34" rx="8" fill="#1c2330" stroke="#58a6ff"/><text x="560" y="157" fill="#58a6ff" font-size="11" text-anchor="middle">AOD = สังเกตควันช่วยปรับ · PM2.5 สถานี = วัดผล</text>
+
+  <line x1="140" y1="88" x2="198" y2="88" stroke="#58a6ff" stroke-width="2" marker-end="url(#a1)"/>
+  <line x1="350" y1="88" x2="408" y2="88" stroke="#58a6ff" stroke-width="2" marker-end="url(#a1)"/>
+  <line x1="275" y1="44" x2="275" y2="58" stroke="#58a6ff" stroke-width="2" marker-end="url(#a1)"/>
+</svg>
+</div>
+<p>จำสมการแกนจาก 3.5 ได้ไหม — ตอนนี้คุณรู้แล้วว่าตัวแปรมาจากไหน:</p>
+<div class="card" style="font-family:'Cambria Math',serif;font-size:16px;text-align:center">
+C<sub>t+1</sub> = advect(C<sub>t</sub>, <b style="color:#58a6ff">ลม</b>) + g·<b style="color:#ff9b54">E(จาก FRP)</b> − D·C<sub>t</sub>
+<span style="display:block;color:var(--muted);font-size:12.5px;font-family:'Segoe UI';margin-top:6px">C = PM2.5 (เป้าหมาย) · E จาก FRP (ไฟ) · ลมจาก ERA5 · AOD ใช้เป็นสัญญาณช่วย/ตรวจสอบ</span>
+</div>
+<div class="why"><b>สรุปการเชื่อม:</b> <b style="color:var(--orange)">FRP</b> ป้อนเป็นแหล่ง E → <b style="color:var(--blue)">ลม</b> พัดพา (advect) → ออกมาเป็น <b style="color:var(--green)">PM2.5</b> ที่เราพยากรณ์ · <b style="color:var(--blue)">AOD</b> คอยช่วยให้โมเดลเห็นควันเต็มพื้นที่และใช้ตรวจสอบ · 3 ตัวที่เรียนวันนี้คือ 3 เสาของข้อมูลทั้งโปรเจกต์</div>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. ตัวเลขสถานการณ์ไทย (บริบทของ pain)</h2>
+<div class="three">
+<div class="stat"><div class="big" style="color:var(--red)">~223</div><span class="muted">µg/m³ พีคเชียงใหม่<br>(เกณฑ์ = 15)</span></div>
+<div class="stat"><div class="big" style="color:var(--amber)">~51%</div><span class="muted">PM2.5 ช่วงวิกฤต<br>มาจากเผาชีวมวล</span></div>
+<div class="stat"><div class="big" style="color:var(--orange)">45%</div><span class="muted">ฝุ่นเชียงราย<br>มาจากข้ามแดน</span></div>
+</div>
+<p class="muted" style="margin-top:10px">ทุกฤดูแล้ง (ก.พ.–เม.ย.) FRP ในภูมิภาคพุ่ง (เผาไร่+ไฟป่า) → AOD เต็มท้องฟ้า → PM2.5 ภาคพื้นวิกฤต · นี่คือวงจรที่ HazeNet จะพยากรณ์+ระบุแหล่ง (รายละเอียด pain เต็มอยู่ใน <a href="../research/hazenet-focused-plan.html">focused-plan</a>)</p>
+
+<!-- ============ CHEAT ============ -->
+<h2 id="cheat">8. Cheat Sheet + แบบฝึกหัด</h2>
+<div class="card">
+<table>
+<tr><th>คำ</th><th>จำสั้น ๆ</th></tr>
+<tr><td><b>PM2.5</b></td><td>ฝุ่นจิ๋ว ≤2.5µm ตรงพื้น · µg/m³ · <b>เป้าหมายเราพยากรณ์</b></td></tr>
+<tr><td><b>FRP</b></td><td>พลังไฟ MW · จาก FIRMS · <b>อินพุต = แหล่งปล่อย</b></td></tr>
+<tr><td><b>AOD</b></td><td>ควันบังแสงทั้งคอลัมน์ ไร้หน่วย · จาก Himawari · <b>อินพุตสังเกต</b></td></tr>
+<tr><td>ห่วงโซ่</td><td>ไฟ(FRP) → ควัน → ลมพัด → AOD(บน) + PM2.5(พื้น)</td></tr>
+<tr><td>กับดัก</td><td>AOD ≠ PM2.5 (คอลัมน์ vs พื้น) แปลงตรง ๆ ไม่ได้</td></tr>
+</table>
+</div>
+
+<div class="chk">
+<p class="q">แบบฝึกหัด</p>
+<ol>
+<li>PM2.5 อันตรายกว่าฝุ่นใหญ่เพราะอะไร?</li>
+<li>FRP วัดอะไร หน่วยอะไร เราเอาไปใช้เป็นอะไรในโมเดล?</li>
+<li>AOD กับ PM2.5 ต่างกันตรงไหนสำคัญที่สุด?</li>
+<li>ทำไมเราใช้ AOD ทั้งที่มี PM2.5 สถานีอยู่แล้ว?</li>
+<li>ทำไมข้อมูล FRP ถึงมี "ช่องโหว่" และมันเชื่อมกับไอเดีย source inversion ยังไง?</li>
+</ol>
+<details>
+<summary style="cursor:pointer;color:var(--cyan)">▶ เฉลย</summary>
+<ol style="margin-top:8px">
+<li>เล็กมาก (≤2.5µm) เข้าลึกถึงถุงลมปอด+ซึมเข้ากระแสเลือด</li>
+<li>วัดพลังความร้อนของไฟ หน่วย MW · ใช้เป็น<b>ตัวแทน emission</b> (แหล่งปล่อยควัน E)</li>
+<li>AOD นับ<b>ทั้งคอลัมน์อากาศ</b> (รวมควันบนสูง) · PM2.5 นับ<b>เฉพาะตรงพื้น</b>ที่เราหายใจ → แปลงตรง ๆ ไม่ได้</li>
+<li>สถานี PM2.5 เป็น<b>จุดห่าง ๆ</b> · AOD เป็น<b>แผนที่เต็มพื้นที่</b>รายชั่วโมง → เติมช่องว่างเชิงพื้นที่ + เห็นควันข้ามแดน</li>
+<li>ดาวเทียมผ่านเป็นช่วง + เมฆบัง → ไฟบางส่วนพลาด · source inversion ใช้ "ควันปลายทางที่สังเกตได้" แก้ย้อนหาไฟที่หายไป</li>
+</ol>
+</details>
+</div>
+
+<hr>
+<div class="lead">
+<b>จบ 1.1 แล้วคุณควร:</b> แยกออกชัดว่า FRP (สาเหตุ) / AOD (ควันจากบน) / PM2.5 (ที่เราหายใจ) ต่างกันยังไง · รู้ว่าแต่ละตัวเป็น input/output ตรงไหนในสมการเรา · และเข้าใจกับดัก "AOD ≠ PM2.5"<br><br>
+<b>ขั้นต่อไปแนะนำ:</b> <b>1.2 สมการ Advection-Diffusion-Reaction (ADR)</b> — แกนฟิสิกส์ของทั้งโปรเจกต์ และเป็น 1 ใน "3 หัวใจ" · ตอนนี้คุณรู้แล้วว่า C, E, ลม คืออะไร พร้อมเข้าใจสมการที่ร้อยมันเข้าด้วยกัน
+</div>
+
+<p class="center muted">HazeNet · Knowledge · 1.1 PM2.5 / AOD / FRP · — เริ่มโมดูล 1 โดเมนปัญหา —</p>
+
+</div>
+</body>
+</html>

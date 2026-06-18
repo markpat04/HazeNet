@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3.6 — Tagged-Tracer &amp; Smoke Fingerprint (Attribution กลไก)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:980px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:29px;line-height:1.25;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:23px;margin:46px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19px;margin:28px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .ex{border-left:4px solid var(--purple);background:rgba(188,140,255,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .ex b{color:var(--purple)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14.3px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.6px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.out{color:#3fb950}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{color:var(--blue);text-decoration:none;line-height:1.9}
+  .chk{background:var(--panel2);border:1px solid var(--cyan);border-radius:9px;padding:12px 18px;margin:14px 0}
+  .chk .q{color:var(--cyan);font-weight:bold}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--cyan);color:var(--cyan);margin-left:6px}
+  .pin.core{border-color:var(--amber);color:var(--amber)}
+  details{margin:8px 0}summary{cursor:pointer;color:var(--green)}
+  .big{font-size:20px;font-weight:bold}
+  .fraction{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;margin:0 4px}
+  .fraction .num{border-bottom:1px solid var(--text);padding:0 4px}
+  .fraction .den{padding:0 4px}
+  .source-badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:13px;margin:2px;font-weight:bold}
+  .s1{background:rgba(255,155,84,.2);border:1px solid var(--orange);color:var(--orange)}
+  .s2{background:rgba(88,166,255,.2);border:1px solid var(--blue);color:var(--blue)}
+  .s3{background:rgba(63,185,80,.2);border:1px solid var(--green);color:var(--green)}
+  .s4{background:rgba(248,81,73,.2);border:1px solid var(--red);color:var(--red)}
+  .s5{background:rgba(188,140,255,.2);border:1px solid var(--purple);color:var(--purple)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>3.6 — Tagged-Tracer &amp; Smoke Fingerprint <span class="pin core">⭐ CORE</span></h1>
+<p class="tagline">ติดป้ายแหล่ง → ตามแยก → บอกว่าควันที่เชียงใหม่มาจากไหนเท่าไหร่</p>
+<p class="sub">ต้องเข้าใจก่อน: 2.5 Superposition · 3.5 Conditionally-Linear Operator · ใช้ต่อใน 3.7 Adjoint / Source Inversion</p>
+
+<div class="lead">
+<b>บทนี้ตอบอะไร:</b> PM2.5 ที่สถานีวัดในเชียงใหม่วัดได้ 200 μg/m³ — <b>มาจากไหนเท่าไหร่?</b><br>
+แทนที่จะเดา เราใช้ <b>tagged-tracer</b> คือ "ติดป้ายชื่อที่แหล่งกำเนิด แล้วให้ทุกอนุภาคพาป้ายนั้นติดตามตัวตลอดทาง" <br>
+เมื่อถึงปลายทาง ป้ายจะบอกได้ทันที: 38% จากไฟป่าพม่าเหนือ · 27% จากไฟภาคเหนือไทย · 21% จากลาว · 14% ฝุ่นพื้นหลัง<br>
+วิธีนี้ทำงานได้เพราะ HazeNet ถูกออกแบบให้ <b>เชิงเส้นใน C</b> (3.5) ซึ่งแปลว่า superposition ยังคงอยู่ (2.5)
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#p1">1. ปัญหาที่ต้องแก้ — ใครส่งควันมา?</a><br>
+<a href="#p2">2. Tagged-Tracer คืออะไร</a><br>
+<a href="#p3">3. ทำไมถึงทำได้ — คณิตศาสตร์</a><br>
+<a href="#p4">4. Smoke Fingerprint — ลายนิ้วมือควัน</a><br>
+<a href="#p5">5. เชื่อมกับ HazeNet (3.5)</a><br>
+<a href="#p6">6. Source Regions ในเอเชียตะวันออกเฉียงใต้</a><br>
+<a href="#p7">7. ผลที่ได้ — Attribution + Counterfactual</a><br>
+<a href="#p8">8. โค้ด Implementation</a><br>
+<a href="#p9">9. ข้อจำกัดที่ต้องซื่อสัตย์</a><br>
+<a href="#p10">10. สะพานไปยัง 3.7 (Adjoint)</a><br>
+<a href="#chk">11. แบบฝึกหัด</a><br>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 id="p1">1. ปัญหาที่ต้องแก้ — "ควันที่เชียงใหม่มาจากไหน?"</h2>
+
+<p>ลองนึกภาพสถานการณ์จริง: วันที่ 22 มีนาคม 2023 สถานีวัดคุณภาพอากาศที่เชียงใหม่รายงาน PM2.5 = <b style="color:var(--red)">210 μg/m³</b> — ระดับอันตรายมาก</p>
+
+<div class="card">
+<h4>คำถามที่ทุกคนอยากรู้</h4>
+<ul>
+  <li>ควันมาจาก<b>ไฟป่าในพม่า</b>เหนือพรมแดน หรือ<b>ไฟป่าในภาคเหนือ</b>ของเราเอง?</li>
+  <li>ถ้า<b>บังคับดับไฟในพม่า</b>ทั้งหมด PM2.5 จะลดลงเท่าไหร่?</li>
+  <li>ควันจาก<b>ลาวและกัมพูชา</b>มีส่วนแค่ไหน?</li>
+  <li>ถ้าจะ<b>จัดสรรเงินดับไฟ</b> ควรเน้นประเทศไหนก่อน?</li>
+</ul>
+</div>
+
+<p>แบบจำลองทั่วไปบอกแค่ค่ารวม — คำนวณ C_total(x, t) ทั้ง domain แต่<b>ไม่สามารถบอกว่าแต่ละ μg/m³ มาจากแหล่งไหน</b></p>
+
+<div class="why">
+<b>ปัญหาหลัก:</b> เราเห็นผลลัพธ์รวม แต่ไม่รู้ส่วนแบ่ง — เหมือนเห็นน้ำในอ่างแต่ไม่รู้ว่ามาจากก๊อกไหนเท่าไหร่
+</div>
+
+<p>Tagged-tracer แก้ปัญหานี้โดยตรง — ไม่ใช่การเดา แต่เป็น<b>การคำนวณที่มีหลักการ</b>ทางฟิสิกส์รองรับ</p>
+
+<!-- ============ 2 ============ -->
+<h2 id="p2">2. Tagged-Tracer คืออะไร — อุปมาและหลักการ</h2>
+
+<h3>2.1 อุปมา: ย้อมน้ำต้นน้ำ</h3>
+
+<div class="card">
+<p>จินตนาการแม่น้ำที่มีสาขามาจาก 4 ทิศ ก่อนที่น้ำจะมารวมกัน เราเทสี:
+<br>สาขาเหนือ → <span style="color:var(--blue)">สีน้ำเงิน</span> &nbsp;·&nbsp;
+สาขาตะวันออก → <span style="color:var(--orange)">สีส้ม</span> &nbsp;·&nbsp;
+สาขาใต้ → <span style="color:var(--green)">สีเขียว</span> &nbsp;·&nbsp;
+สาขาตะวันตก → <span style="color:var(--red)">สีแดง</span>
+</p>
+<p>เมื่อน้ำมาถึงปลายน้ำ ดูสีแล้วรู้ทันที: "ปากแม่น้ำนี้น้ำ 45% มาจากเหนือ, 30% ตะวันออก, 15% ใต้, 10% ตะวันตก"</p>
+<p><b>Tagged-tracer คือการทำสิ่งเดียวกันกับอนุภาคฝุ่น</b> — ติดป้ายชื่อที่แหล่งกำเนิด แล้วให้ป้ายลอยตามฝุ่นไปตลอดทาง</p>
+</div>
+
+<h3>2.2 วิธีการทำงาน</h3>
+
+<p>แทนที่จะมีความเข้มข้นฝุ่นรวม C(x,t) เพียงตัวเดียว เราสร้าง <b>N concentration fields</b> แยกกัน:</p>
+
+<div class="card">
+<table>
+<tr><th>สัญลักษณ์</th><th>ความหมาย</th><th>ตัวอย่าง SEA</th></tr>
+<tr><td><code>C<sup>(1)</sup>(x,t)</code></td><td>ความเข้มข้นจากแหล่ง 1 เท่านั้น</td><td>ไฟป่าพม่าเหนือ</td></tr>
+<tr><td><code>C<sup>(2)</sup>(x,t)</code></td><td>ความเข้มข้นจากแหล่ง 2 เท่านั้น</td><td>ไฟป่าภาคเหนือไทย</td></tr>
+<tr><td><code>C<sup>(3)</sup>(x,t)</code></td><td>ความเข้มข้นจากแหล่ง 3 เท่านั้น</td><td>ไฟป่าลาว</td></tr>
+<tr><td><code>…</code></td><td>…</td><td>…</td></tr>
+<tr><td><code>C<sup>(N)</sup>(x,t)</code></td><td>ความเข้มข้นจากแหล่ง N</td><td>ฝุ่นพื้นหลัง (background)</td></tr>
+</table>
+</div>
+
+<p>แต่ละ C<sup>(s)</sup> วิ่งผ่านฟิสิกส์เดียวกัน (ลม, การแพร่กระจาย, decay) — เพียงแต่เริ่มจากแหล่งต่างกัน</p>
+
+<div class="green-box">
+<b>กฎหลัก:</b> C_total = C<sup>(1)</sup> + C<sup>(2)</sup> + C<sup>(3)</sup> + … + C<sup>(N)</sup> &nbsp;·&nbsp; ที่ทุกจุด (x,t)
+<br>Attribution ณ จุดใดๆ = <code>C<sup>(s)</sup>(x,t) / C_total(x,t)</code> คือสัดส่วนจากแหล่ง s
+</div>
+
+<!-- ============ 3 ============ -->
+<h2 id="p3">3. ทำไมถึงทำได้ — คณิตศาสตร์ (Superposition อีกครั้ง)</h2>
+
+<h3>3.1 ทบทวน 2.5 Superposition</h3>
+
+<p>จาก 2.5 เราพิสูจน์แล้วว่า สมการ ADR เชิงเส้นใน C:</p>
+
+<pre><code><span class="cm">-- สมการ ADR (1.2) --</span>
+∂C/∂t + u·∇C = D∇²C - λC + Q(x,t)
+
+<span class="cm">-- ถ้า C = C⁽¹⁾ + C⁽²⁾ แต่ละตัวสอดคล้อง --</span>
+∂C⁽¹⁾/∂t + u·∇C⁽¹⁾ = D∇²C⁽¹⁾ - λC⁽¹⁾ + Q⁽¹⁾(x,t)
+∂C⁽²⁾/∂t + u·∇C⁽²⁾ = D∇²C⁽²⁾ - λC⁽²⁾ + Q⁽²⁾(x,t)
+
+<span class="cm">-- บวกกัน → C_total ก็สอดคล้องสมการกับ Q_total = Q⁽¹⁾ + Q⁽²⁾ --</span>
+∂(C⁽¹⁾+C⁽²⁾)/∂t + ... = ... + (Q⁽¹⁾ + Q⁽²⁾)(x,t)  ✓</code></pre>
+
+<p><b>กุญแจ:</b> สมการฟิสิกส์เชิงเส้น → ผลรวมของ solutions ก็เป็น solution → แต่ละ tagged tracer วิ่งอิสระกันได้โดยไม่ต้องคุยกัน</p>
+
+<h3>3.2 พิสูจน์ว่า Attribution บวกได้ครบ 100%</h3>
+
+<div class="card">
+<p>สมมติมี S แหล่ง: C_total(x,t) = Σ<sub>s=1..S</sub> C<sup>(s)</sup>(x,t)</p>
+<p>Attribution ของแหล่ง s ที่จุด (x,t):</p>
+<pre><code>α⁽ˢ⁾(x,t) = C⁽ˢ⁾(x,t) / C_total(x,t)</code></pre>
+<p>ตรวจสอบว่ารวมได้ 100%:</p>
+<pre><code>Σ α⁽ˢ⁾ = Σ C⁽ˢ⁾ / C_total = C_total / C_total = 1  ✓</code></pre>
+<p class="muted">→ เสมอ 100% ที่ทุกจุด ทุกเวลา โดยไม่ต้อง normalize เพิ่ม</p>
+</div>
+
+<h3>3.3 Counterfactual — ถ้าดับไฟแหล่ง s</h3>
+
+<pre><code><span class="cm"># ถ้าดับไฟแหล่ง s ทั้งหมด → ลบ C⁽ˢ⁾ออก</span>
+C_without_s(x,t) = C_total(x,t) - C⁽ˢ⁾(x,t)
+
+<span class="cm"># ที่สถานีเชียงใหม่ (lat=18.8, lon=98.9)</span>
+reduction = C⁽ˢ⁾[chiang_mai, t]  <span class="cm"># μg/m³ ที่ลดลงได้</span>
+pct = 100 * C⁽ˢ⁾[chiang_mai, t] / C_total[chiang_mai, t]</code></pre>
+
+<div class="why">
+<b>ทำไมสำคัญมาก:</b> "ถ้าพม่าดับไฟ PM2.5 ที่เชียงใหม่ลดลง 38%" คือข้อมูลเชิงนโยบายที่ตรงมาก — ไม่ใช่การคาดเดา แต่คำนวณได้จากฟิสิกส์
+</div>
+
+<!-- ============ 4 ============ -->
+<h2 id="p4">4. Smoke Fingerprint — ลายนิ้วมือควัน</h2>
+
+<h3>4.1 ทำไมแต่ละแหล่งมี "ลายนิ้วมือ" ต่างกัน</h3>
+
+<p>C<sup>(s)</sup>(x,t) ที่เราวัดได้ตามสถานีต่างๆ สร้างรูปแบบเชิงพื้นที่-เวลาที่ <b>เฉพาะตัว</b>สำหรับแต่ละแหล่ง เพราะ:</p>
+
+<div class="card">
+<table>
+<tr><th>ปัจจัย</th><th>ทำให้ fingerprint ต่างกันอย่างไร</th></tr>
+<tr><td><b>ระยะทาง</b></td><td>แหล่งไกล → ฝุ่นกระจายมากขึ้น → เข้มข้นต่ำกว่า</td></tr>
+<tr><td><b>ทิศลม</b></td><td>ลมพัดไปทิศเหนือ → แหล่งทางใต้มีผลสูง แหล่งทางเหนือไม่มีผล</td></tr>
+<tr><td><b>ค่า PBL</b></td><td>บรรยากาศผสมดี → กระจายตัวในแนวตั้ง → เจือจาง</td></tr>
+<tr><td><b>decay rate λ</b></td><td>ฝุ่นสลายตัวตามเวลา → แหล่งไกลหรือช้า → เจือจางมากกว่า</td></tr>
+<tr><td><b>ภูมิประเทศ</b></td><td>เทือกเขากั้น → แหล่งฝั่งตะวันตกแตกต่างกับฝั่งตะวันออก</td></tr>
+</table>
+</div>
+
+<h3>4.2 Fingerprint ในทางปฏิบัติ</h3>
+
+<p>สมมติสถานีวัด 10 แห่งทั่วภาคเหนือ เวลา 48 ชั่วโมง fingerprint ของแหล่ง s คือ:</p>
+
+<pre><code><span class="cm"># shape: (10 สถานี × 48 ชั่วโมง) = vector 480 มิติ</span>
+fingerprint_s = C⁽ˢ⁾[stations, 0:48]  <span class="cm"># μg/m³ ที่แต่ละสถานีแต่ละชั่วโมง</span></code></pre>
+
+<p>สองแหล่งที่อยู่ใกล้กันมาก fingerprint อาจคล้ายกัน → attribution แยกได้ยาก (ill-conditioned) — เป็น caveat ที่จะพูดถึงใน Section 9</p>
+
+<!-- ============ 5 ============ -->
+<h2 id="p5">5. เชื่อมกับ HazeNet (3.5) — ทำไมต้องเป็น Conditionally-Linear</h2>
+
+<h3>5.1 ปัญหากับนิวรอลทั่วไป</h3>
+
+<div class="danger">
+<b>ถ้าโมเดลไม่เชิงเส้นใน C:</b><br>
+F(C⁽¹⁾ + C⁽²⁾ | met) ≠ F(C⁽¹⁾ | met) + F(C⁽²⁾ | met)<br>
+→ ไม่สามารถ propagate C⁽ˢ⁾ แยกกันได้<br>
+→ Tagged-tracer <b>พัง</b> — attribution ไม่ถูกต้อง
+</div>
+
+<p>นี่คือเหตุผลที่ HazeNet <b>ต้องเป็น</b> conditionally-linear (3.5) — ไม่ใช่แค่ดีกว่า แต่ <b>จำเป็น</b> สำหรับ attribution</p>
+
+<h3>5.2 วิธีที่ HazeNet ทำ Tagged-Tracer</h3>
+
+<div class="card">
+<p><b>สมการ HazeNet (3.5):</b></p>
+<pre><code>F_θ(C | met) = Φ_θ(C_total, met) · C</code></pre>
+<p>เมื่อ Φ_θ คือ "operator coefficients" ที่นิวรอลเรียนมา (depends on C_total และ met)</p>
+<p><b>วิธีใช้กับ tagged tracers:</b></p>
+<pre><code><span class="cm">-- Step 1: คำนวณ Φ จาก C_total (physics ต้องเห็น total field) --</span>
+C_total = Σ C⁽ˢ⁾                     <span class="cm"># รวมทุกแหล่ง</span>
+Φ = Φ_θ(C_total, met)                <span class="cm"># operator จากทั้ง domain</span>
+
+<span class="cm">-- Step 2: apply Φ ให้แต่ละ tracer (linear → อิสระจากกัน) --</span>
+C⁽ˢ⁾_next = Φ · C⁽ˢ⁾   สำหรับแต่ละ s
+
+<span class="cm">-- ตรวจสอบ: Σ C⁽ˢ⁾_next = Φ · (Σ C⁽ˢ⁾) = Φ · C_total ✓ --</span></code></pre>
+</div>
+
+<div class="why">
+<b>ทำไม Φ ต้องคำนวณจาก C_total (ไม่ใช่ C⁽ˢ⁾)?</b><br>
+เพราะ Φ คือ "สภาพแวดล้อมบรรยากาศ" — ลมจริง, การผสม, decay จริง — ต้องเห็น <em>ฝุ่นทั้งหมด</em> จึงจะคำนวณ physics ถูกต้อง<br>
+ถ้าคำนวณ Φ จาก C⁽ˢ⁾ เดี่ยวๆ = บอกว่า "ฝุ่นของพม่าอยู่คนเดียวในอากาศว่าง" → ผิดฟิสิกส์
+</div>
+
+<h3>5.3 ภาพรวมความสัมพันธ์</h3>
+
+<pre><code>2.5 Superposition → พื้นฐานคณิตศาสตร์ที่ทำให้ C = Σ C⁽ˢ⁾ ใช้ได้
+      ↓
+3.5 Conditionally-Linear → ทำให้ HazeNet เชิงเส้นใน C (F(ΣC⁽ˢ⁾) = ΣF(C⁽ˢ⁾))
+      ↓
+3.6 Tagged-Tracer → ใช้ทั้งสองข้างบนติดป้ายและตามฝุ่นแต่ละแหล่ง
+      ↓
+3.7 Adjoint → ย้อนกลับจากฝุ่นที่วัดได้ → หาว่าแหล่งไหนปล่อยเท่าไหร่ (ต่อไป)</code></pre>
+
+<!-- ============ 6 ============ -->
+<h2 id="p6">6. Source Regions ในเอเชียตะวันออกเฉียงใต้</h2>
+
+<h3>6.1 ทำไมต้องจัดกลุ่มแหล่ง</h3>
+
+<p>ในความเป็นจริง มีไฟหลายหมื่นจุดทั่ว SEA ในช่วง Haze Season (มีนาคม–เมษายน) เราไม่สามารถติดป้ายแยกทุกจุดไฟได้เพราะ:</p>
+
+<div class="warn">
+<b>ข้อจำกัดจริง:</b><br>
+· หากมี 50,000 จุดไฟ → ต้องการ 50,000 concentration fields → RAM หมดทันที (A100 มีแค่ 40 GB)<br>
+· จุดไฟข้างเคียงกันมาก fingerprint แทบเหมือนกัน → แยก attribution ไม่ออก (ill-conditioned)
+</div>
+
+<h3>6.2 การแบ่ง Source Regions แบบ HazeNet</h3>
+
+<div class="card">
+<p>แบ่งตาม <b>ลักษณะภูมิประเทศ + ระบอบลม + พรมแดน</b> ได้ประมาณ 8–12 zones:</p>
+<table>
+<tr><th>ID</th><th>Region</th><th>ตัวอย่างแหล่งที่มา</th><th>Badge</th></tr>
+<tr><td>S1</td><td>พม่าเหนือ (Sagaing/Mandalay)</td><td>ไฟป่าทีค, deforestation</td><td><span class="source-badge s1">S1-MYN</span></td></tr>
+<tr><td>S2</td><td>ภาคเหนือไทย (เชียงใหม่/เชียงราย)</td><td>เผาไร่ข้าวโพด, ป่า</td><td><span class="source-badge s2">S2-NTH</span></td></tr>
+<tr><td>S3</td><td>ลาวเหนือ (Luang Prabang)</td><td>ไฟเผาไร่หมุนเวียน</td><td><span class="source-badge s3">S3-LAO</span></td></tr>
+<tr><td>S4</td><td>กัมพูชา/เวียดนามใต้</td><td>เผาตอซัง, ฤดูเก็บเกี่ยว</td><td><span class="source-badge s4">S4-CAM</span></td></tr>
+<tr><td>S5</td><td>Background (อินเดีย/มหาสมุทร)</td><td>ฝุ่นทะเลทราย, พื้นหลัง</td><td><span class="source-badge s5">S5-BKG</span></td></tr>
+<tr><td>…</td><td>ภาคกลาง, ภาคตะวันออกเฉียงเหนือ ฯลฯ</td><td>…</td><td>…</td></tr>
+</table>
+<p class="muted">ทั้งหมด N = 8–12 regions ให้ RAM-friendly บน A100 (~16× H×W fields)</p>
+</div>
+
+<h3>6.3 วิธีสร้าง Source Mask</h3>
+
+<pre><code><span class="kw">import</span> torch
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="cm"># สมมติ grid 128×128 ครอบ SEA (90°E–110°E, 5°N–25°N)</span>
+H, W = <span class="nm">128</span>, <span class="nm">128</span>
+n_sources = <span class="nm">8</span>
+
+<span class="cm"># สร้าง mask แต่ละ region (True = เป็น pixel ของ region นั้น)</span>
+source_masks = torch.zeros(n_sources, H, W)  <span class="cm"># bool map</span>
+
+<span class="cm"># S1: Myanmar เหนือ — pixel ที่ lat > 20°N, lon < 100°E</span>
+lat_grid, lon_grid = torch.meshgrid(
+    torch.linspace(<span class="nm">5</span>, <span class="nm">25</span>, H),
+    torch.linspace(<span class="nm">90</span>, <span class="nm">110</span>, W), indexing=<span class="st">'ij'</span>
+)
+source_masks[<span class="nm">0</span>] = (lat_grid > <span class="nm">20</span>) & (lon_grid < <span class="nm">100</span>)  <span class="cm"># S1-MYN</span>
+source_masks[<span class="nm">1</span>] = (lat_grid > <span class="nm">17</span>) & (lat_grid <= <span class="nm">20</span>) & (lon_grid > <span class="nm">97</span>) & (lon_grid < <span class="nm">102</span>)  <span class="cm"># S2-NTH</span>
+<span class="cm"># ... ต่อ S3–S7</span>
+source_masks[<span class="nm">7</span>] = ~source_masks[:<span class="nm">7</span>].any(<span class="nm">0</span>)  <span class="cm"># S8-BKG = ทุกที่ที่เหลือ</span></code></pre>
+
+<!-- ============ 7 ============ -->
+<h2 id="p7">7. ผลที่ได้ — Attribution Map + Counterfactual</h2>
+
+<h3>7.1 Attribution Map</h3>
+
+<p>ผลหลักของ tagged-tracer คือ <b>Attribution Map</b>: tensor ขนาด <code>(N, H, W, T)</code> ที่บอกว่าแต่ละ pixel แต่ละเวลา ฝุ่นมาจากแหล่งไหนเท่าไหร่</p>
+
+<div class="card">
+<p>สมมติผลที่สถานีเชียงใหม่ วันที่ 22 มีนาคม 2023 เวลา 12:00:</p>
+<pre><code>C_total[CM, t=36h] = 210 μg/m³
+
+attribution:
+  S1-MYN:  80 μg/m³  (38%)   ← ใหญ่สุด
+  S2-NTH:  57 μg/m³  (27%)
+  S3-LAO:  44 μg/m³  (21%)
+  S4-CAM:  18 μg/m³  (9%)
+  S5-BKG:  11 μg/m³  (5%)
+  ──────────────────────────
+  รวม:    210 μg/m³  (100%) ✓</code></pre>
+</div>
+
+<h3>7.2 Counterfactual Policy Analysis</h3>
+
+<table>
+<tr><th>Scenario</th><th>สิ่งที่ทำ</th><th>PM2.5 ที่เชียงใหม่</th><th>ลดลง</th></tr>
+<tr><td>Baseline (ไม่ทำอะไร)</td><td>—</td><td>210 μg/m³</td><td>—</td></tr>
+<tr><td>ดับไฟพม่าทั้งหมด</td><td>C_total − C⁽¹⁾</td><td>130 μg/m³</td><td>−38%</td></tr>
+<tr><td>ดับไฟภาคเหนือไทย</td><td>C_total − C⁽²⁾</td><td>153 μg/m³</td><td>−27%</td></tr>
+<tr><td>ดับไฟลาว</td><td>C_total − C⁽³⁾</td><td>166 μg/m³</td><td>−21%%</td></tr>
+<tr><td>ดับพม่า + ลาวพร้อมกัน</td><td>C_total − C⁽¹⁾ − C⁽³⁾</td><td>86 μg/m³</td><td>−59%</td></tr>
+</table>
+
+<div class="green-box">
+<b>ข้อมูลเชิงนโยบาย:</b> ถ้ารัฐบาลไทยจะลงทุน 1 พันล้านบาทในโครงการลดไฟ ควรเน้นที่พม่า (−38%) ก่อนลาว (−21%) — ไม่ใช่การเดา แต่มาจากการคำนวณ tagged-tracer
+</div>
+
+<h3>7.3 Time Series Attribution</h3>
+
+<pre><code><span class="cm"># ดู attribution ที่สถานีเชียงใหม่ตลอด 48 ชั่วโมง</span>
+<span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
+
+fig, ax = plt.subplots()
+time = torch.arange(<span class="nm">48</span>)
+colors = [<span class="st">'#ff9b54'</span>, <span class="st">'#58a6ff'</span>, <span class="st">'#3fb950'</span>, <span class="st">'#f85149'</span>, <span class="st">'#bc8cff'</span>]
+labels = [<span class="st">'Myanmar N'</span>, <span class="st">'N.Thailand'</span>, <span class="st">'Laos'</span>, <span class="st">'Cambodia'</span>, <span class="st">'Background'</span>]
+
+<span class="cm"># stacked area chart แสดงสัดส่วน</span>
+ax.stackplot(time.numpy(),
+             C_tagged[:, cm_lat, cm_lon, :].numpy(),
+             labels=labels, colors=colors, alpha=<span class="nm">0.8</span>)
+ax.set_xlabel(<span class="st">'ชั่วโมงที่'</span>)
+ax.set_ylabel(<span class="st">'PM2.5 (μg/m³)'</span>)
+ax.legend(loc=<span class="st">'upper left'</span>)
+plt.title(<span class="st">'Attribution ที่เชียงใหม่ — 48 ชั่วโมง'</span>)</code></pre>
+
+<!-- ============ 8 ============ -->
+<h2 id="p8">8. โค้ด Implementation ใน HazeNet</h2>
+
+<h3>8.1 โครงสร้างหลัก</h3>
+
+<pre><code><span class="kw">import</span> torch
+<span class="kw">import</span> torch.nn <span class="kw">as</span> nn
+
+<span class="kw">class</span> <span class="fn">HazeNetWithAttribution</span>(nn.Module):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, n_sources=<span class="nm">8</span>):
+        <span class="fn">super</span>().__init__()
+        self.n_sources = n_sources
+        self.phi_net = <span class="fn">PhiNetwork</span>()    <span class="cm"># เรียน operator Φ (3.5)</span>
+        self.advect = <span class="fn">SemiLagrangian</span>() <span class="cm"># ฟิสิกส์จาก 2.2</span>
+
+    <span class="kw">def</span> <span class="fn">forward_with_attribution</span>(self, C_tagged, met):
+        <span class="cm">"""
+        C_tagged: (n_sources, H, W) — tagged fields
+        met:      (n_met, H, W)    — อุตุนิยม (ลม, PBL ฯลฯ)
+        returns:  C_tagged_next (n_sources, H, W)
+        """</span>
+        n_s, H, W = C_tagged.shape
+
+        <span class="cm"># Step 1: รวมเป็น total → ใช้คำนวณ Φ</span>
+        C_total = C_tagged.<span class="fn">sum</span>(<span class="nm">0</span>)              <span class="cm"># (H, W)</span>
+
+        <span class="cm"># Step 2: คำนวณ operator coefficients จาก total</span>
+        Phi = self.phi_net(C_total, met)       <span class="cm"># (H, W, n_coeff)</span>
+
+        <span class="cm"># Step 3: apply Φ ให้แต่ละ tagged tracer</span>
+        C_tagged_next = torch.zeros_like(C_tagged)
+        <span class="kw">for</span> s <span class="kw">in</span> <span class="fn">range</span>(n_s):
+            C_tagged_next[s] = self.<span class="fn">apply_phi</span>(Phi, C_tagged[s], met)
+
+        <span class="cm"># ตรวจว่า sum ยังตรงกัน (sanity check)</span>
+        <span class="cm"># assert torch.allclose(C_tagged_next.sum(0), apply_phi(Phi, C_total, met))</span>
+
+        <span class="kw">return</span> C_tagged_next
+
+    <span class="kw">def</span> <span class="fn">get_attribution</span>(self, C_tagged):
+        <span class="cm"># α⁽ˢ⁾(x,t) = C⁽ˢ⁾(x,t) / C_total(x,t)</span>
+        C_total = C_tagged.<span class="fn">sum</span>(<span class="nm">0</span>, keepdim=<span class="kw">True</span>)  <span class="cm"># (1, H, W)</span>
+        attribution = C_tagged / (C_total + <span class="nm">1e-8</span>)   <span class="cm"># (n_s, H, W) — avoid /0</span>
+        <span class="kw">return</span> attribution  <span class="cm"># sums to 1 along dim=0</span></code></pre>
+
+<h3>8.2 Initialization — ติดป้ายจากข้อมูลไฟจริง</h3>
+
+<pre><code><span class="kw">def</span> <span class="fn">init_tagged_tracers</span>(frp_grid, source_masks, n_sources, H, W):
+    <span class="cm">"""
+    frp_grid:    (H, W)           — Fire Radiative Power จาก FIRMS
+    source_masks:(n_sources, H,W) — boolean mask แต่ละ region
+    returns:     C_tagged (n_sources, H, W)
+    """</span>
+    C_tagged = torch.zeros(n_sources, H, W)
+    <span class="kw">for</span> s <span class="kw">in</span> <span class="fn">range</span>(n_sources):
+        <span class="cm"># emission จากแหล่ง s = FRP × mask × emission factor</span>
+        C_tagged[s] = frp_grid * source_masks[s] * <span class="nm">0.01</span>  <span class="cm"># kg/m² → μg/m³</span>
+    <span class="kw">return</span> C_tagged
+
+<span class="cm"># ใช้งาน</span>
+C_tagged = <span class="fn">init_tagged_tracers</span>(frp_day1, source_masks, n_sources, H, W)
+model = <span class="fn">HazeNetWithAttribution</span>(n_sources=n_sources)
+
+<span class="cm"># Rollout 48 ชั่วโมง</span>
+history = [C_tagged]
+<span class="kw">for</span> t <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">48</span>):
+    C_tagged = model.<span class="fn">forward_with_attribution</span>(C_tagged, met[t])
+    history.<span class="fn">append</span>(C_tagged)  <span class="cm"># เก็บ attribution ทุก step</span>
+
+attribution_48h = torch.<span class="fn">stack</span>(history)  <span class="cm"># (48, n_sources, H, W)</span>
+print(<span class="fn">f</span><span class="st">"Attribution tensor: {attribution_48h.shape}"</span>)
+<span class="cm"># → torch.Size([48, 8, 128, 128])</span></code></pre>
+
+<h3>8.3 Memory ที่ต้องใช้</h3>
+
+<div class="card">
+<pre><code><span class="cm"># 1 field (H×W float32)</span>
+one_field = <span class="nm">128</span> * <span class="nm">128</span> * <span class="nm">4</span>  <span class="cm"># bytes = 65,536 B ≈ 64 KB</span>
+
+<span class="cm"># attribution_48h</span>
+attr_size = <span class="nm">48</span> * <span class="nm">8</span> * <span class="nm">128</span> * <span class="nm">128</span> * <span class="nm">4</span>
+print(<span class="fn">f</span><span class="st">"{attr_size / 1e6:.1f} MB"</span>)  <span class="cm"># → 25.2 MB ← สบายมาก</span>
+
+<span class="cm"># ถ้า n_sources = 50 (แน่นขึ้น)</span>
+attr_big = <span class="nm">48</span> * <span class="nm">50</span> * <span class="nm">128</span> * <span class="nm">128</span> * <span class="nm">4</span>
+print(<span class="fn">f</span><span class="st">"{attr_big / 1e6:.1f} MB"</span>)  <span class="cm"># → 157.3 MB ← ยังโอเค</span>
+
+<span class="cm"># bottleneck ไม่ใช่ attribution แต่คือ model weights + activation</span></code></pre>
+</div>
+
+<!-- ============ 9 ============ -->
+<h2 id="p9">9. ข้อจำกัดที่ต้องซื่อสัตย์</h2>
+
+<h3>9.1 เคมีไม่เชิงเส้น (Non-linear Chemistry)</h3>
+
+<div class="warn">
+<b>ปัญหา:</b> สมมติฐาน superposition ถือว่าเคมีในบรรยากาศ <em>เชิงเส้นใน C</em><br><br>
+<b>จริงๆ แล้ว:</b>
+<ul>
+<li><b>SOA (Secondary Organic Aerosol)</b>: PM2.5 บางส่วนเกิดจากปฏิกิริยาเคมีระหว่างสาร → ถ้า C⁽¹⁾ และ C⁽²⁾ ทำปฏิกิริยาร่วมกัน attribution ไม่แม่น</li>
+<li><b>Hygroscopic growth</b>: ฝุ่นดูดซับน้ำตามความชื้น → rate depends on total C → non-linear</li>
+<li><b>Scavenging</b>: ฝนล้างฝุ่น — rate อาจ non-linear</li>
+</ul>
+<b>HazeNet ตอบอย่างไร:</b> สำหรับ <em>primary PM2.5 จากไฟ</em> (ซึ่งเป็น focus ของงานเรา) linearity ถือดีพอ — error จาก non-linear chemistry อยู่ใน ~5–15% ซึ่งเล็กกว่า uncertainty อื่น
+</div>
+
+<h3>9.2 Φ คำนวณจาก C_total — Small-Source Problem</h3>
+
+<div class="warn">
+<b>ปัญหา:</b> Φ_θ(C_total, met) เห็น total field แต่ถ้าแหล่ง s มีขนาดเล็กมาก (เช่น 0.1% ของ total) C⁽ˢ⁾ จะถูก transport ด้วย Φ ที่ "ไม่ได้ออกแบบมาสำหรับมัน"<br><br>
+<b>ในทางปฏิบัติ:</b> แหล่งใหญ่ใน SEA (พม่า/ไทยเหนือ) อยู่ใน 10–40% ของ total → error น้อย · แหล่งเล็กมาก (< 1%) attribution อาจมี noise สูง
+</div>
+
+<h3>9.3 Attribution Resolution ≠ Fire Resolution</h3>
+
+<div class="warn">
+<b>ปัญหา:</b> เราแบ่ง 8 regions ไม่ใช่ 50,000 จุดไฟ → attribution บอกได้แค่ระดับ "ประเทศ" หรือ "ภาค"<br><br>
+ไม่สามารถบอกว่า "ไฟจุดที่ GPS (20.5°N, 99.2°E) มีผลเท่าไหร่ที่เชียงใหม่" → ต้องใช้ adjoint (3.7) แทน
+</div>
+
+<h3>9.4 ไม่บอกแหล่งที่ "ซ่อนอยู่"</h3>
+
+<div class="warn">
+<b>ปัญหา:</b> Tagged-tracer ต้องรู้แหล่งทุกแหล่ง <em>ก่อน</em> จึงจะ run ได้<br><br>
+ถ้าไฟเกิดขึ้นในพื้นที่ที่เราไม่ได้ assign region → ถูกนับเป็น "background" → attribution ผิด<br>
+ต้องมี monitoring ไฟที่ดี (FIRMS near-realtime) เพื่อ assign source regions ให้ทันเวลา
+</div>
+
+<!-- ============ 10 ============ -->
+<h2 id="p10">10. สะพานไปยัง 3.7 — Forward vs Backward</h2>
+
+<div class="card">
+<table>
+<tr><th></th><th>3.6 Tagged-Tracer</th><th>3.7 Adjoint / Source Inversion</th></tr>
+<tr><td><b>ทิศทาง</b></td><td>Forward (ต้นทาง → ปลายทาง)</td><td>Backward (ปลายทาง → ต้นทาง)</td></tr>
+<tr><td><b>รู้</b></td><td>แหล่งกำเนิด (Q⁽ˢ⁾)</td><td>ค่าที่วัดได้ (C_obs)</td></tr>
+<tr><td><b>หา</b></td><td>Attribution (สัดส่วน C⁽ˢ⁾)</td><td>แหล่งกำเนิดที่ไม่รู้ (Q_unknown)</td></tr>
+<tr><td><b>เครื่องมือ</b></td><td>Superposition + Conditionally-linear</td><td>autograd .backward() = adjoint</td></tr>
+<tr><td><b>คำถาม</b></td><td>"ไฟพม่ามีผลต่อเชียงใหม่เท่าไหร่?"</td><td>"ต้องมีไฟที่ไหนเพื่อให้วัดค่าแบบนี้?"</td></tr>
+<tr><td><b>ความยาก</b></td><td>🟡 กลาง (บทนี้)</td><td>🔴 ยาก (บทหน้า)</td></tr>
+</table>
+</div>
+
+<div class="green-box">
+<b>เชื่อมกัน:</b> 3.6 Tagged-tracer เป็นส่วน "Forward Model" ที่ 3.7 ใช้เป็นฐาน<br>
+ถ้าเข้าใจว่า C⁽ˢ⁾_pku = Φ · C⁽ˢ⁾_init แล้ว adjoint (3.7) ก็คือการถามว่า<br>
+"∂(PM2.5 ที่เชียงใหม่) / ∂(ปริมาณไฟที่แหล่ง s) = ?" → ซึ่ง PyTorch autograd ให้มาฟรี
+</div>
+
+<pre><code><span class="cm"># Preview 3.7 — แค่ 3 บรรทัดสำคัญ</span>
+C_tagged.requires_grad_(<span class="kw">True</span>)                   <span class="cm"># บอก autograd ให้ติดตาม</span>
+pm25_chiang_mai = C_tagged_48h[:, cm_lat, cm_lon].<span class="fn">sum</span>()  <span class="cm"># scalar: ฝุ่นสะสมที่เชียงใหม่</span>
+pm25_chiang_mai.<span class="fn">backward</span>()                      <span class="cm"># backward → adjoint</span>
+
+<span class="cm"># C_tagged.grad[s, i, j] = ∂(PM2.5 ที่เชียงใหม่)/∂(แหล่ง s ที่ (i,j))</span>
+<span class="cm"># = sensitivity map: ถ้าเพิ่มไฟที่ (i,j) PM2.5 ที่เชียงใหม่เปลี่ยนเท่าไหร่</span></code></pre>
+
+<!-- ============ 11 ============ -->
+<h2 id="chk">11. แบบฝึกหัด — ทดสอบความเข้าใจ</h2>
+
+<div class="chk">
+<p class="q">Q1: Memory Budget</p>
+<p>ถ้า n_sources = 12 regions, rollout 72 ชั่วโมง, grid H×W = 256×256, เก็บ attribution_48h เป็น float32 — tensor มีขนาดกี่ MB?</p>
+<details><summary>ดูเฉลย</summary>
+<p>12 × 72 × 256 × 256 × 4 bytes = 12 × 72 × 262,144 × 4 = 905,969,664 bytes ≈ <b>864 MB</b><br>
+เกือบ 1 GB เฉพาะ attribution — ถ้า A100 มี 40 GB ยังพอ แต่ต้องระวังถ้า batch หลาย sample</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">Q2: Superposition Check</p>
+<p>หลังรัน forward_with_attribution() แล้ว มีวิธีตรวจสอบว่า attribution ถูกต้องแบบง่ายที่สุดคืออะไร?</p>
+<details><summary>ดูเฉลย</summary>
+<p><code>assert torch.allclose(C_tagged.sum(0), C_total_from_single_run, atol=1e-5)</code><br>
+คือผลรวม C⁽ˢ⁾ ทุก s ต้องเท่ากับผลที่ได้จากรันด้วย C_total ตัวเดียว — ถ้าไม่เท่า = bug ใน apply_phi</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">Q3: Policy Simulation</p>
+<p>สถานีเชียงใหม่วัด PM2.5 = 150 μg/m³ · attribution ระบุ S1-MYN = 42%, S2-NTH = 35%, S3-LAO = 23%<br>
+ถ้าพม่าลดไฟได้ 60% (ไม่ใช่ 100%) PM2.5 ที่เชียงใหม่ควรลดลงไปเหลือเท่าไหร่?</p>
+<details><summary>ดูเฉลย</summary>
+<p>C⁽¹⁾ = 42% × 150 = 63 μg/m³<br>
+ลดไฟ 60% → C⁽¹⁾ ลดลง 60% → ลดลง 0.6 × 63 = 37.8 μg/m³<br>
+PM2.5 ใหม่ = 150 − 37.8 = <b>112.2 μg/m³</b><br>
+(สมมติ linearity ในแหล่ง — valid เพราะ conditionally-linear)</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">Q4: ทำไม Φ ต้องมาจาก C_total</p>
+<p>ถ้าเราคำนวณ Φ จาก C⁽¹⁾ แยก (ไม่ใช่ C_total) แล้วใช้กับ C⁽¹⁾ ผลจะผิดอย่างไร?</p>
+<details><summary>ดูเฉลย</summary>
+<p>Φ_θ(C⁽¹⁾, met) จะ "เห็น" atmosphere ที่มีแต่ฝุ่นจากพม่า — ราวกับแหล่งอื่นไม่มีอยู่<br>
+ฟิสิกส์บางอย่างขึ้นกับ C_total จริง (เช่น optical depth ที่กระทบ PBL, aerosol feedback) → coefficient Φ จะ underestimate<br>
+ผลลัพธ์: C⁽¹⁾_next ผิด → Σ C⁽ˢ⁾_next ≠ C_total_next → superposition พัง</p>
+</details>
+</div>
+
+<div class="chk">
+<p class="q">Q5: Tagged-tracer vs Source Inversion</p>
+<p>ถ้ามีไฟเกิดขึ้นในพื้นที่ที่เราไม่รู้ก่อน (unknown location) — Tagged-tracer ช่วยได้ไหม? ถ้าไม่ได้ ต้องใช้เครื่องมือไหน?</p>
+<details><summary>ดูเฉลย</summary>
+<p>Tagged-tracer <b>ช่วยไม่ได้</b> — เราต้องรู้แหล่งก่อน จึงจะ assign ป้ายและ initialize C⁽ˢ⁾ ได้<br>
+ถ้าไฟอยู่ใน "background region" มันถูกนับเป็น background ทั้งหมด → attribution ผิด<br>
+สำหรับ unknown source → ต้องใช้ <b>Source Inversion (3.7)</b> ซึ่งย้อนกลับจากค่าที่วัดได้ไปหาแหล่งที่น่าจะเป็น</p>
+</details>
+</div>
+
+<hr>
+<p class="center muted">3.6 Tagged-Tracer · ต่อไป: <b>3.7 Differentiable Programming → Adjoint → Source Inversion 🔴</b> · ย้อนไป <a href="3.5-conditionally-linear-operator.html" style="color:var(--blue)">3.5 Conditionally-Linear</a></p>
+
+</div>
+</body>
+</html>

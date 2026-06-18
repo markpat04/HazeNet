@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuralGCM — วิเคราะห์เชิงลึก (กระบวนทัศน์ physics+ML ของ HazeNet)</title>
+<style>
+  :root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2330;--border:#30363d;--text:#e6edf3;
+    --muted:#9aa7b4;--green:#3fb950;--blue:#58a6ff;--purple:#bc8cff;--amber:#e3b341;--red:#f85149;--cyan:#56d4dd;--pink:#f778ba;--orange:#ff9b54;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Tahoma,sans-serif;line-height:1.78;font-size:16.5px;}
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 20px 90px}
+  h1{font-size:27px;line-height:1.3;margin:0 0 4px}
+  .tagline{color:var(--cyan);font-size:16px;margin:0 0 6px}
+  h2{font-size:24px;margin:50px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);color:var(--green)}
+  h3{font-size:19.5px;margin:30px 0 8px;color:var(--cyan)}
+  h4{font-size:16.5px;margin:18px 0 6px;color:var(--purple)}
+  p{margin:11px 0}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 8px}
+  a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+  .lead{background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--green);padding:15px 20px;border-radius:8px;margin:20px 0}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin:16px 0}
+  .why{border-left:4px solid var(--cyan);background:rgba(86,212,221,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .why b{color:var(--cyan)}
+  .warn{border-left:4px solid var(--amber);background:rgba(227,179,65,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger{border-left:4px solid var(--red);background:rgba(248,81,73,.08);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .danger b{color:var(--red)}
+  .green-box{border-left:4px solid var(--green);background:rgba(63,185,80,.07);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0}
+  .hz{border:1px solid var(--green);background:rgba(63,185,80,.06);border-radius:10px;padding:14px 20px;margin:16px 0}
+  .hz .h{color:var(--green);font-weight:bold;font-size:15.5px;margin-bottom:4px}
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:14px}
+  th,td{border:1px solid var(--border);padding:8px 11px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--green)}
+  code{font-family:"Consolas","Courier New",monospace}
+  p code,li code,td code{background:#11161d;border:1px solid var(--border);border-radius:5px;padding:1px 6px;color:var(--amber);font-size:14px}
+  pre{background:#11161d;border:1px solid var(--border);border-radius:9px;padding:14px 16px;overflow-x:auto;font-size:13.4px;line-height:1.6;margin:14px 0}
+  pre code{color:var(--text)}
+  .cm{color:#8b949e}.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}
+  ul,ol{margin:8px 0;padding-left:24px}li{margin:5px 0}
+  b.k{color:var(--green)} .muted{color:var(--muted)} .center{text-align:center}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 22px;margin:20px 0;font-size:14.5px;columns:2}
+  @media(max-width:680px){.toc{columns:1}}
+  .toc a{line-height:1.95}
+  hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .pin{display:inline-block;font-size:12px;padding:1px 9px;border-radius:20px;border:1px solid var(--green);color:var(--green);margin-left:6px}
+  svg{max-width:100%;height:auto;display:block;margin:8px auto}
+  .legend{font-size:13px;color:var(--muted);text-align:center;margin-top:4px}
+
+  .eq{background:#11161d;border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin:16px 0;text-align:center;font-size:18px;font-family:"Cambria Math","Times New Roman",serif;overflow-x:auto}
+  .eq .small{font-size:14px;color:var(--muted)}
+  .phys{color:var(--blue);font-weight:bold} .ml{color:var(--pink);font-weight:bold}
+
+  .bar-row{display:flex;align-items:center;gap:10px;margin:6px 0;font-size:13.5px}
+  .bar-name{width:200px;flex-shrink:0;color:var(--muted)}
+  .bar-track{flex:1;background:var(--panel2);border-radius:5px;height:20px;position:relative;overflow:hidden}
+  .bar-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,#3fb95088,#3fb950)}
+  .bar-val{width:74px;text-align:right;flex-shrink:0}
+  .tag{font-size:11.5px;padding:1px 8px;border-radius:10px;border:1px solid var(--border);color:var(--muted);background:var(--panel2);margin-left:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>🌍 NeuralGCM — วิเคราะห์เชิงลึก <span class="pin">กระบวนทัศน์ physics+ML ของ HazeNet</span></h1>
+<p class="tagline">"Neural General Circulation Models for Weather and Climate" — การประกอบร่าง physics+ML ระดับมาสเตอร์ ที่ตอบคำถาม "rollout ยาวจะเสถียรไหม"</p>
+<p class="sub">ต้นฉบับ: Kochkov, Yuval, Langmore et al. (+ Battaglia, Hoyer) · Nature 2024 · Google · <a href="https://www.nature.com/articles/s41586-024-07744-y">Nature</a> · <a href="https://arxiv.org/abs/2311.07222">arXiv 2311.07222</a> · <a href="https://github.com/neuralgcm/dinosaur">โค้ด (Dinosaur)</a></p>
+
+<div class="lead">
+<b>ทำไมอ่านตัวนี้เป็นตัวที่ 3:</b> สองงานก่อน (FastCTM = forward, adjoint emulator = inverse) ทิ้งคำถามเดียวกันค้างไว้ —
+<b>"พอ rollout ยาว ๆ จะเสถียรไหม? gradient จะระเบิดไหม?"</b>
+<br><br>NeuralGCM คือคำตอบโดยตรง: มันคือ hybrid physics+ML ที่ <b>rollout ได้เสถียรถึงระดับหลายสิบปี</b> และเป็น ML ตัวแรกที่ทำ ensemble ได้ <b>CRPS ดีกว่าโมเดลฟิสิกส์</b>. ที่สำคัญ <b>มันใช้ "differentiable programming" แบบเดียวกับที่ให้ HazeNet ทำ source inversion</b> (3.7) — แต่ใช้เพื่อ "เทรนผ่าน solver". อ่านจบจะเห็นว่า HazeNet = NeuralGCM ที่เปลี่ยนโดเมนจาก "อากาศ" เป็น "ฝุ่น+แหล่งกำเนิด".
+</div>
+
+<div class="toc">
+<b>สารบัญ</b><br>
+<a href="#s1">1. ภาพใหญ่ — GCM คืออะไร, NeuralGCM ต่างยังไง</a><br>
+<a href="#s2">2. ทฤษฎีรากฐาน: Dynamical Core vs Physics</a><br>
+<a href="#s3">3. สถาปัตยกรรม NeuralGCM (3 ส่วน)</a><br>
+<a href="#s4">4. ทฤษฎีที่ใช้ (spectral, primitive eq, parameterization)</a><br>
+<a href="#s5">5. ⭐ การเทรน end-to-end + Rollout Curriculum</a><br>
+<a href="#s6">6. ผลลัพธ์ (CRPS, 3500× เร็ว, climate, พายุ)</a><br>
+<a href="#s7">7. ข้อจำกัด (ซื่อสัตย์)</a><br>
+<a href="#s8">8. ⭐ NeuralGCM ↔ HazeNet — เทียบทุกจุด</a><br>
+<a href="#s9">9. สรุป + เช็กลิสต์ + สามงานรวมกัน</a><br>
+</div>
+
+<!-- 1 -->
+<h2 id="s1">1. ภาพใหญ่ — GCM คืออะไร และ NeuralGCM ต่างจากเดิมยังไง</h2>
+<p><b>GCM (General Circulation Model)</b> = แบบจำลองหมุนเวียนบรรยากาศทั้งโลก — เครื่องมือหลักของการพยากรณ์อากาศ/ภูมิอากาศมา 50 ปี. มันแก้สมการฟิสิกส์ของอากาศบนกริดทั่วโลก แล้วเดินเวลาไปข้างหน้า.</p>
+<table>
+<tr><th>แนวทาง</th><th>ดี</th><th>เสีย</th></tr>
+<tr><td><b>GCM ฟิสิกส์ล้วน</b> (ดั้งเดิม)</td><td>เคารพฟิสิกส์, เสถียร, รันยาวได้</td><td>ช้ามาก, ส่วน "parameterization" ต้องจูนมือ → อคติ (bias) เยอะ</td></tr>
+<tr><td><b>ML ล้วน</b> (GraphCast/Pangu)</td><td>เร็วมาก, แม่นช่วงสั้น</td><td>rollout ยาวมักไม่เสถียร, ทำ climate ไม่ได้, ไม่เคารพฟิสิกส์</td></tr>
+<tr><td><b>NeuralGCM (hybrid)</b></td><td>เร็ว + เสถียรยาว + ฟิสิกส์คุม + ensemble ดี</td><td>ยัง coarse, extrapolate ไป climate ใหม่ ๆ ไม่ได้</td></tr>
+</table>
+
+<div class="why"><b>หัวใจของ NeuralGCM ในประโยคเดียว:</b> "<b>ให้ฟิสิกส์ทำสิ่งที่ฟิสิกส์เก่ง (การไหลขนาดใหญ่) และให้ ML ทำสิ่งที่ฟิสิกส์ห่วย (กระบวนการเล็ก ๆ ที่ต้องจูนมือ เช่น เมฆ)" แล้วเชื่อมทั้งสองให้ <b>หาอนุพันธ์ได้ทั้งระบบ</b> เพื่อเทรนร่วมกันแบบ end-to-end.</div>
+
+<div class="hz"><div class="h">🎯 นี่คือปรัชญาเดียวกับ FastCTM และ HazeNet</div>
+จำ FastCTM ได้ไหม? เขาใช้ <b>สูตรฟิกซ์ (upwind) สำหรับ transport</b> และ <b>UNet++ เรียนรู้ K/k/d</b> ที่ไม่รู้สูตร. นั่นคือหลักการเดียวกับ NeuralGCM เป๊ะ — แค่ FastCTM ทำกับ "เคมี-ขนส่ง" ส่วน NeuralGCM ทำกับ "พลศาสตร์ทั้งโลก". HazeNet ก็ยืนบนหลักการนี้: <b>physics สำหรับสิ่งที่รู้, ML สำหรับสิ่งที่ไม่รู้, เชื่อมแบบ differentiable.</b></div>
+
+<!-- 2 -->
+<h2 id="s2">2. ทฤษฎีรากฐาน — "Dynamical Core" vs "Physics"</h2>
+<p>หัวใจของ GCM ทุกตัวคือการแบ่งงานเป็น 2 ส่วน. ต้องเข้าใจตรงนี้ก่อน ทุกอย่างจะตามมาเอง:</p>
+
+<svg viewBox="0 0 720 230" role="img" aria-label="dynamical core vs physics">
+  <text x="360" y="22" text-anchor="middle" fill="#e6edf3" font-size="14" font-weight="bold">บรรยากาศ = สิ่งที่ "เห็นบนกริด" + สิ่งที่ "เล็กกว่ากริด"</text>
+  <rect x="40" y="50" width="300" height="150" rx="10" fill="#161b22" stroke="#58a6ff"/>
+  <text x="190" y="78" text-anchor="middle" fill="#58a6ff" font-size="15" font-weight="bold">① Dynamical Core (Dynamics)</text>
+  <text x="190" y="103" text-anchor="middle" fill="#9aa7b4" font-size="12">การไหลขนาดใหญ่ที่ "เห็นบนกริด"</text>
+  <text x="190" y="123" text-anchor="middle" fill="#9aa7b4" font-size="12">ลม, ความกดอากาศ, อุณหภูมิ</text>
+  <text x="190" y="148" text-anchor="middle" fill="#3fb950" font-size="12.5">→ รู้สมการแน่ชัด (primitive eq.)</text>
+  <text x="190" y="170" text-anchor="middle" fill="#3fb950" font-size="12.5">→ แก้ด้วยฟิสิกส์ตรง ๆ</text>
+  <text x="190" y="190" text-anchor="middle" fill="#9aa7b4" font-size="11">NeuralGCM: เก็บไว้เป็นฟิสิกส์ (diff ได้)</text>
+
+  <rect x="380" y="50" width="300" height="150" rx="10" fill="#161b22" stroke="#f778ba"/>
+  <text x="530" y="78" text-anchor="middle" fill="#f778ba" font-size="15" font-weight="bold">② Physics (Parameterization)</text>
+  <text x="530" y="103" text-anchor="middle" fill="#9aa7b4" font-size="12">กระบวนการ "เล็กกว่ากริด"</text>
+  <text x="530" y="123" text-anchor="middle" fill="#9aa7b4" font-size="12">เมฆ, ฝน, การพาความร้อน, รังสี</text>
+  <text x="530" y="148" text-anchor="middle" fill="#e3b341" font-size="12.5">→ ไม่มีสูตรแน่ชัด ต้องประมาณ</text>
+  <text x="530" y="170" text-anchor="middle" fill="#f85149" font-size="12.5">→ ดั้งเดิม "จูนมือ" = อคติเยอะ</text>
+  <text x="530" y="190" text-anchor="middle" fill="#bc8cff" font-size="11">NeuralGCM: แทนด้วย NN เรียนจากข้อมูล</text>
+</svg>
+
+<p><b>ทำไมต้องแยก:</b> เมฆก้อนหนึ่งเล็กกว่ากริด 140 กม. มาก → "มองไม่เห็น" บนกริด แต่มีผลต่ออากาศมหาศาล. นักวิทยาศาสตร์เลยต้อง "ประมาณผลรวม" ของมันด้วยสูตร เรียก <b>parameterization</b>. ปัญหาคือสูตรพวกนี้<b>ไม่แม่น ต้องจูนมือ</b> และเป็น<b>แหล่งอคติ (bias) ที่ใหญ่ที่สุด</b>ของ climate model ทั้งหลาย.</p>
+
+<div class="green-box"><b>ไอเดียทอง:</b> NeuralGCM เก็บ <span class="phys">dynamical core</span> (ส่วนที่ฟิสิกส์เชื่อถือได้) ไว้เป็นฟิสิกส์จริง แต่ <b>แทน parameterization ที่ห่วยทั้งหมดด้วย neural network เดียว</b> ที่เรียนจากข้อมูลจริง (ERA5). → ได้ความแม่นของ ML + ความเสถียรของฟิสิกส์.</div>
+
+<!-- 3 -->
+<h2 id="s3">3. สถาปัตยกรรม NeuralGCM — 3 ส่วน</h2>
+
+<svg viewBox="0 0 760 250" role="img" aria-label="neuralgcm architecture loop">
+  <defs><marker id="ar" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#56d4dd"/></marker></defs>
+  <!-- encoder -->
+  <rect x="30" y="95" width="120" height="55" rx="8" fill="#161b22" stroke="#bc8cff"/>
+  <text x="90" y="118" text-anchor="middle" fill="#bc8cff" font-size="12.5" font-weight="bold">Encoder</text>
+  <text x="90" y="136" text-anchor="middle" fill="#9aa7b4" font-size="10.5">ERA5 → state</text>
+  <!-- core box -->
+  <rect x="210" y="55" width="340" height="140" rx="10" fill="#0d1117" stroke="#30363d" stroke-dasharray="4 3"/>
+  <text x="380" y="48" text-anchor="middle" fill="#9aa7b4" font-size="11">เดินเวลา 1 ก้าว (วนซ้ำ)</text>
+  <rect x="230" y="80" width="140" height="55" rx="8" fill="#11201a" stroke="#58a6ff"/>
+  <text x="300" y="103" text-anchor="middle" fill="#58a6ff" font-size="12.5" font-weight="bold">Dynamical Core</text>
+  <text x="300" y="121" text-anchor="middle" fill="#9aa7b4" font-size="10.5">primitive eq. (JAX)</text>
+  <rect x="390" y="80" width="140" height="55" rx="8" fill="#1c1420" stroke="#f778ba"/>
+  <text x="460" y="103" text-anchor="middle" fill="#f778ba" font-size="12.5" font-weight="bold">Learned Physics</text>
+  <text x="460" y="121" text-anchor="middle" fill="#9aa7b4" font-size="10.5">NN (per column)</text>
+  <circle cx="380" cy="165" r="16" fill="#161b22" stroke="#3fb950"/><text x="380" y="170" text-anchor="middle" fill="#3fb950" font-size="15">+</text>
+  <line x1="300" y1="135" x2="368" y2="158" stroke="#56d4dd" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="460" y1="135" x2="392" y2="158" stroke="#56d4dd" stroke-width="1.6" marker-end="url(#ar)"/>
+  <!-- decoder -->
+  <rect x="610" y="95" width="120" height="55" rx="8" fill="#161b22" stroke="#bc8cff"/>
+  <text x="670" y="118" text-anchor="middle" fill="#bc8cff" font-size="12.5" font-weight="bold">Decoder</text>
+  <text x="670" y="136" text-anchor="middle" fill="#9aa7b4" font-size="10.5">state → output</text>
+  <!-- arrows -->
+  <line x1="150" y1="122" x2="208" y2="122" stroke="#56d4dd" stroke-width="2" marker-end="url(#ar)"/>
+  <line x1="550" y1="122" x2="608" y2="122" stroke="#56d4dd" stroke-width="2" marker-end="url(#ar)"/>
+  <path d="M380,181 Q380,220 300,220 Q230,220 230,135" stroke="#e3b341" stroke-width="1.8" fill="none" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+  <text x="300" y="237" text-anchor="middle" fill="#e3b341" font-size="11">state ใหม่ → วนกลับเข้าก้าวถัดไป</text>
+</svg>
+
+<h3>3.1 ส่วนที่ ① — Differentiable Dynamical Core ("Dinosaur")</h3>
+<ul>
+<li>แก้ <b>primitive equations</b> (สมการพื้นฐานการเคลื่อนที่ของอากาศขนาดใหญ่) บน <b>sigma coordinates</b> (แกนตั้งตามภูมิประเทศ)</li>
+<li>แทนสนามแนวนอนด้วย <b>spherical harmonics</b> (วิธี spectral) + time integration แบบ semi-implicit</li>
+<li>เขียนด้วย <b>JAX</b> → <b>หาอนุพันธ์ได้ทั้ง forward และ backward</b> (นี่คือกุญแจ — ดู §5, §8)</li>
+</ul>
+
+<h3>3.2 ส่วนที่ ② — Learned Physics Module (NN)</h3>
+<ul>
+<li>NN ทำนายผลของ "กระบวนการที่ resolve ไม่ได้": เมฆ, รังสี, ฝน, พลศาสตร์ย่อย</li>
+<li>เป็น <b>fully-connected NN + residual connections</b> (ResNet — เหมือนเปเปอร์ adjoint!), <b>ใช้น้ำหนักชุดเดียวกันทุก column ทั่วโลก</b></li>
+<li><b>Input:</b> ตัวแปร prognostic ในจุดนั้น, เงื่อนไขขอบ, รังสีดวงอาทิตย์ตกกระทบ, spatial embedding ที่เรียนรู้, gradient แนวนอน &nbsp;<b>Output:</b> "tendencies" (อัตราการเปลี่ยน)</li>
+</ul>
+
+<h3>3.3 ส่วนที่ ③ — Encoder / Decoder</h3>
+<p>ตัวแปลงระหว่างข้อมูล ERA5 (พิกัดความดัน) กับโลกภายในของ core (sigma coordinates) — ใช้ interpolation + การแก้ที่เรียนรู้ด้วย NN แบบเดียวกับ learned physics.</p>
+
+<h3>3.4 การเชื่อมต่อแต่ละก้าวเวลา</h3>
+<div class="eq" style="font-size:16px">state ใหม่ = <span class="phys">DynamicalCore(state)</span> + <span class="ml">LearnedPhysics(state, แสงแดด, ...)</span></div>
+<p>นี่คือ <b>operator splitting</b> อีกครั้ง (เหมือน FastCTM!) — ฟิสิกส์ที่รู้ + ML ที่เรียน รวมกันเป็น tendency แล้วเดินเวลา. วนซ้ำ.</p>
+
+<!-- 4 -->
+<h2 id="s4">4. ทฤษฎีที่ใช้ (ลงลึก)</h2>
+
+<h3>4.1 Spectral Method / Spherical Harmonics</h3>
+<p><b>ปัญหา:</b> จะแทน "สนามอากาศทั้งลูกโลก" ในคอมพิวเตอร์ยังไงให้คำนวณอนุพันธ์ได้แม่น? <b>คำตอบ:</b> เขียนเป็น "ผลรวมของลวดลายคลื่นบนทรงกลม" — เหมือน Fourier แต่บนลูกโลก. ลวดลายพื้นฐานเหล่านี้เรียก <b>spherical harmonics</b>.</p>
+
+<svg viewBox="0 0 640 120" role="img" aria-label="spherical harmonics sum">
+  <circle cx="70" cy="60" r="38" fill="none" stroke="#58a6ff" stroke-width="1.5"/>
+  <path d="M40,60 Q70,40 100,60" stroke="#58a6ff" fill="none"/><text x="70" y="112" text-anchor="middle" fill="#9aa7b4" font-size="11">คลื่นใหญ่</text>
+  <text x="135" y="65" fill="#9aa7b4" font-size="20">+</text>
+  <circle cx="210" cy="60" r="38" fill="none" stroke="#56d4dd" stroke-width="1.5"/>
+  <path d="M180,60 Q195,42 210,60 Q225,78 240,60" stroke="#56d4dd" fill="none"/><text x="210" y="112" text-anchor="middle" fill="#9aa7b4" font-size="11">คลื่นกลาง</text>
+  <text x="275" y="65" fill="#9aa7b4" font-size="20">+</text>
+  <circle cx="350" cy="60" r="38" fill="none" stroke="#bc8cff" stroke-width="1.5"/>
+  <path d="M320,60 Q328,48 336,60 Q344,72 352,60 Q360,48 368,60 Q376,72 380,60" stroke="#bc8cff" fill="none"/><text x="350" y="112" text-anchor="middle" fill="#9aa7b4" font-size="11">คลื่นเล็ก</text>
+  <text x="415" y="65" fill="#9aa7b4" font-size="20">=</text>
+  <circle cx="500" cy="60" r="40" fill="#11201a" stroke="#3fb950" stroke-width="2"/><text x="500" y="64" text-anchor="middle" fill="#3fb950" font-size="12">สนามจริง</text>
+  <text x="585" y="64" fill="#9aa7b4" font-size="11">บนลูกโลก</text>
+</svg>
+<div class="why"><b>ทำไม spectral ดี:</b> ในรูปแบบคลื่นนี้ การคำนวณอนุพันธ์ (∇) ทำได้<b>แม่นและง่าย</b> (แค่คูณตัวเลข) — เหมาะกับการแก้ PDE บนทรงกลมมาก. นี่คือเหตุผลที่ GCM ระดับโลกชอบใช้ spectral. <span class="muted">(เชื่อมกับ FNO/FourCastNet ที่ก็ทำงานใน Fourier space ด้วยเหตุผลคล้ายกัน)</span></div>
+
+<h3>4.2 Primitive Equations + Sigma Coordinates</h3>
+<p><b>Primitive equations</b> = สมการการเคลื่อนที่ของอากาศแบบประมาณ (อนุรักษ์โมเมนตัม + มวล + พลังงาน + สมดุล hydrostatic + ก๊าซอุดมคติ) สำหรับการไหลขนาดใหญ่. <b>Sigma coordinates</b> = แกนตั้งที่ "ตามพื้นผิว" (σ=1 ที่พื้น, σ=0 ที่ยอดบรรยากาศ) → จัดการภูเขาได้ดี.</p>
+
+<h3>4.3 Parameterization — จุดที่ ML เข้ามาช่วย</h3>
+<p>กระบวนการเล็กกว่ากริด (เมฆ, การพาความร้อน) ต้องประมาณด้วยสูตร. ดั้งเดิมสูตรพวกนี้มาจากการ "จูนมือ" ของผู้เชี่ยวชาญ → เป็นศิลปะมากกว่าวิทยาศาสตร์ และเป็นแหล่ง bias หลัก. <b>NeuralGCM แทนทั้งหมดด้วย NN เดียวที่เรียนจากข้อมูล</b> → ลด bias ได้มาก.</p>
+
+<!-- 5 -->
+<h2 id="s5">5. ⭐ การเทรน end-to-end + Rollout Curriculum (หัวใจที่เราต้องการ)</h2>
+
+<h3>5.1 เทรน "ผ่าน" solver — differentiable programming ตัวจริง</h3>
+<p>เพราะทั้ง dynamical core (JAX) และ learned physics (NN) <b>หาอนุพันธ์ได้</b> → เทรน NN โดยให้ gradient ไหล<b>ทะลุผ่าน solver ฟิสิกส์</b>ได้เลย. นี่คือ "differentiable programming" / "online training".</p>
+<div class="eq" style="font-size:15.5px">เทรน: ปรับ NN เพื่อให้ <span class="phys">[Core+NN เดินเวลา หลายก้าว]</span> ออกมาใกล้ ERA5 → <code>loss.backward()</code> ทะลุทุกก้าว</div>
+<div class="hz"><div class="h">🎯 นี่คือเครื่องมือเดียวกับ source inversion ของเรา</div>
+NeuralGCM ใช้ "gradient ทะลุ solver" เพื่อ <b>เทรน</b>. HazeNet ใช้ "gradient ทะลุ solver" ตัวเดียวกันเพื่อ <b>2 อย่าง</b>: (1) เทรน <b>และ</b> (2) <b>source inversion ตอน inference</b> (กลับทิศหา emission — บท 3.7). <b>เครื่องมือเดียว ใช้กว้างกว่า.</b> NeuralGCM พิสูจน์ว่าการ backprop ทะลุ solver ฟิสิกส์ "ทำได้จริงและเสถียร" ในสเกลใหญ่.</div>
+
+<h3>5.2 🏆 Rollout Curriculum — คำตอบของ "ความเสถียร" ที่เราตามหา</h3>
+<p>นี่คือเทคนิคที่มีค่าที่สุดสำหรับ HazeNet จากเปเปอร์นี้. ปัญหาที่ผมเตือนใน 2 ไฟล์ก่อน — "rollout ยาวแล้วระเบิด" — NeuralGCM แก้ด้วยวิธีง่ายแต่ทรงพลัง:</p>
+
+<div class="card">
+<b>อย่าเทรนด้วย rollout ยาวตั้งแต่แรก — ค่อย ๆ เพิ่มความยาวทีละขั้น:</b>
+<svg viewBox="0 0 700 130" role="img" aria-label="rollout curriculum ramp">
+  <defs><marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#3fb950"/></marker></defs>
+  <line x1="40" y1="100" x2="660" y2="100" stroke="#30363d" stroke-width="1.5"/>
+  <rect x="60"  y="80" width="60" height="20" rx="4" fill="#1c2330" stroke="#58a6ff"/><text x="90" y="94" text-anchor="middle" fill="#58a6ff" font-size="11">6 ชม.</text>
+  <rect x="180" y="68" width="60" height="32" rx="4" fill="#1c2330" stroke="#56d4dd"/><text x="210" y="88" text-anchor="middle" fill="#56d4dd" font-size="11">12 ชม.</text>
+  <rect x="300" y="52" width="60" height="48" rx="4" fill="#1c2330" stroke="#bc8cff"/><text x="330" y="80" text-anchor="middle" fill="#bc8cff" font-size="11">1 วัน</text>
+  <rect x="420" y="34" width="60" height="66" rx="4" fill="#1c2330" stroke="#e3b341"/><text x="450" y="70" text-anchor="middle" fill="#e3b341" font-size="11">3 วัน</text>
+  <rect x="540" y="16" width="60" height="84" rx="4" fill="#11201a" stroke="#3fb950"/><text x="570" y="62" text-anchor="middle" fill="#3fb950" font-size="11">5 วัน</text>
+  <line x1="120" y1="100" x2="175" y2="100" stroke="#3fb950" stroke-width="1.5" marker-end="url(#ar2)"/>
+  <line x1="240" y1="100" x2="295" y2="100" stroke="#3fb950" stroke-width="1.5" marker-end="url(#ar2)"/>
+  <line x1="360" y1="100" x2="415" y2="100" stroke="#3fb950" stroke-width="1.5" marker-end="url(#ar2)"/>
+  <line x1="480" y1="100" x2="535" y2="100" stroke="#3fb950" stroke-width="1.5" marker-end="url(#ar2)"/>
+  <text x="350" y="122" text-anchor="middle" fill="#9aa7b4" font-size="11.5">เพิ่มความยาว rollout ทีละขั้นระหว่างเทรน → โมเดลเรียนเสถียรก่อน แล้วค่อยเจอ horizon ยาว</text>
+</svg>
+</div>
+
+<div class="why"><b>ทำไมได้ผล:</b> ถ้าบังคับเทรน rollout 5 วันตั้งแต่แรก gradient ต้องทะลุหลายร้อยก้าว → ระเบิด/ฟุ้ง เทรนไม่ลง. แต่ถ้าเริ่ม 6 ชม. ให้โมเดล "เดินมั่นคง" ก่อน แล้วค่อยยืด → มันเรียนที่จะไม่สะสม error. <b>เหมือนสอนเด็กเดินก่อนวิ่ง.</b></div>
+
+<h3>5.3 Ensemble จากการฉีด noise + เทรนด้วย CRPS</h3>
+<p>NeuralGCM-ENS สร้างความไม่แน่นอนโดย <b>ฉีด noise</b> (Gaussian random fields ที่มี correlation เชิงพื้นที่/เวลาที่เรียนรู้) เข้าไปใน encoder + learned physics → ได้สมาชิก ensemble หลายตัว. แล้ว <b>เทรนโดยตรงเพื่อ minimize CRPS</b> (ไม่ใช่ MSE).</p>
+<div class="hz"><div class="h">🎯 เชื่อมกับบท 3.9</div>
+นี่คือ uncertainty อีกแนวทาง (เสริม quantile regression ที่เราเรียน): <b>"ฉีด noise + เทรนด้วย CRPS"</b>. CRPS ที่เราเรียนในบท 3.9 คือ metric เดียวกับที่ NeuralGCM ใช้เป็น <b>loss</b> เลย. → HazeNet เลือกได้ระหว่าง quantile regression (เบา, 1 pass) หรือ stochastic+CRPS แบบ NeuralGCM (หนักกว่าแต่ ensemble แท้).</div>
+
+<!-- 6 -->
+<h2 id="s6">6. ผลลัพธ์</h2>
+
+<h3>6.1 ความเร็ว (ตัวเลขที่ทำให้คนตะลึง)</h3>
+<div class="card center">
+<b>NeuralGCM 1.4° เร็วกว่า X-SHiELD (cloud-resolving model) มากกว่า 3,500 เท่า</b><br>
+<span class="muted">จำลองบรรยากาศ 1 ปี: X-SHiELD ใช้ 20 วัน · NeuralGCM ใช้ 8 นาที</span>
+</div>
+
+<h3>6.2 ความแม่น (deterministic + ensemble)</h3>
+<ul>
+<li><b>Deterministic:</b> สูสีกับ ML ชั้นนำ (GraphCast/Pangu) ที่ 1–10 วัน; เทียบเท่า ECMWF ensemble ที่ 1–15 วัน</li>
+<li><b>Ensemble (NeuralGCM-ENS 1.4°):</b> <b>error ต่ำกว่า ECMWF-ENS เกือบทุกตัวแปร/lead time/ระดับความสูง</b> ทั้ง ensemble-mean RMSE, spread-skill และ <b>CRPS</b></li>
+</ul>
+<p class="muted center">→ เป็น ML ตัวแรกที่ทำ ensemble ได้ CRPS ดีกว่าโมเดลฟิสิกส์ระดับโลก</p>
+
+<h3>6.3 Climate ระยะยาว + พายุหมุนเขตร้อน</h3>
+<ul>
+<li>กำหนด SST แล้วรันได้เสถียร <b>หลายสิบปี</b> — ติดตาม global mean temperature + AMIP ได้สมจริง</li>
+<li>ที่ 140 กม. เกิด <b>พายุหมุนเขตร้อนที่สมจริง</b> (ความถี่ + เส้นทาง); ปี 2020 ทำนายจำนวน/ความรุนแรงพายุตรงกับที่สังเกตจริง</li>
+<li>โมเดลฝน: ทั้ง 37 initial conditions เสถียรครบ 20 ปี</li>
+</ul>
+
+<!-- 7 -->
+<h2 id="s7">7. ข้อจำกัด (ซื่อสัตย์)</h2>
+<table>
+<tr><th>ข้อจำกัด</th><th>ความหมาย / ผลต่อเรา</th></tr>
+<tr><td><b>extrapolate ไป climate ใหม่ไม่ได้</b></td><td>เทรนบนสภาพอดีต → ทำนายสภาพที่ต่างจากเดิมมาก ๆ (โลกร้อนสุดขั้ว) ไม่น่าเชื่อถือ. <b>HazeNet ก็เป็น</b> — ทำนาย emission/สภาพที่ไม่เคยเห็นได้ไม่ดี</td></tr>
+<tr><td>ความละเอียดหยาบ (140 กม. climate)</td><td>ไม่ละเอียดพอเห็นรายละเอียดเฉพาะที่ (แอ่งเชียงใหม่เล็กเกินไป)</td></tr>
+<tr><td>ฝนยังยาก</td><td>ต้องมีเปเปอร์ตามมาแก้เรื่องฝนโดยเฉพาะ (Science Advances) — กระบวนการ moist เป็นจุดอ่อน</td></tr>
+<tr><td><b>compute ระดับ Google</b></td><td>🔴 เกินงบเรา (~15 A100-hr) มหาศาล. <b>เราเอาแนวคิด ไม่ใช่สเกล</b></td></tr>
+<tr><td>hydrostatic primitive eq.</td><td>ไม่ resolve การพาความร้อนแนวดิ่งแบบ non-hydrostatic ตรง ๆ</td></tr>
+</table>
+
+<!-- 8 -->
+<h2 id="s8">8. ⭐ NeuralGCM ↔ HazeNet — เทียบทุกจุด</h2>
+
+<h3>8.1 สิ่งที่ NeuralGCM "ยืนยัน/ให้แนวทาง" กับเรา</h3>
+<table>
+<tr><th>NeuralGCM ทำ</th><th>HazeNet หยิบไปใช้ยังไง</th></tr>
+<tr><td>split: dynamical core (ฟิสิกส์) + learned physics (NN)</td><td>= split ของเรา: upwind transport (ฟิสิกส์) + UNet++/FiLM (NN) — <b>กระบวนทัศน์เดียวกัน พิสูจน์แล้วระดับสูงสุด</b></td></tr>
+<tr><td>เทรน end-to-end ทะลุ solver (JAX autodiff)</td><td>= กลไก source inversion ของเรา (3.7) — <b>เครื่องมือเดียวกัน</b></td></tr>
+<tr><td><b>rollout curriculum (6ชม.→5วัน)</b></td><td>🟢 <b>คำตอบของความเสี่ยงเสถียรภาพ</b> ที่ค้างจาก 2 ไฟล์ก่อน — เอามาใช้ตรง ๆ</td></tr>
+<tr><td>ensemble = ฉีด noise + เทรนด้วย CRPS</td><td>ทางเลือก uncertainty (3.9) เสริม quantile regression</td></tr>
+<tr><td>operator splitting (core + physics รวม tendency)</td><td>ยืนยันโครง modular ของเรา (เหมือน FastCTM)</td></tr>
+<tr><td>ResNet ใน learned physics</td><td>ยืนยันบล็อกพื้นฐาน (เหมือนเปเปอร์ adjoint)</td></tr>
+</table>
+
+<h3>8.2 สิ่งที่ HazeNet "ต่าง / ไปไกลกว่า"</h3>
+<div class="green-box">
+<ul>
+<li><b>โดเมน:</b> NeuralGCM = อากาศ/ภูมิอากาศ. HazeNet = <b>ฝุ่น PM2.5 + เคมีแอโรซอล</b> (มี emission, chemistry, deposition ที่ NeuralGCM ไม่มี)</li>
+<li><b>ใช้ differentiability กว้างกว่า:</b> NeuralGCM ใช้เพื่อ <b>เทรน</b> เท่านั้น. HazeNet ใช้เพื่อเทรน <b>และ source inversion ตอน inference</b> (กลับทิศหาแหล่ง)</li>
+<li><b>Attribution:</b> HazeNet เพิ่ม tagged-tracer (3.6) แยกแหล่งเชิงพื้นที่ — NeuralGCM ไม่มีแนวคิดนี้</li>
+<li><b>สเกล/งบ:</b> NeuralGCM = Google. HazeNet = โดเมนเล็ก (SEA) + งบ ~15 A100-hr → เราเอา<b>แนวคิด</b>มาทำในสเกลที่เอื้อม</li>
+</ul>
+</div>
+
+<h3>8.3 หมายเหตุปฏิบัติ: JAX vs PyTorch</h3>
+<div class="warn"><b>เรื่องที่ต้องตัดสินใจ:</b> NeuralGCM ใช้ <b>JAX</b> (เหมาะกับ differentiable physics solver มาก — diff ทะลุ solver ได้ลื่น). HazeNet น่าจะใช้ <b>PyTorch</b> (เข้าถึงง่ายกว่า, ระบบนิเวศใหญ่กว่า, คุณคุ้นจากบท 0.2 autograd). <b>ทั้งคู่ทำ autodiff ได้</b> — เลือก PyTorch ได้ แต่ต้องเขียน solver ให้ differentiable เอง (ใช้ operation ที่ PyTorch track ได้, เลี่ยง in-place ที่ตัด graph). รู้ว่า JAX เป็นทางเลือกถ้า solver ซับซ้อนมาก.</div>
+
+<h3>8.4 สามงานรวมกัน = HazeNet</h3>
+<svg viewBox="0 0 760 200" role="img" aria-label="three papers combine">
+  <rect x="20" y="60" width="150" height="90" rx="9" fill="#161b22" stroke="#58a6ff"/>
+  <text x="95" y="88" text-anchor="middle" fill="#58a6ff" font-size="13" font-weight="bold">FastCTM</text>
+  <text x="95" y="108" text-anchor="middle" fill="#9aa7b4" font-size="10.5">forward + 5 โมดูล</text>
+  <text x="95" y="124" text-anchor="middle" fill="#9aa7b4" font-size="10.5">ฟิสิกส์-เคมี</text>
+
+  <text x="195" y="110" text-anchor="middle" fill="#3fb950" font-size="22">+</text>
+
+  <rect x="220" y="60" width="150" height="90" rx="9" fill="#161b22" stroke="#f778ba"/>
+  <text x="295" y="88" text-anchor="middle" fill="#f778ba" font-size="13" font-weight="bold">Adjoint Emul.</text>
+  <text x="295" y="108" text-anchor="middle" fill="#9aa7b4" font-size="10.5">inverse + FiLM</text>
+  <text x="295" y="124" text-anchor="middle" fill="#9aa7b4" font-size="10.5">adjoint=autodiff</text>
+
+  <text x="395" y="110" text-anchor="middle" fill="#3fb950" font-size="22">+</text>
+
+  <rect x="420" y="60" width="150" height="90" rx="9" fill="#161b22" stroke="#56d4dd"/>
+  <text x="495" y="84" text-anchor="middle" fill="#56d4dd" font-size="13" font-weight="bold">NeuralGCM</text>
+  <text x="495" y="104" text-anchor="middle" fill="#9aa7b4" font-size="10.5">เสถียร rollout ยาว</text>
+  <text x="495" y="120" text-anchor="middle" fill="#9aa7b4" font-size="10.5">+ ensemble/CRPS</text>
+
+  <text x="595" y="110" text-anchor="middle" fill="#3fb950" font-size="22">→</text>
+
+  <rect x="620" y="50" width="120" height="110" rx="10" fill="#11201a" stroke="#3fb950" stroke-width="2"/>
+  <text x="680" y="95" text-anchor="middle" fill="#3fb950" font-size="14" font-weight="bold">HazeNet</text>
+  <text x="680" y="116" text-anchor="middle" fill="#e6edf3" font-size="10">forward+inverse</text>
+  <text x="680" y="131" text-anchor="middle" fill="#e6edf3" font-size="10">+attribution+UQ</text>
+</svg>
+
+<!-- 9 -->
+<h2 id="s9">9. สรุป + เช็กลิสต์</h2>
+<div class="lead">
+<b>NeuralGCM ในหนึ่งประโยค:</b> "เก็บ dynamical core ที่ฟิสิกส์เชื่อถือได้ (เขียนใน JAX ให้ diff ได้) + แทน parameterization ที่ห่วยด้วย neural network เดียว → เทรน end-to-end ทะลุ solver โดยค่อย ๆ ยืด rollout → ได้โมเดลที่เร็ว 3,500× เสถียรหลายสิบปี และ ensemble CRPS ดีกว่า ECMWF."
+</div>
+
+<h4>✅ เช็กลิสต์ดึงมาใส่ HazeNet:</h4>
+<ul>
+<li>☐ ยึดกระบวนทัศน์ "physics สำหรับสิ่งที่รู้ + ML สำหรับสิ่งที่ไม่รู้ + differentiable ทั้งระบบ"</li>
+<li>☐ ใช้ <b>rollout curriculum</b> (เริ่มสั้น→ยืดยาว) เพื่อเสถียรภาพ — <b>แก้ความเสี่ยง #1 ของเรา</b></li>
+<li>☐ พิจารณา <b>เทรนด้วย CRPS + ฉีด noise</b> เป็นทางเลือก uncertainty (เทียบกับ quantile regression)</li>
+<li>☐ ตัดสินใจ JAX vs PyTorch ตั้งแต่ต้น (PyTorch ได้ แต่ต้องระวัง operation ที่ตัด autodiff graph)</li>
+<li>☐ ใช้ความ differentiable เพื่อ <b>ทั้งเทรนและ source inversion</b> (กว้างกว่า NeuralGCM)</li>
+<li>☐ เขียน caveat ให้ตรง: เราก็ extrapolate ไป regime ใหม่ไม่ได้ (เหมือน NeuralGCM)</li>
+</ul>
+
+<div class="hz"><div class="h">🎯 ประโยคพูดกับกรรมการ</div>
+"HazeNet ใช้กระบวนทัศน์ hybrid differentiable เดียวกับที่ NeuralGCM (Nature 2024) พิสูจน์ว่าให้ทั้งความเร็ว ความเสถียรระยะยาว และ ensemble ที่ CRPS ดีกว่าโมเดลฟิสิกส์ — โดยเรานำเทคนิคสำคัญอย่าง rollout curriculum และ CRPS training มาใช้เพื่อความเสถียร. <b>ความต่างคือเราขยายความ differentiable จาก 'การเทรน' ไปสู่ 'source inversion ตอน inference' และเพิ่มการ attribute แหล่งเชิงพื้นที่</b> สำหรับปัญหาหมอกควันข้ามแดนอาเซียน ในสเกลที่ทำได้จริงด้วยงบจำกัด"
+</div>
+
+<hr>
+<p class="muted center">วิเคราะห์จากต้นฉบับ: Kochkov et al., "Neural general circulation models for weather and climate", Nature 2024 · <a href="https://arxiv.org/abs/2311.07222">arXiv 2311.07222</a> · <a href="https://github.com/neuralgcm/dinosaur">github.com/neuralgcm/dinosaur</a><br>
+งานต่อยอด: NeuralGCM for precipitation (Science Advances 2024/25) · ตัวเลขผลลัพธ์อ้างอิงจากเปเปอร์ · การเชื่อมโยงกับ HazeNet เป็นการวิเคราะห์เพื่อการเรียนรู้<br>
+อ่านครบชุด: fastctm-deep-analysis.html (forward) · adjoint-chemistry-emulator-deep-analysis.html (inverse) · ไฟล์นี้ (เสถียร+UQ) · related-work-sota-research.html (ภาพรวม)</p>
+
+</div>
+</body>
+</html>
