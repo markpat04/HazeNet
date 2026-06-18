@@ -10,11 +10,8 @@ import os
 import json
 
 import numpy as np
-import torch
-from torch.utils.data import TensorDataset, DataLoader
 
 from .dataset import load_dataset
-from .model import build_model, masked_mse, pinball_loss
 
 # optional dashboard live tracking
 try:
@@ -31,12 +28,15 @@ def _resume_path(cfg):
 
 
 def train(cfg) -> dict:
+    # load zarr BEFORE importing torch (Windows OpenMP/pyarrow segfault prevention)
+    d = load_dataset(cfg)
+    import torch
+    from torch.utils.data import TensorDataset, DataLoader
+    from .model import build_model, masked_mse, pinball_loss
     torch.manual_seed(cfg.seed); np.random.seed(cfg.seed)
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     use_amp = cfg.amp and dev == "cuda"
     print(f"device: {dev}  amp={use_amp}")
-
-    d = load_dataset(cfg)
     meta = d["meta"]; S, in_ch = meta["S"], meta["in_ch"]
     pm25_max = meta["pm25_max"]
     print(f"grid {meta['H']}×{meta['W']}  G={meta['H']*meta['W']}  "

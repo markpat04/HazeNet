@@ -6,10 +6,8 @@ near/far split, and top contributing cells.
 from __future__ import annotations
 
 import numpy as np
-import torch
 
 from .dataset import load_dataset
-from .infer import load_model
 
 _DIRS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
 
@@ -22,7 +20,11 @@ class Attributor:
     """Lazy-loaded helper; reuse across many queries."""
     def __init__(self, cfg, device: str = "cpu"):
         self.cfg = cfg; self.dev = device
+        # load zarr BEFORE importing torch (Windows OpenMP/pyarrow segfault prevention)
         self.d = load_dataset(cfg)
+        import torch
+        from .infer import load_model
+        self._torch = torch
         self.model, ck = load_model(cfg.ckpt_path, device)
         sf = ck.get("station_feats", self.d["station_feats"])
         self.sfeats_t = torch.tensor(np.asarray(sf, dtype="float32")).to(device)
@@ -30,6 +32,7 @@ class Attributor:
         self.LAT, self.LON = cfg.LAT, cfg.LON
 
     def attribution(self, day_idx: int, station_idx: int) -> dict:
+        torch = self._torch
         met = torch.tensor(self.d["met"][day_idx:day_idx + 1]).to(self.dev)
         emis = torch.tensor(self.d["emis"][day_idx:day_idx + 1]).to(self.dev)
         with torch.no_grad():
@@ -37,7 +40,7 @@ class Attributor:
             contrib, _ = self.model.attribution(K, emis)     # (1,S,H,W)
         cmap = contrib[0, station_idx].cpu().numpy()          # (H,W)
         total = float(cmap.sum())
-        pred = float(self.model.predict_median(out)[0, station_idx].cpu()
+        pred = float(self.model.predict_median(out)[0, station_idx].item()
                      ) * self.d["meta"]["pm25_max"]
 
         st = self.stations.iloc[station_idx]

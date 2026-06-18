@@ -23,7 +23,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from .model import build_model, masked_mse, pinball_loss
+# torch-dependent imports are lazy (inside functions) to avoid Windows
+# OpenMP/pyarrow segfault when torch is imported before zarr is opened.
 
 
 def _compute_station_feats(cfg, stations, X, channel_names):
@@ -76,6 +77,7 @@ def _load_raw(cfg):
 def _fit_fold(cfg, met_raw, emis_raw, y_raw, station_feats, train, test, S, dev):
     import torch
     from torch.utils.data import TensorDataset, DataLoader
+    from .model import build_model, masked_mse, pinball_loss
     torch.manual_seed(cfg.seed)
 
     mu = met_raw[train].mean(axis=(0, 2, 3), keepdims=True)

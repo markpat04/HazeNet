@@ -10,22 +10,23 @@ import json
 
 import numpy as np
 import pandas as pd
-import torch
-from torch.utils.data import TensorDataset, DataLoader
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from .dataset import load_dataset
-from .infer import load_model
 
 # Gate W2: low-dust-year positive bias must shrink to ≤ this (µg/m³)
 GATE_W2_BIAS = 25.0
 
 
 def evaluate(cfg) -> dict:
-    dev = "cuda" if torch.cuda.is_available() else "cpu"
+    # load zarr BEFORE importing torch (Windows OpenMP/pyarrow segfault prevention)
     d = load_dataset(cfg)
+    import torch
+    from torch.utils.data import TensorDataset, DataLoader
+    from .infer import load_model
+    dev = "cuda" if torch.cuda.is_available() else "cpu"
     model, ck = load_model(cfg.ckpt_path, dev)
     pm25_max = d["meta"]["pm25_max"]
 

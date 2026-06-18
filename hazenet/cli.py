@@ -18,7 +18,7 @@ ORDER = ["fetch", "grid", "datacube", "train", "eval", "attribution"]
 
 
 def _run_stage(stage: str, cfg: Config):
-    print(f"\n{'='*60}\n▶ STAGE: {stage}\n{'='*60}")
+    print(f"\n{'='*60}\n>> STAGE: {stage}\n{'='*60}")
     if stage == "fetch":
         from .data import fetch_all
         fetch_all(cfg)
