@@ -104,10 +104,25 @@ def _fit_fold(cfg, met_raw, emis_raw, y_raw, train, test, S, dev):
             preds.append(model.predict_median(model(mm, me)[0]).cpu())
     pred = torch.cat(preds).numpy() * pm_max
     g = y_raw[test]; m = ~np.isnan(g)
-    return dict(MAE=float(np.abs(pred[m] - g[m]).mean()),
-                RMSE=float(np.sqrt(((pred[m] - g[m]) ** 2).mean())),
-                bias=float((pred[m] - g[m]).mean()),
-                obs_mean=float(np.nanmean(g)), n=int(m.sum()))
+    err = pred - g
+
+    # split held-out (station,day) points by whether the station was SEEN in any
+    # training year (model knows its background) vs NEW (never seen → unfair).
+    seen_station = (~np.isnan(y_raw[train])).any(axis=0)          # (S,)
+    seen_col = np.broadcast_to(seen_station, g.shape)
+    ms, mn = m & seen_col, m & ~seen_col
+
+    def sub(mask):
+        if not mask.any():
+            return dict(MAE=None, bias=None, n=0)
+        return dict(MAE=float(np.abs(err[mask]).mean()),
+                    bias=float(err[mask].mean()), n=int(mask.sum()))
+
+    return dict(MAE=float(np.abs(err[m]).mean()),
+                RMSE=float(np.sqrt((err[m] ** 2).mean())),
+                bias=float(err[m].mean()),
+                obs_mean=float(np.nanmean(g)), n=int(m.sum()),
+                seen=sub(ms), new=sub(mn))
 
 
 def loyo(cfg) -> dict:
@@ -124,14 +139,19 @@ def loyo(cfg) -> dict:
         r = _fit_fold(cfg, met_raw, emis_raw, y_raw, train, test, S, dev)
         r["year"] = Y
         rows.append(r)
+        sn, nw = r["seen"], r["new"]
+        sn_s = f"{sn['MAE']:.1f}(n{sn['n']})" if sn["MAE"] is not None else "—"
+        nw_s = f"{nw['MAE']:.1f}(n{nw['n']})" if nw["MAE"] is not None else "—"
         print(f"  holdout {Y}: MAE={r['MAE']:.1f}  bias={r['bias']:+.1f}  "
-              f"obs_mean={r['obs_mean']:.0f}  n={r['n']}")
+              f"obs={r['obs_mean']:.0f}  |  SEEN-station MAE={sn_s}  NEW-station MAE={nw_s}")
 
     df = pd.DataFrame(rows)
     worst_mae = float(df["MAE"].max())
     mean_mae = float(df["MAE"].mean())
-    print(f"\nLOYO summary: mean MAE={mean_mae:.1f}  WORST year MAE={worst_mae:.1f} "
-          f"({int(df.loc[df['MAE'].idxmax(),'year'])})")
+    seen_maes = [r["seen"]["MAE"] for r in rows if r["seen"]["MAE"] is not None]
+    seen_mean = float(np.mean(seen_maes)) if seen_maes else float("nan")
+    print(f"\nLOYO summary: ALL mean MAE={mean_mae:.1f}  worst={worst_mae:.1f}  "
+          f"|  SEEN-station mean MAE={seen_mean:.1f}  (← model's fair skill)")
 
     os.makedirs(cfg.figures_dir, exist_ok=True)
     fig, ax = plt.subplots(figsize=(7, 4))
