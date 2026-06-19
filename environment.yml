@@ -25,10 +25,16 @@ dependencies:
   # machine learning
   - scikit-learn
   - xgboost
+  # experiment tracking + geospatial (v2: country attribution mask)
+  - wandb
+  - geopandas
+  - shapely
   - pip
   - pip:
-      # PyTorch + CUDA 12.1 (สำหรับ NVIDIA GPU เช่น RTX 4050)
+      # PyTorch + CUDA 12.1 — works on RTX 2080 Ti (Turing) and newer
       # CPU เท่านั้น: ตัด --index-url ออก
       - --index-url https://download.pytorch.org/whl/cu121
       - torch
+      # neural-ODE solver — AirPhyNet baseline + Level-3 physics-ODE model
+      - torchdiffeq
   # xesmf (conservative regrid) ลองเพิ่มแยกภายหลัง - บน Windows อาจไม่มี build
