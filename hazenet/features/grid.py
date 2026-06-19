@@ -35,29 +35,68 @@ def _open_era5(f):
 # ── DEM ──
 def _grid_dem(cfg) -> np.ndarray:
     import rioxarray
-    from rioxarray.merge import merge_arrays
+    from scipy.interpolate import RegularGridInterpolator
     paths = sorted(glob.glob(os.path.join(cfg.raw_dir, "dem", "*.tif")))
     if not paths:
-        # fall back to the same-domain m2 DEM
         from ..config import ROOT
         paths = sorted(glob.glob(os.path.join(ROOT, "data", "raw_m2", "dem", "*.tif")))
     if not paths:
         raise FileNotFoundError("no DEM tiles (run fetch/dem)")
-    tiles = []
+
+    # Collect points from each tile without GDAL VRT (merge_arrays crashes on Windows).
+    # Downsample each tile by stride to keep memory under control (SRTM is 3600×3600 per °).
+    STRIDE = 30  # ~0.008° native → ~0.25° after stride; fine enough to interp to 0.1°
+    lon_pts, lat_pts, elev_pts = [], [], []
     for f in paths:
         try:
-            t = rioxarray.open_rasterio(f, masked=True).rio.clip_box(
-                cfg.lon0 - 0.05, cfg.lat0 - 0.05, cfg.lon1 + 0.05, cfg.lat1 + 0.05)
-            if t.size:
-                _ = t.values[:, :5, :5]; tiles.append(t)
+            t = rioxarray.open_rasterio(f, masked=True)
+            x = t.x.values; y = t.y.values
+            if x.max() < cfg.lon0 - 0.5 or x.min() > cfg.lon1 + 0.5:
+                continue
+            if y.max() < cfg.lat0 - 0.5 or y.min() > cfg.lat1 + 0.5:
+                continue
+            # Clip to domain + small pad, then subsample by STRIDE
+            xi = np.where((x >= cfg.lon0 - 0.3) & (x <= cfg.lon1 + 0.3))[0][::STRIDE]
+            yi = np.where((y >= cfg.lat0 - 0.3) & (y <= cfg.lat1 + 0.3))[0][::STRIDE]
+            if xi.size == 0 or yi.size == 0:
+                continue
+            v = t.values[0][np.ix_(yi, xi)].astype("float32")
+            mask = np.isfinite(v)
+            XX, YY = np.meshgrid(x[xi], y[yi])
+            lon_pts.append(XX[mask]); lat_pts.append(YY[mask]); elev_pts.append(v[mask])
         except Exception as e:
             print(f"  [dem skip] {os.path.basename(f)}: {e}")
-    dem = merge_arrays(tiles).isel(band=0).coarsen(x=30, y=30, boundary="trim").mean()
-    dem = dem.interp(x=cfg.LON, y=cfg.LAT, method="linear")
-    if dem.y.values[0] > dem.y.values[-1]:
-        dem = dem.isel(y=slice(None, None, -1))
-    df = pd.DataFrame(dem.values).ffill(axis=0).bfill(axis=0).ffill(axis=1).bfill(axis=1)
-    return df.values.astype("float32")
+
+    if not lon_pts:
+        raise RuntimeError("DEM: no valid tiles loaded")
+    all_lon = np.concatenate(lon_pts)
+    all_lat = np.concatenate(lat_pts)
+    all_elev = np.concatenate(elev_pts)
+
+    # Bin onto a regular 0.01° grid then interpolate to target resolution
+    res = 0.01
+    glon = np.arange(cfg.lon0 - 0.05, cfg.lon1 + 0.05 + res, res)
+    glat = np.arange(cfg.lat0 - 0.05, cfg.lat1 + 0.05 + res, res)
+    acc = np.zeros((len(glat), len(glon)), dtype="float64")
+    cnt = np.zeros((len(glat), len(glon)), dtype="int32")
+    ji = np.round((all_lon - glon[0]) / res).astype(int)
+    ii = np.round((all_lat - glat[0]) / res).astype(int)
+    ok = (ii >= 0) & (ii < len(glat)) & (ji >= 0) & (ji < len(glon))
+    np.add.at(acc, (ii[ok], ji[ok]), all_elev[ok].astype("float64"))
+    np.add.at(cnt, (ii[ok], ji[ok]), 1)
+    with np.errstate(invalid="ignore"):
+        grid = np.where(cnt > 0, acc / cnt, np.nan).astype("float32")
+
+    # Fill NaN with neighbour average
+    df = pd.DataFrame(grid).ffill(axis=0).bfill(axis=0).ffill(axis=1).bfill(axis=1)
+    grid = df.values.astype("float32")
+
+    # Interpolate to target cfg.LAT / cfg.LON
+    interp = RegularGridInterpolator(
+        (glat, glon), grid, method="linear", bounds_error=False, fill_value=None)
+    LONM, LATM = np.meshgrid(cfg.LON, cfg.LAT)
+    dem = interp(np.stack([LATM.ravel(), LONM.ravel()], axis=1)).reshape(cfg.H, cfg.W)
+    return dem.astype("float32")
 
 
 def _rh_from_dewpoint(t2m_c, d2m_c):
@@ -113,6 +152,15 @@ def _grid_era5(cfg, dates):
         if "pressure_level" in arr.dims:
             arr = arr.isel(pressure_level=0)
         out["t850"] = arr.values.astype("float32") - 273.15
+
+    # Soil moisture — era5_sm_*.nc files (downloaded separately via fetch_soil).
+    sm_files = sorted(glob.glob(os.path.join(os.path.dirname(sl_files[0]), "era5_sm_*.nc")))
+    if sm_files:
+        sm = load_daily(sm_files, "mean")
+        svars = [v for v in ["swvl1", "volumetric_soil_water_layer_1"] if v in sm]
+        if svars:
+            out["swvl1"] = sm[svars[0]].values.astype("float32")
+            print(f"[grid] soil moisture (swvl1) loaded from {len(sm_files)} files")
     return out, times
 
 

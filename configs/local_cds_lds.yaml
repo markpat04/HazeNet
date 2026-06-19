@@ -1,9 +1,8 @@
-# HazeNet — LOCAL + CDS physics test.
-# Same 446-day window (Feb–Apr 2019–2023) but the grid is rebuilt from CDS ERA5
-# so we get the missing physics drivers (blh, t850 → ventilation/inversion) plus
-# ENSO. This is the test of whether those variables move the 2023 wall, before
-# committing to the full 9-year RunPod build.
-name: local_cds
+# HazeNet — Sprint 1 experiment: Label Distribution Smoothing (LDS) loss.
+# Identical to local_cds.yaml EXCEPT train.lds=true, so it reuses the SAME
+# datacube (data/processed_cds) and only changes the loss weighting.
+# Ref: Yang et al., "Delving into Deep Imbalanced Regression", ICML 2021.
+name: local_cds_lds
 
 domain:
   lat: [14.0, 25.0, 111]
@@ -41,6 +40,11 @@ train:
   seed: 42
   num_workers: 0
   patience: 30
+  # ── Sprint 1: imbalanced-regression loss ──
+  lds: true
+  lds_reweight: sqrt_inv
+  lds_sigma: 2.0
+  lds_max_weight: 10.0
 
 paths:
   grid_nc: data/processed_cds/grid_cds.nc

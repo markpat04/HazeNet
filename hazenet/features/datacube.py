@@ -51,6 +51,11 @@ def _resolve_channel(ch: str, grid: xr.Dataset, cfg, nt: int) -> np.ndarray:
         return physics.ventilation(time_var("blh"), ws)
     if ch == "inversion":
         return physics.inversion(time_var("t850"), time_var("temp"))
+    if ch.startswith("emission_lag"):
+        # emission_lag3 / emission_lag7 — trailing FRP sum (smoke transport delay)
+        _need(grid, "emission", ch)
+        win = int(ch.replace("emission_lag", "") or "3")
+        return physics.emission_accum(grid.emission.values.astype("float32"), window=win)
     if ch == "enso":
         if not cfg.enso_csv or not os.path.exists(cfg.enso_csv):
             raise KeyError("channel 'enso' needs features.enso_csv to point at a NOAA ONI table")

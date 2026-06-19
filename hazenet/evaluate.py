@@ -10,11 +10,11 @@ import json
 
 import numpy as np
 import pandas as pd
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 
 from .dataset import load_dataset
+
+# matplotlib is imported lazily inside the plotting helpers — it must come AFTER
+# torch on Windows (Agg-backend DLL ordering crash otherwise; see loyo.py).
 
 # Gate W2: low-dust-year positive bias must shrink to ≤ this (µg/m³)
 GATE_W2_BIAS = 25.0
@@ -73,19 +73,30 @@ def evaluate(cfg) -> dict:
     print(f"\nGATE W2: worst low-dust-year |bias|={worst_low_bias:.1f} "
           f"(target ≤{GATE_W2_BIAS}) → {'PASS ✅' if gate_pass else 'FAIL ❌'}")
 
-    os.makedirs(cfg.figures_dir, exist_ok=True)
-    _scatter(cfg, pred, y, d["test_mask"], te)
-    _bias_bars(cfg, per_year)
-
+    # Save metrics FIRST (figures can crash on some Windows matplotlib builds).
     out = dict(test=te, train=tr, gate_w2_pass=bool(gate_pass),
                worst_low_bias=worst_low_bias,
                per_year=per_year.to_dict(orient="records"))
+    os.makedirs(cfg.models_dir, exist_ok=True)
     json.dump(out, open(os.path.join(cfg.models_dir, f"eval_{cfg.name}.json"), "w"),
               indent=2, default=float)
+
+    # Figures are best-effort: some Windows matplotlib builds SEGFAULT in the Agg
+    # renderer (uncatchable by try/except). HAZENET_NOFIG=1 skips them so the
+    # pipeline always finishes with metrics; figures can be made on Linux/RunPod.
+    if not os.environ.get("HAZENET_NOFIG"):
+        os.makedirs(cfg.figures_dir, exist_ok=True)
+        try:
+            _scatter(cfg, pred, y, d["test_mask"], te)
+            _bias_bars(cfg, per_year)
+        except Exception as e:
+            print(f"[eval] figure save failed (non-fatal): {e}")
     return out
 
 
 def _scatter(cfg, pred, y, te_mask, te):
+    import matplotlib; matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
     p, g = pred[te_mask], y[te_mask]; m = ~np.isnan(g)
     fig, ax = plt.subplots(figsize=(6, 6))
     ax.scatter(g[m], p[m], alpha=0.4, s=8, c="tab:orange")
@@ -98,6 +109,8 @@ def _scatter(cfg, pred, y, te_mask, te):
 
 
 def _bias_bars(cfg, per_year):
+    import matplotlib; matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
     fig, ax = plt.subplots(figsize=(7, 4))
     c = ["tab:red" if b > 0 else "tab:blue" for b in per_year["bias"]]
     ax.bar(per_year["year"].astype(str), per_year["bias"], color=c)

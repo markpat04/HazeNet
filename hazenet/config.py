@@ -80,6 +80,15 @@ class Config:
     models_dir: str
     figures_dir: str
 
+    # ── imbalanced-regression (Sprint 1) — Label Distribution Smoothing ──
+    lds: bool = False               # enable LDS-weighted loss
+    lds_reweight: str = "sqrt_inv"  # "sqrt_inv" | "inv"
+    lds_sigma: float = 2.0          # Gaussian kernel width (bins)
+    lds_max_weight: float = 10.0    # clip weights to [1/max, max]
+
+    # ── emission curve shape (Sprint 2) ──
+    emission_curve_kind: str = "sat"  # sat | power | sat_linear
+
     # ---------- derived ----------
     @property
     def LAT(self) -> np.ndarray:
@@ -152,11 +161,16 @@ class Config:
             sfeat_hidden=mdl.get("sfeat_hidden", 16),
             emission_curve=mdl.get("emission_curve", True),
             quantiles=mdl.get("quantiles") or None,
+            emission_curve_kind=mdl.get("emission_curve_kind", "sat"),
             epochs=trn.get("epochs", 200), batch_size=trn.get("batch_size", 32),
             lr=trn.get("lr", 1e-3), weight_decay=trn.get("weight_decay", 1e-4),
             grad_clip=trn.get("grad_clip", 1.0), amp=trn.get("amp", False),
             seed=trn.get("seed", 42), num_workers=trn.get("num_workers", 0),
             patience=trn.get("patience", 0),
+            lds=trn.get("lds", False),
+            lds_reweight=trn.get("lds_reweight", "sqrt_inv"),
+            lds_sigma=trn.get("lds_sigma", 2.0),
+            lds_max_weight=trn.get("lds_max_weight", 10.0),
             grid_nc=_abs(pth["grid_nc"]), pm25_glob=_abs(pth["pm25_glob"]),
             raw_dir=_abs(pth.get("raw_dir", "data/raw_m2")),
             out_dir=_abs(pth.get("out_dir", "data/processed_hn")),

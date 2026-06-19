@@ -46,6 +46,22 @@ def precip_accum(precip: np.ndarray, window: int = 3) -> np.ndarray:
     return out
 
 
+def emission_accum(emission: np.ndarray, window: int = 3) -> np.ndarray:
+    """
+    Trailing FRP/emission sum over the past `window` days (inclusive of today).
+    Smoke from biomass burning lingers and is transported over several days, so
+    a same-day FRP field under-represents accumulated haze. This is the smoke
+    transport-delay feature (Sprint 2). emission: (T,H,W). Past days only — no
+    future leakage.
+    """
+    T = emission.shape[0]
+    out = np.zeros_like(emission, dtype="float32")
+    for t in range(T):
+        lo = max(0, t - window + 1)
+        out[t] = emission[lo:t + 1].sum(axis=0)
+    return out
+
+
 def ventilation(blh: np.ndarray, wind_spd: np.ndarray) -> np.ndarray:
     """
     Ventilation coefficient = BLH × wind speed.

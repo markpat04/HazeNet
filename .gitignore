@@ -6,6 +6,10 @@ __pycache__/
 # secrets (API keys) - อย่า commit เด็ดขาด
 src/.keys
 .cdsapirc
+.netrc
+
+# experiment tracking — Weights & Biases local run cache (creds live in ~/.netrc)
+wandb/
 
 # ข้อมูลใหญ่ - ดึงใหม่ผ่าน pipeline แทน (regenerable)
 data/raw/

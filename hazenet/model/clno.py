@@ -33,16 +33,45 @@ import torch.nn.functional as F
 
 # ─────────────────────────────────────────────────────────────────────────
 class EmissionCurve(nn.Module):
-    """Learnable saturating map φ(E)=scale·(1−exp(−E/τ)). Near-linear for small E."""
-    def __init__(self, tau_init: float = 0.4):
+    """
+    Learnable FRP→emission map φ(E).  `kind`:
+
+      sat         φ = scale·(1−exp(−E/τ))            (saturating; original)
+      power       φ = scale·(E+ε)^γ                  (unbounded; γ learnable)
+      sat_linear  φ = scale·(1−exp(−E/τ)) + lin·E    (saturating + linear tail)
+
+    Motivation (ACP 2024, SE-Asia biomass burning): fire PM2.5 is *under*-counted
+    (OC emission factor 3–4× too low for peat; up to 54% AOD/PM2.5 deficit). A
+    purely SATURATING curve caps the contribution of the biggest fires, which
+    worsens the severe-haze (2023) underestimation. `power` (γ can exceed 1) and
+    `sat_linear` let large fires contribute proportionally more.
+    """
+    def __init__(self, kind: str = "sat", tau_init: float = 0.4):
         super().__init__()
-        self.log_tau = nn.Parameter(torch.tensor(float(tau_init)).expm1().clamp_min(1e-3).log())
-        self.log_scale = nn.Parameter(torch.zeros(()))
+        self.kind = kind
+        if kind in ("sat", "sat_linear"):
+            self.log_tau = nn.Parameter(torch.tensor(float(tau_init)).expm1().clamp_min(1e-3).log())
+            self.log_scale = nn.Parameter(torch.zeros(()))
+        if kind == "sat_linear":
+            self.log_lin = nn.Parameter(torch.tensor(-2.0))   # small initial linear tail
+        if kind == "power":
+            self.log_scale = nn.Parameter(torch.zeros(()))
+            self.log_gamma = nn.Parameter(torch.zeros(()))    # γ = softplus(·)+ε ≈ 0.7 init
+        if kind not in ("sat", "power", "sat_linear"):
+            raise ValueError(f"unknown emission curve kind: {kind!r}")
 
     def forward(self, E: torch.Tensor) -> torch.Tensor:
+        if self.kind == "power":
+            scale = F.softplus(self.log_scale) + 1e-4
+            gamma = F.softplus(self.log_gamma) + 1e-2
+            return scale * torch.pow(E.clamp_min(0.0) + 1e-6, gamma)
         tau = F.softplus(self.log_tau) + 1e-4
         scale = F.softplus(self.log_scale) + 1e-4
-        return scale * (1.0 - torch.exp(-E / tau))
+        out = scale * (1.0 - torch.exp(-E / tau))
+        if self.kind == "sat_linear":
+            lin = F.softplus(self.log_lin) + 1e-6
+            out = out + lin * E.clamp_min(0.0)
+        return out
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -50,7 +79,8 @@ class CLNO(nn.Module):
     def __init__(self, H: int, W: int, in_ch: int,
                  kind: str = "globalv", hidden: int = 64, rank: int = 32,
                  dropout: float = 0.1, n_sfeats: int = 4, sfeat_hidden: int = 16,
-                 emission_curve: bool = True, quantiles=None):
+                 emission_curve: bool = True, quantiles=None,
+                 emission_curve_kind: str = "sat"):
         super().__init__()
         self.H, self.W = H, W
         self.G = H * W
@@ -91,7 +121,7 @@ class CLNO(nn.Module):
         self.b_ctx = nn.Linear(hidden, 1)
         self.b_stat = nn.Linear(sE, 1)
 
-        self.curve = EmissionCurve() if emission_curve else None
+        self.curve = EmissionCurve(kind=emission_curve_kind) if emission_curve else None
 
         # ── quantile spread (non-crossing) ──
         if self.quantiles:
@@ -199,4 +229,5 @@ def build_model(cfg, in_ch: int) -> CLNO:
     return CLNO(H=cfg.H, W=cfg.W, in_ch=in_ch,
                 kind=cfg.model_kind, hidden=cfg.hidden, rank=cfg.rank,
                 dropout=cfg.dropout, n_sfeats=4, sfeat_hidden=cfg.sfeat_hidden,
-                emission_curve=cfg.emission_curve, quantiles=cfg.quantiles)
+                emission_curve=cfg.emission_curve, quantiles=cfg.quantiles,
+                emission_curve_kind=getattr(cfg, "emission_curve_kind", "sat"))

@@ -37,6 +37,9 @@ def _run_stage(stage: str, cfg: Config):
     elif stage == "loyo":
         from .loyo import loyo
         loyo(cfg)
+    elif stage == "loso":
+        from .loyo import loso
+        loso(cfg)
     elif stage == "attribution":
         from .attribution import Attributor
         a = Attributor(cfg)

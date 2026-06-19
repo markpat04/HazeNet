@@ -17,19 +17,22 @@ time:
 
 features:
   channels: [u10, v10, dem, precip, rh, temp, blh,
-             wind_speed, ventilation, inversion, tpi, precip_accum, enso]
+             wind_speed, ventilation, inversion, tpi, precip_accum, enso, swvl1]
   precip_accum_window: 7
   tpi_radius: 5
   enso_csv: data/raw_big/enso/oni.csv
 
 model:
-  kind: lowrank
+  kind: globalv          # station-agnostic CLNO (validated); NOT lowrank
   hidden: 96
   rank: 48
-  dropout: 0.1
+  dropout: 0.3           # matched the local_cds validated setting
   sfeat_hidden: 16
   emission_curve: true
+  emission_curve_kind: sat   # Sprint 2: curve shape had no effect; keep default
   quantiles: [0.1, 0.5, 0.9]
+  # lds left OFF by default (Sprint 1: fixes bias but costs MAE on small data;
+  # re-evaluate on the full 9-year cube where the extreme tail is better sampled)
 
 train:
   epochs: 400
