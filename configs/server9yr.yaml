@@ -1,0 +1,52 @@
+# HazeNet — 9-year build, LOCAL SERVER (2x RTX 2080 Ti).
+# 9 burning seasons (Nov-May 2016-2024), full physics channels.
+# Stretch / Phase C — attacks the 2023 wall with more severe years.
+# Build the data ON the server (fetch auto-pulls DEM/ERA5/FIRMS/PM2.5/ENSO,
+# resume-able), then train. Needs ~/.cdsapirc (CDS) + FIRMS_MAP_KEY env var.
+#   nohup python run_pipeline.py server9yr "fetch,grid,datacube" > fetch9yr.log 2>&1 &
+name: server9yr
+
+domain:
+  lat: [14.0, 25.0, 111]
+  lon: [96.0, 106.0, 101]
+  step: 0.1
+
+time:
+  years: [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
+  test_year: 2023
+  season_months: [11, 12, 1, 2, 3, 4, 5]   # full burning season
+
+features:
+  channels: [u10, v10, dem, precip, rh, temp, blh,
+             wind_speed, ventilation, inversion, tpi, precip_accum, enso, swvl1]
+  precip_accum_window: 7
+  tpi_radius: 5
+  enso_csv: data/raw_big/enso/oni.csv
+
+model:
+  kind: globalv          # station-agnostic CLNO (validated)
+  hidden: 96
+  rank: 48
+  dropout: 0.3
+  sfeat_hidden: 16
+  emission_curve: true
+  emission_curve_kind: sat
+  quantiles: [0.1, 0.5, 0.9]
+
+train:
+  epochs: 400
+  batch_size: 64
+  lr: 0.001
+  weight_decay: 0.0001
+  grad_clip: 1.0
+  amp: true                   # fp16 — RTX 2080 Ti (Turing) has fp16 tensor cores
+  seed: 42
+  num_workers: 4
+
+paths:
+  grid_nc: data/processed_big/grid_big.nc
+  pm25_glob: data/raw_big/pm25/pm25_*.csv
+  raw_dir: data/raw_big
+  out_dir: data/processed_big
+  models_dir: models
+  figures_dir: figures
