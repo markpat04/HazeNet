@@ -5,7 +5,7 @@ text so it is 100% crash-proof and vector-sharp for the report. Reads the fresh
 eval/loyo/loso JSONs. Usage:  python run_figures.py [config_name]
 """
 import os, sys, json
-os.chdir("C:/Users/mark/Desktop/internship")
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 name = sys.argv[1] if len(sys.argv) > 1 else "local_cds"
 FIG = "figures"; os.makedirs(FIG, exist_ok=True)
 

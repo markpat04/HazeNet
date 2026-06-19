@@ -1,8 +1,11 @@
 """Reusable LOYO runner.  Usage:  python run_loyo.py <config.yaml>"""
 import os, sys, traceback
-os.chdir("C:/Users/mark/Desktop/internship")
-sys.path.insert(0, "C:/Users/mark/Desktop/internship")
-os.environ.setdefault("GDAL_DATA", "C:/Users/mark/miniconda3/envs/hazenet/Library/share/gdal")
+ROOT = os.path.dirname(os.path.abspath(__file__))
+_gdal = os.path.join(sys.prefix, "Library", "share", "gdal")
+if os.path.isdir(_gdal):
+    os.environ.setdefault("GDAL_DATA", _gdal)
+os.chdir(ROOT)
+sys.path.insert(0, ROOT)
 
 cfg_path = sys.argv[1] if len(sys.argv) > 1 else "configs/local_cds.yaml"
 print(f"Running LOYO for {cfg_path} ...", flush=True)

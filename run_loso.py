@@ -1,9 +1,12 @@
 """LOSO runner — k-fold Leave-One-Station-Out spatial-generalization gate.
 Usage:  python run_loso.py <config.yaml> [k]"""
 import os, sys, traceback
-os.chdir("C:/Users/mark/Desktop/internship")
-sys.path.insert(0, "C:/Users/mark/Desktop/internship")
-os.environ.setdefault("GDAL_DATA", "C:/Users/mark/miniconda3/envs/hazenet/Library/share/gdal")
+ROOT = os.path.dirname(os.path.abspath(__file__))
+_gdal = os.path.join(sys.prefix, "Library", "share", "gdal")
+if os.path.isdir(_gdal):
+    os.environ.setdefault("GDAL_DATA", _gdal)
+os.chdir(ROOT)
+sys.path.insert(0, ROOT)
 
 cfg_path = sys.argv[1] if len(sys.argv) > 1 else "configs/local_cds.yaml"
 k = int(sys.argv[2]) if len(sys.argv) > 2 else 5

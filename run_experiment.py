@@ -7,9 +7,12 @@ Usage:  python run_experiment.py <base_config.yaml> <out_name> [sweep]
   sweep ∈ { curve, lds, lag }   (default: curve)
 """
 import os, sys, json, copy
-os.chdir("C:/Users/mark/Desktop/internship")
-sys.path.insert(0, "C:/Users/mark/Desktop/internship")
-os.environ.setdefault("GDAL_DATA", "C:/Users/mark/miniconda3/envs/hazenet/Library/share/gdal")
+ROOT = os.path.dirname(os.path.abspath(__file__))
+_gdal = os.path.join(sys.prefix, "Library", "share", "gdal")
+if os.path.isdir(_gdal):
+    os.environ.setdefault("GDAL_DATA", _gdal)
+os.chdir(ROOT)
+sys.path.insert(0, ROOT)
 
 import numpy as np
 from hazenet.config import Config

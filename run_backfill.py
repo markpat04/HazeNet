@@ -8,8 +8,9 @@ captured offline during its run; sync it with `wandb sync --sync-all`.
 Run AFTER `wandb login` so these go straight to the online project.
 """
 import os, sys, json
-os.chdir("C:/Users/mark/Desktop/internship")
-sys.path.insert(0, "C:/Users/mark/Desktop/internship")
+ROOT = os.path.dirname(os.path.abspath(__file__))
+os.chdir(ROOT)
+sys.path.insert(0, ROOT)
 
 from hazenet.tracking import Experiment
 
