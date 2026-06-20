@@ -23,5 +23,6 @@ def load_model(ckpt_path: str, device: str = "cpu"):
         from .model.clno import CLNO
         model = CLNO(kind=kind, **kwargs)
     model.load_state_dict(ck["state_dict"])
+    model.to(device)
     model.eval()
     return model, ck
