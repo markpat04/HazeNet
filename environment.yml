@@ -33,9 +33,12 @@ dependencies:
   - pip:
       # PyTorch CUDA 12.1 index as EXTRA (so non-torch pkgs still resolve from PyPI).
       # Using --index-url here breaks torchdiffeq (PyTorch index has only torch).
-      # Works on RTX 2080 Ti (Turing) and newer.
+      # MUST pin the +cu121 local tag: without it, pip grabs PyPI's default build
+      # (newer cu12x) which needs a newer driver -> "driver too old" / cuda False.
+      # +cu121 exists ONLY on the PyTorch index, so pip is forced to use it.
+      # cu121 runs on RTX 2080 Ti (Turing) and any driver >= CUDA 12.1.
       - --extra-index-url https://download.pytorch.org/whl/cu121
-      - torch
+      - torch==2.5.1+cu121
       # neural-ODE solver — AirPhyNet baseline + Level-3 physics-ODE model (from PyPI)
       - torchdiffeq
   # xesmf (conservative regrid) ลองเพิ่มแยกภายหลัง - บน Windows อาจไม่มี build
