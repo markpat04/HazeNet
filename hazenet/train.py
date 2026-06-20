@@ -59,7 +59,7 @@ def train(cfg) -> dict:
 
     opt = torch.optim.Adam(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=cfg.epochs)
-    scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+    scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
 
     def loss_fn(out, yb):
         if cfg.quantiles:
@@ -93,7 +93,7 @@ def train(cfg) -> dict:
         for mb in tr_loader:
             mm, me, my = (x.to(dev) for x in mb)
             opt.zero_grad()
-            with torch.cuda.amp.autocast(enabled=use_amp):
+            with torch.amp.autocast("cuda", enabled=use_amp):
                 out, _, _ = model(mm, me, sfeats_t); loss = loss_fn(out, my)
             scaler.scale(loss).backward()
             scaler.unscale_(opt)
