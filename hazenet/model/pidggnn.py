@@ -82,7 +82,7 @@ class PIDGGNN(CLNO):
         # ── physics prior (additive in log-probability space) ──
         if a_wind is not None:
             physics_logit = self.alpha * torch.log(
-                a_wind.to(logit.device, logit.dtype) + 1e-8)            # (B, S, G)
+                a_wind.to(logit.device, logit.dtype) + 1e-4)            # (B, S, G); 1e-4 safe in fp16
             logit = logit + physics_logit
 
         K = torch.softmax(logit, dim=-1)                                # (B, S, G)
