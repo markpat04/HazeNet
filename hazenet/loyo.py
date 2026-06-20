@@ -69,10 +69,27 @@ def _load_raw(cfg):
             y_raw[ti, si] = r["pm25"]
 
     station_feats = _compute_station_feats(cfg, stations, X, names)   # (S, 4)
-    return met_raw, emis_raw, y_raw, times, S, station_feats
+
+    # ── optional wind-advection weights (for PIDGGNN) ──
+    a_wind = None
+    if getattr(cfg, "compute_advection_weights", False):
+        met_channel_names = [n for i, n in enumerate(names) if i != e_idx]
+        if "u10" in met_channel_names and "v10" in met_channel_names:
+            from .model.transport import precompute_advection, row_normalize
+            u10_i = met_channel_names.index("u10")
+            v10_i = met_channel_names.index("v10")
+            station_xy = stations[["lat", "lon"]].values.astype("float32")
+            T = met_raw.shape[0]
+            print(f"Precomputing advection weights ({T}×{S}×{met_raw.shape[2]*met_raw.shape[3]}) ...")
+            a_wind = precompute_advection(met_raw[:, u10_i], met_raw[:, v10_i],
+                                          cfg.LAT, cfg.LON, station_xy)
+            a_wind = row_normalize(a_wind).astype("float32")
+            print(f"  a_wind done: {a_wind.shape}")
+
+    return met_raw, emis_raw, y_raw, times, S, station_feats, a_wind
 
 
-def _fit_fold(cfg, met_raw, emis_raw, y_raw, station_feats, train, test, S, dev):
+def _fit_fold(cfg, met_raw, emis_raw, y_raw, station_feats, a_wind, train, test, S, dev):
     import torch
     from torch.utils.data import TensorDataset, DataLoader
     from .model import (build_model, masked_mse, pinball_loss,
@@ -93,10 +110,18 @@ def _fit_fold(cfg, met_raw, emis_raw, y_raw, station_feats, train, test, S, dev)
     sfeats_t = torch.tensor(station_feats).to(dev)
     met_t = torch.tensor(met); emis_t = torch.tensor(emis); y_t = torch.tensor(y)
     tri = np.where(train)[0]; tei = np.where(test)[0]
-    tr = DataLoader(TensorDataset(met_t[tri], emis_t[tri], y_t[tri]),
-                    batch_size=cfg.batch_size, shuffle=True)
-    te = DataLoader(TensorDataset(met_t[tei], emis_t[tei], y_t[tei]),
-                    batch_size=cfg.batch_size)
+    has_wind = a_wind is not None
+    if has_wind:
+        a_wind_t = torch.tensor(a_wind)
+        tr = DataLoader(TensorDataset(met_t[tri], emis_t[tri], a_wind_t[tri], y_t[tri]),
+                        batch_size=cfg.batch_size, shuffle=True)
+        te = DataLoader(TensorDataset(met_t[tei], emis_t[tei], a_wind_t[tei], y_t[tei]),
+                        batch_size=cfg.batch_size)
+    else:
+        tr = DataLoader(TensorDataset(met_t[tri], emis_t[tri], y_t[tri]),
+                        batch_size=cfg.batch_size, shuffle=True)
+        te = DataLoader(TensorDataset(met_t[tei], emis_t[tei], y_t[tei]),
+                        batch_size=cfg.batch_size)
     opt = torch.optim.Adam(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=cfg.epochs)
 
@@ -113,21 +138,28 @@ def _fit_fold(cfg, met_raw, emis_raw, y_raw, station_feats, train, test, S, dev)
     else:
         lossf = (lambda o, yb: pinball_loss(o, yb, cfg.quantiles)) if cfg.quantiles else masked_mse
 
+    def _unpack(mb):
+        if has_wind:
+            mm, me, mw, my = (x.to(dev) for x in mb)
+        else:
+            mm, me, my = (x.to(dev) for x in mb); mw = None
+        return mm, me, mw, my
+
     best, bad, best_state = float("inf"), 0, None
     import copy
     for ep in range(cfg.epochs):
         model.train()
         for mb in tr:
-            mm, me, my = (x.to(dev) for x in mb)
-            opt.zero_grad(); out, _, _ = model(mm, me, sfeats_t)
+            mm, me, mw, my = _unpack(mb)
+            opt.zero_grad(); out, _, _ = model(mm, me, sfeats_t, mw)
             loss = lossf(out, my); loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.grad_clip); opt.step()
         sched.step()
         model.eval(); tl = 0.0
         with torch.no_grad():
             for mb in te:
-                mm, me, my = (x.to(dev) for x in mb)
-                tl += lossf(model(mm, me, sfeats_t)[0], my).item()
+                mm, me, mw, my = _unpack(mb)
+                tl += lossf(model(mm, me, sfeats_t, mw)[0], my).item()
         tl /= max(1, len(te))
         if tl < best - 1e-5:
             best, bad, best_state = tl, 0, copy.deepcopy(model.state_dict())
@@ -141,9 +173,16 @@ def _fit_fold(cfg, met_raw, emis_raw, y_raw, station_feats, train, test, S, dev)
     # predict held-out year
     model.eval(); preds = []
     with torch.no_grad():
-        for mb in DataLoader(TensorDataset(met_t[tei], emis_t[tei]), batch_size=cfg.batch_size):
-            mm, me = (x.to(dev) for x in mb)
-            preds.append(model.predict_median(model(mm, me, sfeats_t)[0]).cpu())
+        if has_wind:
+            infer_ds = TensorDataset(met_t[tei], emis_t[tei], a_wind_t[tei])
+        else:
+            infer_ds = TensorDataset(met_t[tei], emis_t[tei])
+        for mb in DataLoader(infer_ds, batch_size=cfg.batch_size):
+            if has_wind:
+                mm, me, mw = (x.to(dev) for x in mb)
+            else:
+                mm, me = (x.to(dev) for x in mb); mw = None
+            preds.append(model.predict_median(model(mm, me, sfeats_t, mw)[0]).cpu())
     pred = torch.cat(preds).numpy() * pm_max
     g = y_raw[test]; m = ~np.isnan(g)
     err = pred - g
@@ -167,7 +206,7 @@ def _fit_fold(cfg, met_raw, emis_raw, y_raw, station_feats, train, test, S, dev)
 
 
 def loyo(cfg) -> dict:
-    met_raw, emis_raw, y_raw, times, S, station_feats = _load_raw(cfg)
+    met_raw, emis_raw, y_raw, times, S, station_feats, a_wind = _load_raw(cfg)
     import torch
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     yrs = np.array([t.year for t in times])
@@ -177,7 +216,7 @@ def loyo(cfg) -> dict:
     rows = []
     for Y in years:
         test = yrs == Y; train = ~test
-        r = _fit_fold(cfg, met_raw, emis_raw, y_raw, station_feats, train, test, S, dev)
+        r = _fit_fold(cfg, met_raw, emis_raw, y_raw, station_feats, a_wind, train, test, S, dev)
         r["year"] = Y
         rows.append(r)
         sn, nw = r["seen"], r["new"]
@@ -231,7 +270,7 @@ def loyo(cfg) -> dict:
 # asks: can the station-agnostic CLNO predict at a location it has never seen?
 # This is the field-standard test (cf. arXiv 2505.18461 on location encoders).
 # ─────────────────────────────────────────────────────────────────────────
-def _fit_loso_fold(cfg, met_raw, emis_raw, y_raw, station_feats, train_st, test_st, dev):
+def _fit_loso_fold(cfg, met_raw, emis_raw, y_raw, station_feats, a_wind, train_st, test_st, dev):
     import torch
     from torch.utils.data import TensorDataset, DataLoader
     from .model import (build_model, masked_mse, pinball_loss,
@@ -256,9 +295,14 @@ def _fit_loso_fold(cfg, met_raw, emis_raw, y_raw, station_feats, train_st, test_
     sfeats_t = torch.tensor(station_feats).to(dev)            # ALL stations (needed to predict held-out)
     met_t = torch.tensor(met); emis_t = torch.tensor(emis)
     ytr_t = torch.tensor(y_tr); yte_t = torch.tensor(y_te)
-
-    tr = DataLoader(TensorDataset(met_t, emis_t, ytr_t), batch_size=cfg.batch_size, shuffle=True)
-    te = DataLoader(TensorDataset(met_t, emis_t, yte_t), batch_size=cfg.batch_size)
+    has_wind = a_wind is not None
+    if has_wind:
+        a_wind_t = torch.tensor(a_wind)
+        tr = DataLoader(TensorDataset(met_t, emis_t, a_wind_t, ytr_t), batch_size=cfg.batch_size, shuffle=True)
+        te = DataLoader(TensorDataset(met_t, emis_t, a_wind_t, yte_t), batch_size=cfg.batch_size)
+    else:
+        tr = DataLoader(TensorDataset(met_t, emis_t, ytr_t), batch_size=cfg.batch_size, shuffle=True)
+        te = DataLoader(TensorDataset(met_t, emis_t, yte_t), batch_size=cfg.batch_size)
     opt = torch.optim.Adam(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=cfg.epochs)
 
@@ -270,20 +314,27 @@ def _fit_loso_fold(cfg, met_raw, emis_raw, y_raw, station_feats, train_st, test_
     else:
         lossf = (lambda o, yb: pinball_loss(o, yb, cfg.quantiles)) if cfg.quantiles else masked_mse
 
+    def _unpack_loso(mb):
+        if has_wind:
+            mm, me, mw, my = (x.to(dev) for x in mb)
+        else:
+            mm, me, my = (x.to(dev) for x in mb); mw = None
+        return mm, me, mw, my
+
     best, bad, best_state = float("inf"), 0, None
     for ep in range(cfg.epochs):
         model.train()
         for mb in tr:
-            mm, me, my = (x.to(dev) for x in mb)
-            opt.zero_grad(); out, _, _ = model(mm, me, sfeats_t)
+            mm, me, mw, my = _unpack_loso(mb)
+            opt.zero_grad(); out, _, _ = model(mm, me, sfeats_t, mw)
             loss = lossf(out, my); loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.grad_clip); opt.step()
         sched.step()
         model.eval(); tl = 0.0
         with torch.no_grad():
             for mb in te:
-                mm, me, my = (x.to(dev) for x in mb)
-                tl += lossf(model(mm, me, sfeats_t)[0], my).item()
+                mm, me, mw, my = _unpack_loso(mb)
+                tl += lossf(model(mm, me, sfeats_t, mw)[0], my).item()
         tl /= max(1, len(te))
         if tl < best - 1e-5:
             best, bad, best_state = tl, 0, copy.deepcopy(model.state_dict())
@@ -296,16 +347,23 @@ def _fit_loso_fold(cfg, met_raw, emis_raw, y_raw, station_feats, train_st, test_
 
     model.eval(); preds = []
     with torch.no_grad():
-        for mb in DataLoader(TensorDataset(met_t, emis_t), batch_size=cfg.batch_size):
-            mm, me = (x.to(dev) for x in mb)
-            preds.append(model.predict_median(model(mm, me, sfeats_t)[0]).cpu())
+        if has_wind:
+            infer_ds = TensorDataset(met_t, emis_t, a_wind_t)
+        else:
+            infer_ds = TensorDataset(met_t, emis_t)
+        for mb in DataLoader(infer_ds, batch_size=cfg.batch_size):
+            if has_wind:
+                mm, me, mw = (x.to(dev) for x in mb)
+            else:
+                mm, me = (x.to(dev) for x in mb); mw = None
+            preds.append(model.predict_median(model(mm, me, sfeats_t, mw)[0]).cpu())
     pred = torch.cat(preds).numpy() * pm_max                 # (T, S)
     g = y_raw.copy(); g[:, ~test_st] = np.nan                # eval only at held-out stations
     return pred - g, ~np.isnan(g), g
 
 
 def loso(cfg, k: int = 5) -> dict:
-    met_raw, emis_raw, y_raw, times, S, station_feats = _load_raw(cfg)
+    met_raw, emis_raw, y_raw, times, S, station_feats, a_wind = _load_raw(cfg)
     import torch
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     rng = np.random.default_rng(cfg.seed)
@@ -319,7 +377,7 @@ def loso(cfg, k: int = 5) -> dict:
     for kf, held in enumerate(folds_idx):
         test_st = np.zeros(S, dtype=bool); test_st[held] = True
         train_st = has & ~test_st
-        err, m, g = _fit_loso_fold(cfg, met_raw, emis_raw, y_raw, station_feats,
+        err, m, g = _fit_loso_fold(cfg, met_raw, emis_raw, y_raw, station_feats, a_wind,
                                    train_st, test_st, dev)
         mae = float(np.abs(err[m]).mean()); bias = float(err[m].mean())
         rmse = float(np.sqrt((err[m] ** 2).mean()))

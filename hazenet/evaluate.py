@@ -35,11 +35,19 @@ def evaluate(cfg) -> dict:
     sfeats_t = torch.tensor(np.asarray(sf, dtype="float32")).to(dev)
 
     met_t = torch.tensor(d["met"]); emis_t = torch.tensor(d["emis"])
-    ds = TensorDataset(met_t, emis_t)
+    has_wind = d.get("a_wind") is not None
+    if has_wind:
+        ds = TensorDataset(met_t, emis_t, torch.tensor(d["a_wind"]))
+    else:
+        ds = TensorDataset(met_t, emis_t)
     preds = []
     with torch.no_grad():
-        for mm, me in DataLoader(ds, batch_size=cfg.batch_size):
-            out, _, _ = model(mm.to(dev), me.to(dev), sfeats_t)
+        for mb in DataLoader(ds, batch_size=cfg.batch_size):
+            if has_wind:
+                mm, me, mw = (x.to(dev) for x in mb)
+            else:
+                mm, me = (x.to(dev) for x in mb); mw = None
+            out, _, _ = model(mm, me, sfeats_t, mw)
             preds.append(model.predict_median(out).cpu())
     pred = torch.cat(preds).numpy() * pm25_max          # (T,S)
     y = d["y_raw"]; times = d["times"]

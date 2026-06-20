@@ -50,8 +50,14 @@ def train(cfg) -> dict:
     met_t = torch.tensor(d["met"]); emis_t = torch.tensor(d["emis"])
     y_t = torch.tensor(d["y_norm"])
     tr_idx = np.where(d["train_mask"])[0]; te_idx = np.where(d["test_mask"])[0]
-    tr_ds = TensorDataset(met_t[tr_idx], emis_t[tr_idx], y_t[tr_idx])
-    te_ds = TensorDataset(met_t[te_idx], emis_t[te_idx], y_t[te_idx])
+    has_wind = d.get("a_wind") is not None
+    if has_wind:
+        a_wind_t = torch.tensor(d["a_wind"])
+        tr_ds = TensorDataset(met_t[tr_idx], emis_t[tr_idx], a_wind_t[tr_idx], y_t[tr_idx])
+        te_ds = TensorDataset(met_t[te_idx], emis_t[te_idx], a_wind_t[te_idx], y_t[te_idx])
+    else:
+        tr_ds = TensorDataset(met_t[tr_idx], emis_t[tr_idx], y_t[tr_idx])
+        te_ds = TensorDataset(met_t[te_idx], emis_t[te_idx], y_t[te_idx])
     tr_loader = DataLoader(tr_ds, batch_size=cfg.batch_size, shuffle=True,
                            pin_memory=(dev == "cuda"), num_workers=cfg.num_workers)
     te_loader = DataLoader(te_ds, batch_size=cfg.batch_size, shuffle=False,
@@ -88,13 +94,20 @@ def train(cfg) -> dict:
     best_state, bad = None, 0
     print(f"training {cfg.epochs} epochs (from {start_ep}) "
           f"patience={cfg.patience or 'off'} ...")
+    def _unpack(mb):
+        if has_wind:
+            mm, me, mw, my = (x.to(dev) for x in mb)
+        else:
+            mm, me, my = (x.to(dev) for x in mb); mw = None
+        return mm, me, mw, my
+
     for ep in range(start_ep, cfg.epochs):
         model.train(); tot = 0.0
         for mb in tr_loader:
-            mm, me, my = (x.to(dev) for x in mb)
+            mm, me, mw, my = _unpack(mb)
             opt.zero_grad()
             with torch.amp.autocast("cuda", enabled=use_amp):
-                out, _, _ = model(mm, me, sfeats_t); loss = loss_fn(out, my)
+                out, _, _ = model(mm, me, sfeats_t, mw); loss = loss_fn(out, my)
             scaler.scale(loss).backward()
             scaler.unscale_(opt)
             torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.grad_clip)
@@ -105,8 +118,8 @@ def train(cfg) -> dict:
         model.eval(); tot = 0.0
         with torch.no_grad():
             for mb in te_loader:
-                mm, me, my = (x.to(dev) for x in mb)
-                out, _, _ = model(mm, me, sfeats_t); tot += loss_fn(out, my).item()
+                mm, me, mw, my = _unpack(mb)
+                out, _, _ = model(mm, me, sfeats_t, mw); tot += loss_fn(out, my).item()
         te_losses.append(tot / max(1, len(te_loader)))
 
         if run:
@@ -137,8 +150,8 @@ def train(cfg) -> dict:
     model.eval(); preds = []
     with torch.no_grad():
         for mb in DataLoader(te_ds, batch_size=cfg.batch_size):
-            mm, me, _ = (x.to(dev) for x in mb)
-            out, _, _ = model(mm, me, sfeats_t)
+            mm, me, mw, _ = _unpack(mb)
+            out, _, _ = model(mm, me, sfeats_t, mw)
             preds.append(model.predict_median(out).cpu())
     pred_te = torch.cat(preds).numpy() * pm25_max
     gt_te = d["y_raw"][d["test_mask"]]

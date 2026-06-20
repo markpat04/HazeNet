@@ -132,7 +132,7 @@ class CLNO(nn.Module):
             self.gap_stat = nn.Linear(sE, nq)
 
     # ── forward ──
-    def forward(self, met, emission, station_feats):
+    def forward(self, met, emission, station_feats, a_wind=None):
         """
         met:           (B, in_ch, H, W)   normalised met/static grid
         emission:      (B, H, W)          normalised FRP emission

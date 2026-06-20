@@ -89,6 +89,10 @@ class Config:
     # ── emission curve shape (Sprint 2) ──
     emission_curve_kind: str = "sat"  # sat | power | sat_linear
 
+    # ── PI-DGGNN (Phase A) ──
+    compute_advection_weights: bool = False   # precompute a_wind (T,S,G) — needed for pidggnn
+    pidggnn_alpha_init: float = 0.0           # initial physics-coupling α; 0 = starts as CLNO
+
     # ---------- derived ----------
     @property
     def LAT(self) -> np.ndarray:
@@ -171,6 +175,8 @@ class Config:
             lds_reweight=trn.get("lds_reweight", "sqrt_inv"),
             lds_sigma=trn.get("lds_sigma", 2.0),
             lds_max_weight=trn.get("lds_max_weight", 10.0),
+            compute_advection_weights=mdl.get("compute_advection_weights", False),
+            pidggnn_alpha_init=mdl.get("pidggnn_alpha_init", 0.0),
             grid_nc=_abs(pth["grid_nc"]), pm25_glob=_abs(pth["pm25_glob"]),
             raw_dir=_abs(pth.get("raw_dir", "data/raw_m2")),
             out_dir=_abs(pth.get("out_dir", "data/processed_hn")),

@@ -90,10 +90,27 @@ def load_dataset(cfg):
     met_channel_names = [n for n in names if n != "emission"]
     station_feats = _station_feats(cfg, stations, X, names).astype("float32")  # (S, 4)
 
+    # ── wind-advection weights (optional; only when pidggnn config requests it) ──
+    a_wind = None
+    if getattr(cfg, "compute_advection_weights", False):
+        if "u10" in met_channel_names and "v10" in met_channel_names:
+            from .model.transport import precompute_advection, row_normalize
+            u10_i = met_channel_names.index("u10")
+            v10_i = met_channel_names.index("v10")
+            station_xy = stations[["lat", "lon"]].values.astype("float32")  # (S, 2)
+            print(f"Precomputing advection weights ({T}×{S}×{H*W}) "
+                  f"≈{T*S*H*W*4/1e9:.2f} GB ...")
+            a_wind = precompute_advection(
+                met_raw[:, u10_i], met_raw[:, v10_i],
+                cfg.LAT, cfg.LON, station_xy)
+            a_wind = row_normalize(a_wind).astype("float32")   # (T, S, G)
+            print(f"  a_wind done: {a_wind.shape}")
+
     meta = dict(H=H, W=W, S=S, T=int(T), in_ch=in_ch, e_max=e_max,
                 pm25_max=pm25_max, channels=met_channel_names,
                 met_mu=met_mu.tolist(), met_std=met_std.tolist())
     return dict(met=met_norm, emis=emis_norm, y_norm=y_norm, y_raw=y_raw,
                 stations=stations, station_feats=station_feats,
                 meta=meta, times=times,
-                train_mask=train_mask, test_mask=test_mask)
+                train_mask=train_mask, test_mask=test_mask,
+                a_wind=a_wind)
